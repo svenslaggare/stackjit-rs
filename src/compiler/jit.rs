@@ -1,0 +1,112 @@
+use std::collections::HashMap;
+
+use crate::model::function::{Function, FunctionSignature};
+use crate::ir::compiler::InstructionIRCompiler;
+use crate::ir::InstructionIR;
+use crate::compiler::allocator::ExecutableMemoryAllocator;
+use crate::compiler::code_generator::{CodeGenerator};
+use crate::compiler::binder::Binder;
+use crate::compiler::{FunctionCompilationData, FunctionCallType};
+
+pub struct JitCompiler {
+    memory_allocator: ExecutableMemoryAllocator,
+    compiled_functions: HashMap<FunctionSignature, FunctionCompilationData>,
+    binder: Binder
+}
+
+impl JitCompiler {
+    pub fn new() -> JitCompiler {
+        JitCompiler {
+            memory_allocator: ExecutableMemoryAllocator::new(),
+            compiled_functions: HashMap::new(),
+            binder: Binder::new()
+        }
+    }
+
+    pub fn compile_function(&mut self, function: &Function) {
+        println!("{}", function.definition().signature());
+        println!("{{");
+
+        let mut compilation_data = FunctionCompilationData::new();
+        let instructions_ir = self.compile_ir(function, &mut compilation_data);
+        let function_code_bytes = self.generate_code(function, &mut compilation_data, &instructions_ir);
+
+        println!("}}");
+        println!();
+        let function_code_ptr = self.memory_allocator.allocate(function_code_bytes.len());
+
+        // println!("Function address: 0x{:x}", function_code_ptr as usize);
+
+        unsafe {
+            function_code_ptr.copy_from(function_code_bytes.as_ptr() as *const _, function_code_bytes.len());
+        }
+
+        self.compiled_functions.insert(
+            function.definition().call_signature(),
+            compilation_data
+        );
+
+        self.binder.define(function.definition().clone());
+        self.binder.set_address(&function.definition().call_signature(), function_code_ptr);
+    }
+
+    pub fn prepare_execution(&mut self) -> Option<EntryPoint> {
+        self.resolve_calls();
+        let address = self.binder.get(&FunctionSignature { name: "main".to_owned(), parameters: Vec::new() })?.address()?;
+        Some(unsafe { std::mem::transmute(address) })
+    }
+
+    fn resolve_calls(&mut self) {
+        for (signature, compiled_function) in &mut self.compiled_functions {
+            if !compiled_function.unresolved_function_calls.is_empty() {
+                let function = self.binder.get(signature).unwrap();
+
+                for unresolved_function_call in &compiled_function.unresolved_function_calls {
+                    let function_to_call = self.binder.get(&unresolved_function_call.signature).unwrap();
+
+                    match unresolved_function_call.call_type {
+                        FunctionCallType::Relative => {
+                            let target = (function_to_call.address().unwrap() as i64
+                                          - (function.address().unwrap() as i64 + unresolved_function_call.call_offset as i64 + 5)) as i32;
+
+                            unsafe {
+                                let function_code_ptr = function.address().unwrap().add(unresolved_function_call.call_offset + 1) as *mut i32;
+                                *function_code_ptr = target;
+                            }
+                        }
+                        FunctionCallType::Absolute => {
+
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn compile_ir(&self,
+                  function: &Function,
+                  compilation_data: &mut FunctionCompilationData) -> Vec<InstructionIR> {
+        let mut instruction_ir_compiler = InstructionIRCompiler::new(&self.binder, function, compilation_data);
+        instruction_ir_compiler.compile(function.instructions());
+        instruction_ir_compiler.done()
+    }
+
+    fn generate_code(&self,
+                     function: &Function,
+                     compilation_data: &mut FunctionCompilationData,
+                     instructions_ir: &Vec<InstructionIR>) -> Vec<u8> {
+        let mut code_generator = CodeGenerator::new(&self.binder);
+        code_generator.generate(function, compilation_data, instructions_ir);
+        code_generator.done()
+    }
+
+    pub fn binder(&self) -> &Binder {
+        &self.binder
+    }
+
+    pub fn binder_mut(&mut self) -> &mut Binder {
+        &mut self.binder
+    }
+}
+
+pub type EntryPoint = extern "C" fn() -> i32;
