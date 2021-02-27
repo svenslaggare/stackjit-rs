@@ -37,8 +37,7 @@ fn external1() {
         ]
     )).unwrap();
 
-    let function_ptr = engine.prepare_execution().unwrap();
-    let execution_result = (function_ptr)();
+    let execution_result = engine.execute().unwrap();
     assert_eq!(1337 + 4711, execution_result);
 }
 
@@ -64,8 +63,7 @@ fn external2() {
         ]
     )).unwrap();
 
-    let function_ptr = engine.prepare_execution().unwrap();
-    let execution_result = (function_ptr)();
+    let execution_result = engine.execute().unwrap();
     assert_eq!(4711 - 1337, execution_result);
 }
 
@@ -97,8 +95,7 @@ fn external3() {
         ]
     )).unwrap();
 
-    let function_ptr = engine.prepare_execution().unwrap();
-    let execution_result = (function_ptr)();
+    let execution_result = engine.execute().unwrap();
     assert_eq!(36, execution_result);
 }
 
@@ -128,8 +125,7 @@ fn managed1() {
         ]
     )).unwrap();
 
-    let function_ptr = engine.prepare_execution().unwrap();
-    let execution_result = (function_ptr)();
+    let execution_result = engine.execute().unwrap();
     assert_eq!(1337 + 4711, execution_result);
 }
 
@@ -161,8 +157,7 @@ fn managed2() {
         ]
     )).unwrap();
 
-    let function_ptr = engine.prepare_execution().unwrap();
-    let execution_result = (function_ptr)();
+    let execution_result = engine.execute().unwrap();
     assert_eq!(1337 + 4711, execution_result);
 }
 
@@ -210,8 +205,7 @@ fn managed3() {
         ]
     )).unwrap();
 
-    let function_ptr = engine.prepare_execution().unwrap();
-    let execution_result = (function_ptr)();
+    let execution_result = engine.execute().unwrap();
     assert_eq!(36, execution_result);
 }
 
@@ -290,8 +284,7 @@ fn managed4() {
         ]
     )).unwrap();
 
-    let function_ptr = engine.prepare_execution().unwrap();
-    let execution_result = (function_ptr)();
+    let execution_result = engine.execute().unwrap();
     assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16].iter().sum::<i32>(), execution_result);
 }
 
@@ -321,7 +314,6 @@ fn managed5() {
         ]
     )).unwrap();
 
-    let function_ptr = engine.prepare_execution().unwrap();
-    let execution_result = (function_ptr)();
+    let execution_result = engine.execute().unwrap();
     assert_eq!(1337 + 4711, execution_result);
 }

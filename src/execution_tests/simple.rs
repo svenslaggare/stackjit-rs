@@ -16,8 +16,7 @@ fn test1() {
         ]
     )).unwrap();
 
-    let function_ptr = engine.prepare_execution().unwrap();
-    let execution_result = (function_ptr)();
+    let execution_result = engine.execute().unwrap();
     assert_eq!(4711, execution_result);
 }
 
@@ -36,8 +35,7 @@ fn test2() {
         ]
     )).unwrap();
 
-    let function_ptr = engine.prepare_execution().unwrap();
-    let execution_result = (function_ptr)();
+    let execution_result = engine.execute().unwrap();
     assert_eq!(4711 + 1337, execution_result);
 }
 
@@ -56,8 +54,7 @@ fn test3() {
         ]
     )).unwrap();
 
-    let function_ptr = engine.prepare_execution().unwrap();
-    let execution_result = (function_ptr)();
+    let execution_result = engine.execute().unwrap();
     assert_eq!(4711 - 1337, execution_result);
 }
 
@@ -76,8 +73,7 @@ fn locals1() {
         ]
     )).unwrap();
 
-    let function_ptr = engine.prepare_execution().unwrap();
-    let execution_result = (function_ptr)();
+    let execution_result = engine.execute().unwrap();
     assert_eq!(1337, execution_result);
 }
 
@@ -98,7 +94,6 @@ fn locals2() {
         ]
     )).unwrap();
 
-    let function_ptr = engine.prepare_execution().unwrap();
-    let execution_result = (function_ptr)();
+    let execution_result = engine.execute().unwrap();
     assert_eq!(1337 + 4711, execution_result);
 }

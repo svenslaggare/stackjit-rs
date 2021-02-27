@@ -32,7 +32,12 @@ impl ExecutionEngine {
         Ok(())
     }
 
-    pub fn prepare_execution(&mut self) -> ExecutionEngineResult<EntryPoint> {
+    pub fn execute(&mut self) -> ExecutionEngineResult<i32> {
+        let entrypoint = self.prepare_execution()?;
+        Ok((entrypoint)())
+    }
+
+    fn prepare_execution(&mut self) -> ExecutionEngineResult<EntryPoint> {
         for function in &mut self.functions {
             let mut verifier = Verifier::new(&self.binder, function);
             verifier.verify().map_err(|err| ExecutionEngineError::Verify(err))?;

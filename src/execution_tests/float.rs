@@ -9,7 +9,6 @@ thread_local!(static FLOAT_RESULT: RefCell<f32> = RefCell::new(0.0));
 
 extern "C" fn print_float(x: f32) {
     println!("{}", x);
-    // *FLOAT_RESULT.lock().unwrap() = x;
     FLOAT_RESULT.with(|result| {
         *result.borrow_mut() = x;
     });
@@ -51,8 +50,7 @@ fn test1() {
         ]
     )).unwrap();
 
-    let function_ptr = engine.prepare_execution().unwrap();
-    let execution_result = (function_ptr)();
+    let execution_result = engine.execute().unwrap();
     assert_eq!(0, execution_result);
     assert_eq!(13.37 + 47.11, FLOAT_RESULT.with(|result| *result.borrow()));
 }
@@ -92,8 +90,7 @@ fn test2() {
         ]
     )).unwrap();
 
-    let function_ptr = engine.prepare_execution().unwrap();
-    let execution_result = (function_ptr)();
+    let execution_result = engine.execute().unwrap();
     assert_eq!(0, execution_result);
     assert_eq!(13.37 + 47.11, FLOAT_RESULT.with(|result| *result.borrow()));
 }
@@ -155,8 +152,7 @@ fn test3() {
         ]
     )).unwrap();
 
-    let function_ptr = engine.prepare_execution().unwrap();
-    let execution_result = (function_ptr)();
+    let execution_result = engine.execute().unwrap();
     assert_eq!(0, execution_result);
     assert_eq!(1.1 + 2.1 + 3.1 + 4.1 + 5.1 + 6.1 + 7.1 + 8.1, FLOAT_RESULT.with(|result| *result.borrow()));
 }

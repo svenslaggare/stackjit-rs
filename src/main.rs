@@ -109,8 +109,6 @@ fn main() {
         ]
     )).unwrap();
 
-    let function_ptr = engine.prepare_execution().unwrap();
-
-    let execution_result = (function_ptr)();
+    let execution_result = engine.execute().unwrap();
     println!("Result: {}", execution_result);
 }
