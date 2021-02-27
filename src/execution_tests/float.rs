@@ -1,28 +1,33 @@
-use std::sync::{Arc, Mutex};
+use std::cell::RefCell;
 
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::engine::ExecutionEngine;
 
-lazy_static! {
-   static ref FLOAT_RESULT: Arc<Mutex<f32>> = Arc::new(Mutex::new(0.0));
-}
+thread_local!(static FLOAT_RESULT: RefCell<f32> = RefCell::new(0.0));
 
 extern "C" fn print_float(x: f32) {
     println!("{}", x);
-    *FLOAT_RESULT.lock().unwrap() = x;
+    // *FLOAT_RESULT.lock().unwrap() = x;
+    FLOAT_RESULT.with(|result| {
+        *result.borrow_mut() = x;
+    });
 }
 
 extern "C" fn add(x: f32, y: f32) -> f32 {
     let result = x + y;
-    *FLOAT_RESULT.lock().unwrap() = result;
+    FLOAT_RESULT.with(|result| {
+        *result.borrow_mut() = x;
+    });
     result
 }
 
 #[test]
 fn test1() {
-    *FLOAT_RESULT.lock().unwrap() = 0.0;
+    FLOAT_RESULT.with(|result| {
+        *result.borrow_mut() = 0.0;
+    });
 
     let mut engine = ExecutionEngine::new();
 
@@ -49,12 +54,14 @@ fn test1() {
     let function_ptr = engine.prepare_execution().unwrap();
     let execution_result = (function_ptr)();
     assert_eq!(0, execution_result);
-    assert_eq!(13.37 + 47.11, *FLOAT_RESULT.lock().unwrap());
+    assert_eq!(13.37 + 47.11, FLOAT_RESULT.with(|result| *result.borrow()));
 }
 
 #[test]
 fn test2() {
-    *FLOAT_RESULT.lock().unwrap() = 0.0;
+    FLOAT_RESULT.with(|result| {
+        *result.borrow_mut() = 0.0;
+    });
 
     let mut engine = ExecutionEngine::new();
 
@@ -88,12 +95,14 @@ fn test2() {
     let function_ptr = engine.prepare_execution().unwrap();
     let execution_result = (function_ptr)();
     assert_eq!(0, execution_result);
-    assert_eq!(13.37 + 47.11, *FLOAT_RESULT.lock().unwrap());
+    assert_eq!(13.37 + 47.11, FLOAT_RESULT.with(|result| *result.borrow()));
 }
 
 #[test]
 fn test3() {
-    *FLOAT_RESULT.lock().unwrap() = 0.0;
+    FLOAT_RESULT.with(|result| {
+        *result.borrow_mut() = 0.0;
+    });
 
     let mut engine = ExecutionEngine::new();
 
@@ -149,5 +158,5 @@ fn test3() {
     let function_ptr = engine.prepare_execution().unwrap();
     let execution_result = (function_ptr)();
     assert_eq!(0, execution_result);
-    assert_eq!(1.1 + 2.1 + 3.1 + 4.1 + 5.1 + 6.1 + 7.1 + 8.1, *FLOAT_RESULT.lock().unwrap());
+    assert_eq!(1.1 + 2.1 + 3.1 + 4.1 + 5.1 + 6.1 + 7.1 + 8.1, FLOAT_RESULT.with(|result| *result.borrow()));
 }
