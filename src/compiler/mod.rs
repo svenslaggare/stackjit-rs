@@ -5,7 +5,7 @@ pub mod stack_layout;
 pub mod jit;
 pub mod calling_conventions;
 
-use crate::ir::{HardwareRegister, InstructionIR};
+use crate::ir::{HardwareRegisterExplicit, InstructionIR};
 use crate::model::function::{Function, FunctionSignature};
 
 pub struct FunctionCompilationData {
@@ -46,11 +46,11 @@ impl OperandStack {
 
     pub fn push_register(&mut self,
                          function: &Function,
-                         register: HardwareRegister) -> InstructionIR {
+                         register: HardwareRegisterExplicit) -> InstructionIR {
         self.top_index = self.top_index.map_or(Some(0), |index| Some(index + 1));
 
         let stack_frame_offset = stack_layout::operand_stack_offset(function, self.top_index.unwrap() as u32);
-        InstructionIR::MoveHardwareToMemory(stack_frame_offset, register)
+        InstructionIR::StoreMemoryExplicit(stack_frame_offset, register)
     }
 
     pub fn push_i32(&mut self,
@@ -63,11 +63,11 @@ impl OperandStack {
 
     pub fn pop_register(&mut self,
                         function: &Function,
-                        register: HardwareRegister) -> InstructionIR {
+                        register: HardwareRegisterExplicit) -> InstructionIR {
         let top_index = self.top_index.unwrap();
 
         let stack_frame_offset = stack_layout::operand_stack_offset(function, top_index as u32);
-        let instruction = InstructionIR::MoveMemoryToHardware(register, stack_frame_offset);
+        let instruction = InstructionIR::LoadMemoryExplicit(register, stack_frame_offset);
 
         if let Some(0) = self.top_index {
             self.top_index = None;

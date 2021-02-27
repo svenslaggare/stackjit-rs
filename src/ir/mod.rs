@@ -3,36 +3,36 @@ pub mod compiler;
 use crate::model::function::FunctionSignature;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum  VirtualRegister {
+pub enum HardwareRegister {
     Int(u32),
     Float(u32)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct HardwareRegister(pub iced_x86::Register);
+pub struct HardwareRegisterExplicit(pub iced_x86::Register);
 
 #[derive(Debug)]
 pub enum InstructionIR {
     Marker(usize),
     InitializeFunction,
     LoadInt32(i32),
-    LoadZeroToRegister(VirtualRegister),
+    LoadZeroToRegister(HardwareRegister),
     AddToStackPointer(i32),
     SubFromStackPointer(i32),
-    PushOperand(VirtualRegister),
-    PopOperand(VirtualRegister),
-    PushOperandHardware(HardwareRegister),
-    PopOperandHardware(HardwareRegister),
-    PushNormalHardware(HardwareRegister),
-    PopNormalHardware(HardwareRegister),
-    LoadMemory(VirtualRegister, i32),
-    StoreMemory(i32, VirtualRegister),
-    AddInt32(VirtualRegister, VirtualRegister),
-    SubInt32(VirtualRegister, VirtualRegister),
-    AddFloat32(VirtualRegister, VirtualRegister),
-    SubFloat32(VirtualRegister, VirtualRegister),
-    MoveMemoryToHardware(HardwareRegister, i32),
-    MoveHardwareToMemory(i32, HardwareRegister),
+    PushOperand(HardwareRegister),
+    PopOperand(HardwareRegister),
+    PushOperandExplicit(HardwareRegisterExplicit),
+    PopOperandExplicit(HardwareRegisterExplicit),
+    PushNormalExplicit(HardwareRegisterExplicit),
+    PopNormalExplicit(HardwareRegisterExplicit),
+    LoadMemory(HardwareRegister, i32),
+    StoreMemory(i32, HardwareRegister),
+    LoadMemoryExplicit(HardwareRegisterExplicit, i32),
+    StoreMemoryExplicit(i32, HardwareRegisterExplicit),
+    AddInt32(HardwareRegister, HardwareRegister),
+    SubInt32(HardwareRegister, HardwareRegister),
+    AddFloat32(HardwareRegister, HardwareRegister),
+    SubFloat32(HardwareRegister, HardwareRegister),
     MoveInt32ToMemory(i32, i32),
     Call(FunctionSignature),
     Return

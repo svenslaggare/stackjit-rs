@@ -5,7 +5,7 @@ use crate::compiler::FunctionCompilationData;
 use crate::compiler::stack_layout;
 use crate::compiler::calling_conventions::{CallingConventions};
 use crate::compiler::binder::Binder;
-use crate::ir::{InstructionIR, VirtualRegister};
+use crate::ir::{InstructionIR, HardwareRegister};
 
 pub struct InstructionIRCompiler<'a> {
     binder: &'a Binder,
@@ -48,10 +48,10 @@ impl<'a> InstructionIRCompiler<'a> {
         // Zero locals
         let num_locals = self.function.locals().len();
         if num_locals > 0 {
-            self.instructions.push(InstructionIR::LoadZeroToRegister(VirtualRegister::Int(0)));
+            self.instructions.push(InstructionIR::LoadZeroToRegister(HardwareRegister::Int(0)));
             for local_index in 0..(num_locals as u32) {
                 let local_offset = stack_layout::local_stack_offset(self.function, local_index);
-                self.instructions.push(InstructionIR::StoreMemory(local_offset, VirtualRegister::Int(0)));
+                self.instructions.push(InstructionIR::StoreMemory(local_offset, HardwareRegister::Int(0)));
             }
         }
     }
@@ -69,27 +69,27 @@ impl<'a> InstructionIRCompiler<'a> {
             }
             Instruction::LoadLocal(index) => {
                 let local_offset = stack_layout::local_stack_offset(self.function, *index);
-                self.instructions.push(InstructionIR::LoadMemory(VirtualRegister::Int(0), local_offset));
-                self.instructions.push(InstructionIR::PushOperand(VirtualRegister::Int(0)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), local_offset));
+                self.instructions.push(InstructionIR::PushOperand(HardwareRegister::Int(0)));
             }
             Instruction::StoreLocal(index) => {
                 let local_offset = stack_layout::local_stack_offset(self.function, *index);
-                self.instructions.push(InstructionIR::PopOperand(VirtualRegister::Int(0)));
-                self.instructions.push(InstructionIR::StoreMemory(local_offset, VirtualRegister::Int(0)));
+                self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0)));
+                self.instructions.push(InstructionIR::StoreMemory(local_offset, HardwareRegister::Int(0)));
             }
             Instruction::Add => {
                 match &self.function.instruction_operand_types(instruction_index)[0] {
                     Type::Int32 => {
-                        self.instructions.push(InstructionIR::PopOperand(VirtualRegister::Int(1)));
-                        self.instructions.push(InstructionIR::PopOperand(VirtualRegister::Int(0)));
-                        self.instructions.push(InstructionIR::AddInt32(VirtualRegister::Int(0), VirtualRegister::Int(1)));
-                        self.instructions.push(InstructionIR::PushOperand(VirtualRegister::Int(0)));
+                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1)));
+                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0)));
+                        self.instructions.push(InstructionIR::AddInt32(HardwareRegister::Int(0), HardwareRegister::Int(1)));
+                        self.instructions.push(InstructionIR::PushOperand(HardwareRegister::Int(0)));
                     }
                     Type::Float32 => {
-                        self.instructions.push(InstructionIR::PopOperand(VirtualRegister::Float(1)));
-                        self.instructions.push(InstructionIR::PopOperand(VirtualRegister::Float(0)));
-                        self.instructions.push(InstructionIR::AddFloat32(VirtualRegister::Float(0), VirtualRegister::Float(1)));
-                        self.instructions.push(InstructionIR::PushOperand(VirtualRegister::Float(0)));
+                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Float(1)));
+                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Float(0)));
+                        self.instructions.push(InstructionIR::AddFloat32(HardwareRegister::Float(0), HardwareRegister::Float(1)));
+                        self.instructions.push(InstructionIR::PushOperand(HardwareRegister::Float(0)));
                     }
                     _ => { panic!("unexpected."); }
                 }
@@ -97,16 +97,16 @@ impl<'a> InstructionIRCompiler<'a> {
             Instruction::Sub => {
                 match &self.function.instruction_operand_types(instruction_index)[0] {
                     Type::Int32 => {
-                        self.instructions.push(InstructionIR::PopOperand(VirtualRegister::Int(1)));
-                        self.instructions.push(InstructionIR::PopOperand(VirtualRegister::Int(0)));
-                        self.instructions.push(InstructionIR::SubInt32(VirtualRegister::Int(0), VirtualRegister::Int(1)));
-                        self.instructions.push(InstructionIR::PushOperand(VirtualRegister::Int(0)));
+                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1)));
+                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0)));
+                        self.instructions.push(InstructionIR::SubInt32(HardwareRegister::Int(0), HardwareRegister::Int(1)));
+                        self.instructions.push(InstructionIR::PushOperand(HardwareRegister::Int(0)));
                     }
                     Type::Float32 => {
-                        self.instructions.push(InstructionIR::PopOperand(VirtualRegister::Float(1)));
-                        self.instructions.push(InstructionIR::PopOperand(VirtualRegister::Float(0)));
-                        self.instructions.push(InstructionIR::SubFloat32(VirtualRegister::Float(0), VirtualRegister::Float(1)));
-                        self.instructions.push(InstructionIR::PushOperand(VirtualRegister::Float(0)));
+                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Float(1)));
+                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Float(0)));
+                        self.instructions.push(InstructionIR::SubFloat32(HardwareRegister::Float(0), HardwareRegister::Float(1)));
+                        self.instructions.push(InstructionIR::PushOperand(HardwareRegister::Float(0)));
                     }
                     _ => { panic!("unexpected."); }
                 }
@@ -118,8 +118,8 @@ impl<'a> InstructionIRCompiler<'a> {
             }
             Instruction::LoadArgument(argument_index) => {
                 let argument_offset = stack_layout::argument_stack_offset(self.function, *argument_index);
-                self.instructions.push(InstructionIR::LoadMemory(VirtualRegister::Int(0), argument_offset));
-                self.instructions.push(InstructionIR::PushOperand(VirtualRegister::Int(0)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), argument_offset));
+                self.instructions.push(InstructionIR::PushOperand(HardwareRegister::Int(0)));
             }
             Instruction::Return => {
                 CallingConventions::new().make_return_value(self.function, &mut self.instructions);

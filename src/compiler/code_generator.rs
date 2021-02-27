@@ -4,7 +4,7 @@ use iced_x86::Instruction as X86Instruction;
 use crate::compiler::{FunctionCallType, FunctionCompilationData, UnresolvedFunctionCall, stack_layout};
 use crate::compiler::binder::Binder;
 use crate::compiler::calling_conventions::{CallingConventions};
-use crate::ir::{HardwareRegister, InstructionIR};
+use crate::ir::{HardwareRegisterExplicit, InstructionIR};
 use crate::model::function::{Function, FunctionType};
 
 pub struct CodeGenerator<'a> {
@@ -60,7 +60,7 @@ impl<'a> CodeGenerator<'a> {
                 );
             }
             InstructionIR::LoadZeroToRegister(register) => {
-                let register = virtual_register_mapping::get(*register, true);
+                let register = register_mapping::get(*register, true);
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Xor_r64_rm64, register, register));
             }
             InstructionIR::AddToStackPointer(value) => {
@@ -78,24 +78,24 @@ impl<'a> CodeGenerator<'a> {
                 ).unwrap());
             }
             InstructionIR::PushOperand(register) => {
-                self.push_register_operand_stack(function, compilation_data, virtual_register_mapping::get(*register, true));
+                self.push_register_operand_stack(function, compilation_data, register_mapping::get(*register, true));
             }
             InstructionIR::PopOperand(register) => {
-                self.pop_register_operand_stack(function, compilation_data, virtual_register_mapping::get(*register, true));
+                self.pop_register_operand_stack(function, compilation_data, register_mapping::get(*register, true));
             }
-            InstructionIR::PushOperandHardware(register) => {
+            InstructionIR::PushOperandExplicit(register) => {
                 self.push_register_operand_stack(function, compilation_data, register.0);
             }
-            InstructionIR::PopOperandHardware(register) => {
+            InstructionIR::PopOperandExplicit(register) => {
                 self.pop_register_operand_stack(function, compilation_data, register.0);
             }
-            InstructionIR::PushNormalHardware(register) => {
+            InstructionIR::PushNormalExplicit(register) => {
                 push_r64(
                     |instruction| self.encode_x86_instruction(instruction),
                     register.0
                 );
             }
-            InstructionIR::PopNormalHardware(register) => {
+            InstructionIR::PopNormalExplicit(register) => {
                 pop_r64(
                     |instruction| self.encode_x86_instruction(instruction),
                     register.0
@@ -104,7 +104,7 @@ impl<'a> CodeGenerator<'a> {
             InstructionIR::LoadMemory(destination, offset) => {
                 self.encode_x86_instruction(X86Instruction::with_reg_mem(
                     Code::Mov_r64_rm64,
-                    virtual_register_mapping::get(*destination, true),
+                    register_mapping::get(*destination, true),
                     MemoryOperand::with_base_displ(Register::RBP, *offset)
                 ));
             }
@@ -112,10 +112,10 @@ impl<'a> CodeGenerator<'a> {
                 self.encode_x86_instruction(X86Instruction::with_mem_reg(
                     Code::Mov_rm64_r64,
                     MemoryOperand::with_base_displ(Register::RBP, *offset),
-                    virtual_register_mapping::get(*source, true)
+                    register_mapping::get(*source, true)
                 ));
             }
-            InstructionIR::MoveHardwareToMemory(offset, register) => {
+            InstructionIR::StoreMemoryExplicit(offset, register) => {
                 if register.0.is_xmm() {
                     self.encode_x86_instruction(X86Instruction::with_mem_reg(
                         Code::Movss_xmmm32_xmm,
@@ -130,7 +130,7 @@ impl<'a> CodeGenerator<'a> {
                     ));
                 }
             }
-            InstructionIR::MoveMemoryToHardware(register, offset) => {
+            InstructionIR::LoadMemoryExplicit(register, offset) => {
                 if register.0.is_xmm() {
                     self.encode_x86_instruction(X86Instruction::with_reg_mem(
                         Code::Movss_xmm_xmmm32,
@@ -155,29 +155,29 @@ impl<'a> CodeGenerator<'a> {
             InstructionIR::AddInt32(destination, source) => {
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(
                     Code::Add_r32_rm32,
-                    virtual_register_mapping::get(*destination, false),
-                    virtual_register_mapping::get(*source, false)
+                    register_mapping::get(*destination, false),
+                    register_mapping::get(*source, false)
                 ));
             }
             InstructionIR::SubInt32(destination, source) => {
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(
                     Code::Sub_r32_rm32,
-                    virtual_register_mapping::get(*destination, false),
-                    virtual_register_mapping::get(*source, false)
+                    register_mapping::get(*destination, false),
+                    register_mapping::get(*source, false)
                 ));
             }
             InstructionIR::AddFloat32(destination, source) => {
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(
                     Code::Addss_xmm_xmmm32,
-                    virtual_register_mapping::get(*destination, false),
-                    virtual_register_mapping::get(*source, false)
+                    register_mapping::get(*destination, false),
+                    register_mapping::get(*source, false)
                 ));
             }
             InstructionIR::SubFloat32(destination, source) => {
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(
                     Code::Subss_xmm_xmmm32,
-                    virtual_register_mapping::get(*destination, false),
-                    virtual_register_mapping::get(*source, false)
+                    register_mapping::get(*destination, false),
+                    register_mapping::get(*source, false)
                 ));
             }
             InstructionIR::Call(signature) => {
@@ -257,7 +257,7 @@ impl<'a> CodeGenerator<'a> {
                                        function: &Function,
                                        compilation_data: &mut FunctionCompilationData,
                                        register: Register) {
-        let instruction = compilation_data.operand_stack.push_register(function, HardwareRegister(register));
+        let instruction = compilation_data.operand_stack.push_register(function, HardwareRegisterExplicit(register));
         self.generate_instruction(
             function,
             compilation_data,
@@ -269,7 +269,7 @@ impl<'a> CodeGenerator<'a> {
                                        function: &Function,
                                        compilation_data: &mut FunctionCompilationData,
                                        register: Register) {
-        let instruction = compilation_data.operand_stack.pop_register(function, HardwareRegister(register));
+        let instruction = compilation_data.operand_stack.pop_register(function, HardwareRegisterExplicit(register));
         self.generate_instruction(
             function,
             compilation_data,
@@ -287,10 +287,10 @@ impl<'a> CodeGenerator<'a> {
     }
 }
 
-mod virtual_register_mapping {
+mod register_mapping {
     use iced_x86::Register;
 
-    use crate::ir::VirtualRegister;
+    use crate::ir::HardwareRegister;
 
     lazy_static! {
        static ref mapping_i64: Vec<Register> = {
@@ -324,16 +324,16 @@ mod virtual_register_mapping {
         };
     }
 
-    pub fn get(register: VirtualRegister, is_64: bool) -> Register {
+    pub fn get(register: HardwareRegister, is_64: bool) -> Register {
         match register {
-            VirtualRegister::Int(index) => {
+            HardwareRegister::Int(index) => {
                 if is_64 {
                     mapping_i64[index as usize]
                 } else {
                     mapping_i32[index as usize]
                 }
             }
-            VirtualRegister::Float(index) => {
+            HardwareRegister::Float(index) => {
                 mapping_f32[index as usize]
             }
         }

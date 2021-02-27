@@ -4,7 +4,7 @@ use crate::compiler::{FunctionCompilationData, stack_layout};
 use crate::model::function::{Function, FunctionSignature, FunctionDefinition};
 use crate::model::typesystem::Type;
 use crate::compiler::stack_layout::{STACK_ENTRY_SIZE, STACK_OFFSET};
-use crate::ir::{InstructionIR, HardwareRegister};
+use crate::ir::{InstructionIR, HardwareRegisterExplicit};
 
 pub struct CallingConventions {
 
@@ -41,14 +41,14 @@ impl CallingConventions {
                     //Move from the operand stack to the normal stack
                     instructions.push(compilation_data.operand_stack.pop_register(
                         function,
-                        HardwareRegister(Register::RAX)
+                        HardwareRegisterExplicit(Register::RAX)
                     ));
 
-                    instructions.push(InstructionIR::PushNormalHardware(HardwareRegister(Register::RAX)));
+                    instructions.push(InstructionIR::PushNormalExplicit(HardwareRegisterExplicit(Register::RAX)));
                 } else {
                     instructions.push(compilation_data.operand_stack.pop_register(
                         function,
-                        HardwareRegister(float_register_call_arguments::get_argument(relative_index)))
+                        HardwareRegisterExplicit(float_register_call_arguments::get_argument(relative_index)))
                     );
                 }
             }
@@ -58,14 +58,14 @@ impl CallingConventions {
                     //Move from the operand stack to the normal stack
                     instructions.push(compilation_data.operand_stack.pop_register(
                         function,
-                        HardwareRegister(Register::RAX)
+                        HardwareRegisterExplicit(Register::RAX)
                     ));
 
-                    instructions.push(InstructionIR::PushNormalHardware(HardwareRegister(Register::RAX)));
+                    instructions.push(InstructionIR::PushNormalExplicit(HardwareRegisterExplicit(Register::RAX)));
                 } else {
                     instructions.push(compilation_data.operand_stack.pop_register(
                         function,
-                        HardwareRegister(register_call_arguments::get_argument(relative_index)))
+                        HardwareRegisterExplicit(register_call_arguments::get_argument(relative_index)))
                     );
                 }
             }
@@ -99,10 +99,10 @@ impl CallingConventions {
         match func_to_call.return_type() {
             Type::Void => {}
             Type::Float32 => {
-                instructions.push(InstructionIR::PushOperandHardware(HardwareRegister(float_register_call_arguments::RETURN_VALUE)));
+                instructions.push(InstructionIR::PushOperandExplicit(HardwareRegisterExplicit(float_register_call_arguments::RETURN_VALUE)));
             }
             _ => {
-                instructions.push(InstructionIR::PushOperandHardware(HardwareRegister(register_call_arguments::RETURN_VALUE)));
+                instructions.push(InstructionIR::PushOperandExplicit(HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)));
             }
         }
     }
@@ -111,10 +111,10 @@ impl CallingConventions {
         match function.definition().return_type() {
             Type::Void => {}
             Type::Float32 => {
-                instructions.push(InstructionIR::PopOperandHardware(HardwareRegister(float_register_call_arguments::RETURN_VALUE)));
+                instructions.push(InstructionIR::PopOperandExplicit(HardwareRegisterExplicit(float_register_call_arguments::RETURN_VALUE)));
             }
             _ => {
-                instructions.push(InstructionIR::PopOperandHardware(HardwareRegister(register_call_arguments::RETURN_VALUE)));
+                instructions.push(InstructionIR::PopOperandExplicit(HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)));
             }
         }
     }
@@ -127,19 +127,19 @@ impl CallingConventions {
         let argument_stack_offset = stack_layout::argument_stack_offset(function, argument_index as u32);
         if relative_argument_index >= register_call_arguments::NUM_ARGUMENTS {
             let stack_argument_index = self.get_stack_argument_index(function, argument_index);
-            instructions.push(InstructionIR::MoveMemoryToHardware(
-               HardwareRegister(Register::RAX),
-               STACK_ENTRY_SIZE * (STACK_OFFSET as usize + stack_argument_index + 1) as i32
+            instructions.push(InstructionIR::LoadMemoryExplicit(
+                HardwareRegisterExplicit(Register::RAX),
+                STACK_ENTRY_SIZE * (STACK_OFFSET as usize + stack_argument_index + 1) as i32
             ));
 
-            instructions.push(InstructionIR::MoveHardwareToMemory(
+            instructions.push(InstructionIR::StoreMemoryExplicit(
                 argument_stack_offset,
-                HardwareRegister(Register::RAX)
+                HardwareRegisterExplicit(Register::RAX)
             ));
         } else {
-            instructions.push(InstructionIR::MoveHardwareToMemory(
+            instructions.push(InstructionIR::StoreMemoryExplicit(
                 argument_stack_offset,
-                HardwareRegister(register_call_arguments::get_argument(relative_argument_index))
+                HardwareRegisterExplicit(register_call_arguments::get_argument(relative_argument_index))
             ));
         }
     }
@@ -152,19 +152,19 @@ impl CallingConventions {
         let argument_stack_offset = stack_layout::argument_stack_offset(function, argument_index as u32);
         if relative_argument_index >= float_register_call_arguments::NUM_ARGUMENTS {
             let stack_argument_index = self.get_stack_argument_index(function, argument_index);
-            instructions.push(InstructionIR::MoveMemoryToHardware(
-                HardwareRegister(Register::RAX),
+            instructions.push(InstructionIR::LoadMemoryExplicit(
+                HardwareRegisterExplicit(Register::RAX),
                 STACK_ENTRY_SIZE * (STACK_OFFSET as usize + stack_argument_index + 1) as i32
             ));
 
-            instructions.push(InstructionIR::MoveHardwareToMemory(
+            instructions.push(InstructionIR::StoreMemoryExplicit(
                 argument_stack_offset,
-                HardwareRegister(Register::RAX)
+                HardwareRegisterExplicit(Register::RAX)
             ));
         } else {
-            instructions.push(InstructionIR::MoveHardwareToMemory(
+            instructions.push(InstructionIR::StoreMemoryExplicit(
                 argument_stack_offset,
-                HardwareRegister(float_register_call_arguments::get_argument(relative_argument_index))
+                HardwareRegisterExplicit(float_register_call_arguments::get_argument(relative_argument_index))
             ));
         }
     }
