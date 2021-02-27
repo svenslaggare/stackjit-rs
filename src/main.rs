@@ -5,7 +5,7 @@ mod model;
 mod ir;
 mod compiler;
 mod engine;
-mod tests;
+mod execution_tests;
 
 use crate::model::instruction::Instruction;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
