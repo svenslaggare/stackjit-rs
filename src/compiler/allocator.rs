@@ -76,3 +76,25 @@ impl Drop for ExecutablePage {
         }
     }
 }
+
+#[test]
+fn test_allocate_page1() {
+    let mut page = ExecutablePage::new(4096).unwrap();
+    let allocate1 = page.try_allocate(100);
+    assert!(allocate1.is_some());
+
+    let allocate2 = page.try_allocate(100);
+    assert!(allocate2.is_some());
+    assert_ne!(allocate1, allocate2);
+
+    let allocate3 = page.try_allocate(5000);
+    assert!(allocate3.is_none());
+}
+
+#[test]
+fn test_allocate_manager1() {
+    let mut allocator = ExecutableMemoryAllocator::new();
+    assert_ne!(std::ptr::null_mut(), allocator.allocate(100));
+    assert_ne!(std::ptr::null_mut(), allocator.allocate(5100));
+    assert_eq!(2, allocator.pages.len());
+}
