@@ -1,7 +1,7 @@
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::typesystem::Type;
 use crate::model::instruction::Instruction;
-use crate::compiler::binder::Binder;
+use crate::engine::binder::Binder;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum VerifyError {
@@ -17,12 +17,6 @@ pub enum VerifyError {
 }
 
 pub type VerifyResult<T> = Result<T, VerifyError>;
-
-pub fn create_verified_function(binder: &Binder, mut function: Function) -> Function {
-    let mut verifier = Verifier::new(binder, &mut function);
-    verifier.verify().unwrap();
-    function
-}
 
 pub struct Verifier<'a> {
     function: &'a mut Function,

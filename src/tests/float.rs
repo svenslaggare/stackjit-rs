@@ -3,8 +3,6 @@ use std::sync::{Arc, Mutex};
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
-use crate::compiler::jit::JitCompiler;
-use crate::model::verifier::create_verified_function;
 use crate::engine::ExecutionEngine;
 
 lazy_static! {

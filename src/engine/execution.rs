@@ -1,7 +1,7 @@
 use crate::compiler::jit::{JitCompiler, EntryPoint};
 use crate::model::function::{Function, FunctionSignature};
 use crate::model::verifier::{Verifier, VerifyError};
-use crate::compiler::binder::Binder;
+use crate::engine::binder::Binder;
 
 #[derive(Debug)]
 pub enum ExecutionEngineError {

@@ -1,12 +1,11 @@
+use crate::ir::{HardwareRegisterExplicit, InstructionIR};
+use crate::model::function::{Function, FunctionSignature};
+
 pub mod code_generator;
 pub mod allocator;
-pub mod binder;
 pub mod stack_layout;
 pub mod jit;
 pub mod calling_conventions;
-
-use crate::ir::{HardwareRegisterExplicit, InstructionIR};
-use crate::model::function::{Function, FunctionSignature};
 
 pub struct FunctionCompilationData {
     pub unresolved_function_calls: Vec<UnresolvedFunctionCall>,

@@ -7,11 +7,9 @@ mod compiler;
 mod engine;
 mod tests;
 
-use crate::compiler::jit::JitCompiler;
 use crate::model::instruction::Instruction;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::typesystem::Type;
-use crate::model::verifier::create_verified_function;
 use crate::engine::ExecutionEngine;
 
 extern "C" fn push() -> i32 {

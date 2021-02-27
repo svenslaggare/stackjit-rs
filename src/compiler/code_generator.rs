@@ -2,7 +2,7 @@ use iced_x86::{Code, Encoder, MemoryOperand, Register};
 use iced_x86::Instruction as X86Instruction;
 
 use crate::compiler::{FunctionCallType, FunctionCompilationData, UnresolvedFunctionCall, stack_layout};
-use crate::compiler::binder::Binder;
+use crate::engine::binder::Binder;
 use crate::compiler::calling_conventions::{CallingConventions};
 use crate::ir::{HardwareRegisterExplicit, InstructionIR};
 use crate::model::function::{Function, FunctionType};

@@ -4,7 +4,7 @@ use crate::model::typesystem::Type;
 use crate::compiler::FunctionCompilationData;
 use crate::compiler::stack_layout;
 use crate::compiler::calling_conventions::{CallingConventions};
-use crate::compiler::binder::Binder;
+use crate::engine::binder::Binder;
 use crate::ir::{InstructionIR, HardwareRegister};
 
 pub struct InstructionIRCompiler<'a> {

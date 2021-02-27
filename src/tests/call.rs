@@ -1,8 +1,6 @@
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
-use crate::compiler::jit::JitCompiler;
-use crate::model::verifier::create_verified_function;
 use crate::engine::ExecutionEngine;
 
 extern "C" fn sum(x: i32, y: i32) -> i32 {
@@ -311,7 +309,7 @@ fn managed5() {
             Instruction::Return,
         ]
     )).unwrap();
-    
+
     engine.add_function(Function::new(
         FunctionDefinition::new_managed("sum".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32),
         Vec::new(),

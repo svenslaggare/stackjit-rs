@@ -5,7 +5,7 @@ use crate::ir::compiler::InstructionIRCompiler;
 use crate::ir::InstructionIR;
 use crate::compiler::allocator::ExecutableMemoryAllocator;
 use crate::compiler::code_generator::{CodeGenerator};
-use crate::compiler::binder::Binder;
+use crate::engine::binder::Binder;
 use crate::compiler::{FunctionCompilationData, FunctionCallType};
 
 pub struct JitCompiler {
