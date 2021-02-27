@@ -13,7 +13,8 @@ pub enum VerifyError {
     WrongArithmeticOperands,
     FunctionNotDefined(FunctionSignature),
     ExpectedNumberOfOperands(usize),
-    ParameterCannotBeVoid
+    ParameterCannotBeVoid,
+    LocalCannotBeVoid,
 }
 
 pub type VerifyResult<T> = Result<T, VerifyError>;
@@ -44,6 +45,12 @@ impl<'a> Verifier<'a> {
 
         if !self.operand_stack.is_empty() {
             return Err(VerifyError::NonEmptyOperandStackOnReturn);
+        }
+
+        for local in self.function.locals() {
+            if local == &Type::Void {
+                return Err(VerifyError::LocalCannotBeVoid);
+            }
         }
 
         Ok(())

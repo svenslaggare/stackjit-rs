@@ -26,7 +26,7 @@ impl ExecutionEngine {
         }
     }
 
-    pub fn add_function(&mut self, mut function: Function) -> ExecutionEngineResult<()> {
+    pub fn add_function(&mut self, function: Function) -> ExecutionEngineResult<()> {
         self.binder.define(function.definition().clone());
         self.functions.push(function);
         Ok(())
