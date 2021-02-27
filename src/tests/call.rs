@@ -296,3 +296,34 @@ fn managed4() {
     let execution_result = (function_ptr)();
     assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16].iter().sum::<i32>(), execution_result);
 }
+
+#[test]
+fn managed5() {
+    let mut engine = ExecutionEngine::new();
+
+    engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        Vec::new(),
+        vec![
+            Instruction::LoadInt32(4711),
+            Instruction::LoadInt32(1337),
+            Instruction::Call(FunctionSignature { name: "sum".to_owned(), parameters: vec![Type::Int32, Type::Int32] }),
+            Instruction::Return,
+        ]
+    )).unwrap();
+    
+    engine.add_function(Function::new(
+        FunctionDefinition::new_managed("sum".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32),
+        Vec::new(),
+        vec![
+            Instruction::LoadArgument(0),
+            Instruction::LoadArgument(1),
+            Instruction::Add,
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let function_ptr = engine.prepare_execution().unwrap();
+    let execution_result = (function_ptr)();
+    assert_eq!(1337 + 4711, execution_result);
+}
