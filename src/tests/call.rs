@@ -3,6 +3,7 @@ use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::compiler::jit::JitCompiler;
 use crate::model::verifier::create_verified_function;
+use crate::engine::ExecutionEngine;
 
 extern "C" fn sum(x: i32, y: i32) -> i32 {
     return x + y;
@@ -18,15 +19,16 @@ extern "C" fn sub(x: i32, y: i32) -> i32 {
 
 #[test]
 fn external1() {
-    let mut jit_compiler = JitCompiler::new();
-    jit_compiler.binder_mut().define(
+    let mut engine = ExecutionEngine::new();
+
+    engine.binder_mut().define(
         FunctionDefinition::new_external(
             "sum".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32,
             sum as *mut libc::c_void
         )
     );
 
-    jit_compiler.compile_function(&create_verified_function(jit_compiler.binder(), Function::new(
+    engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -35,24 +37,25 @@ fn external1() {
             Instruction::Call(FunctionSignature { name: "sum".to_owned(), parameters: vec![Type::Int32, Type::Int32] }),
             Instruction::Return,
         ]
-    )));
+    )).unwrap();
 
-    let function_ptr = jit_compiler.prepare_execution().unwrap();
+    let function_ptr = engine.prepare_execution().unwrap();
     let execution_result = (function_ptr)();
     assert_eq!(1337 + 4711, execution_result);
 }
 
 #[test]
 fn external2() {
-    let mut jit_compiler = JitCompiler::new();
-    jit_compiler.binder_mut().define(
+    let mut engine = ExecutionEngine::new();
+
+    engine.binder_mut().define(
         FunctionDefinition::new_external(
             "sub".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32,
             sub as *mut libc::c_void
         )
     );
 
-    jit_compiler.compile_function(&create_verified_function(jit_compiler.binder(), Function::new(
+    engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -61,24 +64,25 @@ fn external2() {
             Instruction::Call(FunctionSignature { name: "sub".to_owned(), parameters: vec![Type::Int32, Type::Int32] }),
             Instruction::Return,
         ]
-    )));
+    )).unwrap();
 
-    let function_ptr = jit_compiler.prepare_execution().unwrap();
+    let function_ptr = engine.prepare_execution().unwrap();
     let execution_result = (function_ptr)();
     assert_eq!(4711 - 1337, execution_result);
 }
 
 #[test]
 fn external3() {
-    let mut jit_compiler = JitCompiler::new();
-    jit_compiler.binder_mut().define(
+    let mut engine = ExecutionEngine::new();
+
+    engine.binder_mut().define(
         FunctionDefinition::new_external(
             "sum8".to_owned(), (0..8).map(|_| Type::Int32).collect(), Type::Int32,
             sum8 as *mut libc::c_void
         )
     );
 
-    jit_compiler.compile_function(&create_verified_function(jit_compiler.binder(), Function::new(
+    engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -93,18 +97,18 @@ fn external3() {
             Instruction::Call(FunctionSignature::new("sum8".to_owned(), (0..8).map(|_| Type::Int32).collect())),
             Instruction::Return,
         ]
-    )));
+    )).unwrap();
 
-    let function_ptr = jit_compiler.prepare_execution().unwrap();
+    let function_ptr = engine.prepare_execution().unwrap();
     let execution_result = (function_ptr)();
     assert_eq!(36, execution_result);
 }
 
 #[test]
 fn managed1() {
-    let mut jit_compiler = JitCompiler::new();
+    let mut engine = ExecutionEngine::new();
 
-    jit_compiler.compile_function(&create_verified_function(jit_compiler.binder(), Function::new(
+    engine.add_function(Function::new(
         FunctionDefinition::new_managed("sum".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32),
         Vec::new(),
         vec![
@@ -113,9 +117,9 @@ fn managed1() {
             Instruction::Add,
             Instruction::Return,
         ]
-    )));
+    )).unwrap();
 
-    jit_compiler.compile_function(&create_verified_function(jit_compiler.binder(), Function::new(
+    engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -124,17 +128,18 @@ fn managed1() {
             Instruction::Call(FunctionSignature { name: "sum".to_owned(), parameters: vec![Type::Int32, Type::Int32] }),
             Instruction::Return,
         ]
-    )));
+    )).unwrap();
 
-    let function_ptr = jit_compiler.prepare_execution().unwrap();
+    let function_ptr = engine.prepare_execution().unwrap();
     let execution_result = (function_ptr)();
     assert_eq!(1337 + 4711, execution_result);
 }
 
 #[test]
 fn managed2() {
-    let mut jit_compiler = JitCompiler::new();
-    jit_compiler.compile_function(&create_verified_function(jit_compiler.binder(), Function::new(
+    let mut engine = ExecutionEngine::new();
+
+    engine.add_function(Function::new(
         FunctionDefinition::new_managed("sum".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32),
         vec![Type::Int32],
         vec![
@@ -145,9 +150,9 @@ fn managed2() {
             Instruction::Add,
             Instruction::Return,
         ]
-    )));
+    )).unwrap();
 
-    jit_compiler.compile_function(&create_verified_function(jit_compiler.binder(), Function::new(
+    engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -156,17 +161,18 @@ fn managed2() {
             Instruction::Call(FunctionSignature { name: "sum".to_owned(), parameters: vec![Type::Int32, Type::Int32] }),
             Instruction::Return,
         ]
-    )));
+    )).unwrap();
 
-    let function_ptr = jit_compiler.prepare_execution().unwrap();
+    let function_ptr = engine.prepare_execution().unwrap();
     let execution_result = (function_ptr)();
     assert_eq!(1337 + 4711, execution_result);
 }
 
 #[test]
 fn managed3() {
-    let mut jit_compiler = JitCompiler::new();
-    jit_compiler.compile_function(&create_verified_function(jit_compiler.binder(), Function::new(
+    let mut engine = ExecutionEngine::new();
+
+    engine.add_function(Function::new(
         FunctionDefinition::new_managed("sum8".to_owned(), (0..8).map(|_| Type::Int32).collect(), Type::Int32),
         Vec::new(),
         vec![
@@ -187,9 +193,9 @@ fn managed3() {
             Instruction::Add,
             Instruction::Return,
         ]
-    )));
+    )).unwrap();
 
-    jit_compiler.compile_function(&create_verified_function(jit_compiler.binder(), Function::new(
+    engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -204,18 +210,18 @@ fn managed3() {
             Instruction::Call(FunctionSignature::new("sum8".to_owned(), (0..8).map(|_| Type::Int32).collect())),
             Instruction::Return,
         ]
-    )));
+    )).unwrap();
 
-    let function_ptr = jit_compiler.prepare_execution().unwrap();
+    let function_ptr = engine.prepare_execution().unwrap();
     let execution_result = (function_ptr)();
     assert_eq!(36, execution_result);
 }
 
 #[test]
 fn managed4() {
-    let mut jit_compiler = JitCompiler::new();
+    let mut engine = ExecutionEngine::new();
 
-    jit_compiler.compile_function(&create_verified_function(jit_compiler.binder(), Function::new(
+    engine.add_function(Function::new(
         FunctionDefinition::new_managed("sum7".to_owned(), (0..7).map(|_| Type::Int32).collect(), Type::Int32),
         Vec::new(),
         vec![
@@ -234,9 +240,9 @@ fn managed4() {
             Instruction::Add,
             Instruction::Return,
         ]
-    )));
+    )).unwrap();
 
-    jit_compiler.compile_function(&create_verified_function(jit_compiler.binder(), Function::new(
+    engine.add_function(Function::new(
         FunctionDefinition::new_managed("sum9".to_owned(), (0..9).map(|_| Type::Int32).collect(), Type::Int32),
         Vec::new(),
         vec![
@@ -259,9 +265,9 @@ fn managed4() {
             Instruction::Add,
             Instruction::Return,
         ]
-    )));
+    )).unwrap();
 
-    jit_compiler.compile_function(&create_verified_function(jit_compiler.binder(), Function::new(
+    engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -284,9 +290,9 @@ fn managed4() {
             Instruction::Call(FunctionSignature::new("sum7".to_owned(), (0..7).map(|_| Type::Int32).collect())),
             Instruction::Return,
         ]
-    )));
+    )).unwrap();
 
-    let function_ptr = jit_compiler.prepare_execution().unwrap();
+    let function_ptr = engine.prepare_execution().unwrap();
     let execution_result = (function_ptr)();
     assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16].iter().sum::<i32>(), execution_result);
 }

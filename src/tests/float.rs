@@ -5,6 +5,7 @@ use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::compiler::jit::JitCompiler;
 use crate::model::verifier::create_verified_function;
+use crate::engine::ExecutionEngine;
 
 lazy_static! {
    static ref FLOAT_RESULT: Arc<Mutex<f32>> = Arc::new(Mutex::new(0.0));
@@ -25,15 +26,16 @@ extern "C" fn add(x: f32, y: f32) -> f32 {
 fn test1() {
     *FLOAT_RESULT.lock().unwrap() = 0.0;
 
-    let mut jit_compiler = JitCompiler::new();
-    jit_compiler.binder_mut().define(
+    let mut engine = ExecutionEngine::new();
+
+    engine.binder_mut().define(
         FunctionDefinition::new_external(
             "print".to_owned(), vec![Type::Float32], Type::Void,
             print_float as *mut libc::c_void
         )
     );
 
-    jit_compiler.compile_function(&create_verified_function(jit_compiler.binder(), Function::new(
+    engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         vec![Type::Float32],
         vec![
@@ -44,9 +46,9 @@ fn test1() {
             Instruction::LoadInt32(0),
             Instruction::Return
         ]
-    )));
+    )).unwrap();
 
-    let function_ptr = jit_compiler.prepare_execution().unwrap();
+    let function_ptr = engine.prepare_execution().unwrap();
     let execution_result = (function_ptr)();
     assert_eq!(0, execution_result);
     assert_eq!(13.37 + 47.11, *FLOAT_RESULT.lock().unwrap());
@@ -56,22 +58,23 @@ fn test1() {
 fn test2() {
     *FLOAT_RESULT.lock().unwrap() = 0.0;
 
-    let mut jit_compiler = JitCompiler::new();
-    jit_compiler.binder_mut().define(
+    let mut engine = ExecutionEngine::new();
+
+    engine.binder_mut().define(
         FunctionDefinition::new_external(
             "print".to_owned(), vec![Type::Float32], Type::Void,
             print_float as *mut libc::c_void
         )
     );
 
-    jit_compiler.binder_mut().define(
+    engine.binder_mut().define(
         FunctionDefinition::new_external(
             "add".to_owned(), vec![Type::Float32, Type::Float32], Type::Float32,
             add as *mut libc::c_void
         )
     );
 
-    jit_compiler.compile_function(&Function::new(
+    engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         vec![Type::Float32],
         vec![
@@ -82,9 +85,9 @@ fn test2() {
             Instruction::LoadInt32(0),
             Instruction::Return
         ]
-    ));
+    )).unwrap();
 
-    let function_ptr = jit_compiler.prepare_execution().unwrap();
+    let function_ptr = engine.prepare_execution().unwrap();
     let execution_result = (function_ptr)();
     assert_eq!(0, execution_result);
     assert_eq!(13.37 + 47.11, *FLOAT_RESULT.lock().unwrap());
@@ -94,15 +97,16 @@ fn test2() {
 fn test3() {
     *FLOAT_RESULT.lock().unwrap() = 0.0;
 
-    let mut jit_compiler = JitCompiler::new();
-    jit_compiler.binder_mut().define(
+    let mut engine = ExecutionEngine::new();
+
+    engine.binder_mut().define(
         FunctionDefinition::new_external(
             "print".to_owned(), vec![Type::Float32], Type::Void,
             print_float as *mut libc::c_void
         )
     );
 
-    jit_compiler.compile_function(&create_verified_function(jit_compiler.binder(), Function::new(
+    engine.add_function(Function::new(
         FunctionDefinition::new_managed("sum8".to_owned(), (0..8).map(|_| Type::Float32).collect(), Type::Float32),
         Vec::new(),
         vec![
@@ -123,9 +127,9 @@ fn test3() {
             Instruction::Add,
             Instruction::Return,
         ]
-    )));
+    )).unwrap();
 
-    jit_compiler.compile_function(&create_verified_function(jit_compiler.binder(), Function::new(
+    engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -142,9 +146,9 @@ fn test3() {
             Instruction::LoadInt32(0),
             Instruction::Return,
         ]
-    )));
+    )).unwrap();
 
-    let function_ptr = jit_compiler.prepare_execution().unwrap();
+    let function_ptr = engine.prepare_execution().unwrap();
     let execution_result = (function_ptr)();
     assert_eq!(0, execution_result);
     assert_eq!(1.1 + 2.1 + 3.1 + 4.1 + 5.1 + 6.1 + 7.1 + 8.1, *FLOAT_RESULT.lock().unwrap());

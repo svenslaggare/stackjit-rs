@@ -11,7 +11,6 @@ use crate::compiler::{FunctionCompilationData, FunctionCallType};
 pub struct JitCompiler {
     memory_allocator: ExecutableMemoryAllocator,
     compiled_functions: HashMap<FunctionSignature, FunctionCompilationData>,
-    binder: Binder
 }
 
 impl JitCompiler {
@@ -19,17 +18,16 @@ impl JitCompiler {
         JitCompiler {
             memory_allocator: ExecutableMemoryAllocator::new(),
             compiled_functions: HashMap::new(),
-            binder: Binder::new()
         }
     }
 
-    pub fn compile_function(&mut self, function: &Function) {
+    pub fn compile_function(&mut self, binder: &mut Binder, function: &Function) {
         println!("{}", function.definition().signature());
         println!("{{");
 
         let mut compilation_data = FunctionCompilationData::new();
-        let instructions_ir = self.compile_ir(function, &mut compilation_data);
-        let function_code_bytes = self.generate_code(function, &mut compilation_data, &instructions_ir);
+        let instructions_ir = self.compile_ir(binder, function, &mut compilation_data);
+        let function_code_bytes = self.generate_code(binder, function, &mut compilation_data, &instructions_ir);
 
         println!("}}");
         println!();
@@ -46,23 +44,16 @@ impl JitCompiler {
             compilation_data
         );
 
-        self.binder.define(function.definition().clone());
-        self.binder.set_address(&function.definition().call_signature(), function_code_ptr);
+        binder.set_address(&function.definition().call_signature(), function_code_ptr);
     }
 
-    pub fn prepare_execution(&mut self) -> Option<EntryPoint> {
-        self.resolve_calls();
-        let address = self.binder.get(&FunctionSignature { name: "main".to_owned(), parameters: Vec::new() })?.address()?;
-        Some(unsafe { std::mem::transmute(address) })
-    }
-
-    fn resolve_calls(&mut self) {
+    pub fn resolve_calls(&mut self, binder: &Binder) {
         for (signature, compiled_function) in &mut self.compiled_functions {
             if !compiled_function.unresolved_function_calls.is_empty() {
-                let function = self.binder.get(signature).unwrap();
+                let function = binder.get(signature).unwrap();
 
                 for unresolved_function_call in &compiled_function.unresolved_function_calls {
-                    let function_to_call = self.binder.get(&unresolved_function_call.signature).unwrap();
+                    let function_to_call = binder.get(&unresolved_function_call.signature).unwrap();
 
                     match unresolved_function_call.call_type {
                         FunctionCallType::Relative => {
@@ -84,28 +75,22 @@ impl JitCompiler {
     }
 
     fn compile_ir(&self,
+                  binder: &Binder,
                   function: &Function,
                   compilation_data: &mut FunctionCompilationData) -> Vec<InstructionIR> {
-        let mut instruction_ir_compiler = InstructionIRCompiler::new(&self.binder, function, compilation_data);
+        let mut instruction_ir_compiler = InstructionIRCompiler::new(&binder, function, compilation_data);
         instruction_ir_compiler.compile(function.instructions());
         instruction_ir_compiler.done()
     }
 
     fn generate_code(&self,
+                     binder: &Binder,
                      function: &Function,
                      compilation_data: &mut FunctionCompilationData,
                      instructions_ir: &Vec<InstructionIR>) -> Vec<u8> {
-        let mut code_generator = CodeGenerator::new(&self.binder);
+        let mut code_generator = CodeGenerator::new(binder);
         code_generator.generate(function, compilation_data, instructions_ir);
         code_generator.done()
-    }
-
-    pub fn binder(&self) -> &Binder {
-        &self.binder
-    }
-
-    pub fn binder_mut(&mut self) -> &mut Binder {
-        &mut self.binder
     }
 }
 

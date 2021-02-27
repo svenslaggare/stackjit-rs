@@ -4,6 +4,7 @@ extern crate lazy_static;
 mod model;
 mod ir;
 mod compiler;
+mod engine;
 mod tests;
 
 use crate::compiler::jit::JitCompiler;
@@ -11,6 +12,7 @@ use crate::model::instruction::Instruction;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::typesystem::Type;
 use crate::model::verifier::create_verified_function;
+use crate::engine::ExecutionEngine;
 
 extern "C" fn push() -> i32 {
     return 4711;
@@ -33,16 +35,16 @@ extern "C" fn print_float(x: f32) {
 }
 
 fn main() {
-    let mut jit_compiler = JitCompiler::new();
+    let mut engine = ExecutionEngine::new();
 
-    jit_compiler.binder_mut().define(
+    engine.binder_mut().define(
         FunctionDefinition::new_external(
             "sum8".to_owned(), (0..8).map(|_| Type::Int32).collect(), Type::Int32,
             sum8 as *mut libc::c_void
         )
     );
 
-    jit_compiler.binder_mut().define(
+    engine.binder_mut().define(
         FunctionDefinition::new_external(
             "print".to_owned(), vec![Type::Float32], Type::Void,
             print_float as *mut libc::c_void
@@ -96,7 +98,7 @@ fn main() {
 
     // jit_compiler.compile_function(&function);
 
-    jit_compiler.compile_function(&create_verified_function(jit_compiler.binder(), Function::new(
+    engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         vec![Type::Float32],
         vec![
@@ -107,9 +109,9 @@ fn main() {
             Instruction::LoadInt32(0),
             Instruction::Return
         ]
-    )));
+    )).unwrap();
 
-    let function_ptr = jit_compiler.prepare_execution().unwrap();
+    let function_ptr = engine.prepare_execution().unwrap();
 
     let execution_result = (function_ptr)();
     println!("Result: {}", execution_result);

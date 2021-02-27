@@ -55,7 +55,7 @@ impl<'a> Verifier<'a> {
         Ok(())
     }
 
-    pub fn verify_instructions(&mut self) -> VerifyResult<()> {
+    fn verify_instructions(&mut self) -> VerifyResult<()> {
         let mut max_stack_size = 0;
 
         let instructions = (*self.function.instructions()).clone();
