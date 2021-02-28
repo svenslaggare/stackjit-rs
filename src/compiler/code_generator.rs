@@ -328,9 +328,9 @@ impl<'a> CodeGenerator<'a> {
     }
 
     fn push_register_operand_stack(&mut self,
-                                       function: &Function,
-                                       compilation_data: &mut FunctionCompilationData,
-                                       register: Register) {
+                                   function: &Function,
+                                   compilation_data: &mut FunctionCompilationData,
+                                   register: Register) {
         let instruction = compilation_data.operand_stack.push_register(function, HardwareRegisterExplicit(register));
         self.generate_instruction(
             function,
@@ -340,9 +340,9 @@ impl<'a> CodeGenerator<'a> {
     }
 
     fn pop_register_operand_stack(&mut self,
-                                       function: &Function,
-                                       compilation_data: &mut FunctionCompilationData,
-                                       register: Register) {
+                                  function: &Function,
+                                  compilation_data: &mut FunctionCompilationData,
+                                  register: Register) {
         let instruction = compilation_data.operand_stack.pop_register(function, HardwareRegisterExplicit(register));
         self.generate_instruction(
             function,

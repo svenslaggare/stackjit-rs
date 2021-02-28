@@ -5,7 +5,6 @@ use std::ops::DerefMut;
 use crate::engine::ExecutionEngine;
 use crate::model::typesystem::{TypeStorage};
 use crate::engine::execution::{ExecutionEngineResult};
-use crate::compiler::jit::EntryPoint;
 use crate::runtime::memory::MemoryManager;
 
 pub struct VirtualMachine {
@@ -32,6 +31,8 @@ impl VirtualMachine {
         self.engine.create_execution(&mut self.type_storage)
     }
 }
+
+pub type EntryPoint = extern "C" fn() -> i32;
 
 pub struct Execution {
     entrypoint: EntryPoint

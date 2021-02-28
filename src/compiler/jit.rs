@@ -101,5 +101,3 @@ impl JitCompiler {
         code_generator.done()
     }
 }
-
-pub type EntryPoint = extern "C" fn() -> i32;
