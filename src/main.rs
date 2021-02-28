@@ -68,7 +68,6 @@ fn main() {
         vec![
             Instruction::LoadInt32(4000),
             Instruction::NewArray(Type::Int32),
-            // Instruction::StoreLocal(0),
             Instruction::Call(FunctionSignature { name: "print_array".to_owned(), parameters: vec![Type::Array(Box::new(Type::Int32))] }),
             Instruction::LoadInt32(0),
             Instruction::Return,

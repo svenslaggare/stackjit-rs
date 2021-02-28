@@ -20,4 +20,9 @@ impl Heap {
             None
         }
     }
+
+    pub fn inside(&self, address: *const std::ffi::c_void) -> bool {
+        let address = address as *const u8;
+        address >= self.data.as_ptr() && address < (self.data.last().unwrap() as *const u8)
+    }
 }

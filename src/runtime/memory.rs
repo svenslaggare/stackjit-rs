@@ -12,6 +12,10 @@ impl MemoryManager {
         }
     }
 
+    pub fn owned_by(&self, address: *const std::ffi::c_void) -> bool {
+        self.heap.inside(address)
+    }
+
     pub fn new_array(&mut self, type_instance: &Type, length: i32) -> *mut std::ffi::c_void {
         let element_type = type_instance.element_type().expect("unexpected type");
 
