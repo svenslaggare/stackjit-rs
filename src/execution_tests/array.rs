@@ -52,7 +52,7 @@ fn test_create1() {
     let execution_result = vm.execute().unwrap();
     assert_eq!(0, execution_result);
     get_vm(|vm| {
-        assert!(vm.memory_manager.owned_by(ARRAY_RESULT.with(|result| *result.borrow()) as *const std::ffi::c_void));
+        assert!(vm.memory_manager.is_owned(ARRAY_RESULT.with(|result| *result.borrow()) as *const std::ffi::c_void));
     });
 }
 
