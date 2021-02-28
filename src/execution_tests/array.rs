@@ -102,12 +102,12 @@ fn test_store1() {
             Instruction::StoreLocal(0),
 
             Instruction::LoadLocal(0),
-            Instruction::LoadInt32(0),
+            Instruction::LoadInt32(146),
             Instruction::LoadInt32(4711),
 
             Instruction::StoreElement(Type::Int32),
             Instruction::LoadLocal(0),
-            Instruction::LoadInt32(0),
+            Instruction::LoadInt32(146),
             Instruction::LoadElement(Type::Int32),
             Instruction::Return,
         ]
@@ -140,12 +140,12 @@ fn test_store2() {
             Instruction::StoreElement(Type::Int32),
 
             Instruction::LoadLocal(0),
-            Instruction::LoadInt32(0),
+            Instruction::LoadInt32(1),
             Instruction::LoadElement(Type::Int32),
             Instruction::Return,
         ]
     )).unwrap();
 
     let execution_result = vm.execute().unwrap();
-    assert_eq!(4711, execution_result);
+    assert_eq!(1337, execution_result);
 }

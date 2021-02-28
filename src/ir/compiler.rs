@@ -129,10 +129,15 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::NewArray(element.clone()));
             }
             Instruction::LoadElement(element) => {
-                self.instructions.push(InstructionIR::LoadElement(element.clone()));
+                self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1))); // The index of the element
+                self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0))); // The array reference
+                self.instructions.push(InstructionIR::LoadElement(element.clone(), HardwareRegister::Int(0), HardwareRegister::Int(1)));
             }
             Instruction::StoreElement(element) => {
-                self.instructions.push(InstructionIR::StoreElement(element.clone()));
+                self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(2))); // The value to store
+                self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1))); // The index of the element
+                self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0))); // The array reference
+                self.instructions.push(InstructionIR::StoreElement(element.clone(), HardwareRegister::Int(0), HardwareRegister::Int(1), HardwareRegister::Int(2)));
             }
         }
     }

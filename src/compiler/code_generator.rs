@@ -260,16 +260,13 @@ impl<'a> CodeGenerator<'a> {
 
                 self.push_register_operand_stack(function, compilation_data, Register::RAX);
             }
-            InstructionIR::LoadElement(element) => {
-                self.pop_register_operand_stack(function, compilation_data, Register::RCX); // The index of the element
-                self.pop_register_operand_stack(function, compilation_data, Register::RAX); // The array reference
+            InstructionIR::LoadElement(element, reference_register, index_register) => {
+                let reference_register = register_mapping::get(*reference_register, true);
+                let index_register = register_mapping::get(*index_register, true);
 
                 // TODO: add error checks
 
-                // Compute the address of the element
-                self.encode_x86_instruction(X86Instruction::try_with_reg_reg_i32(Code::Imul_r64_rm64_imm32, Register::RCX, Register::RCX, element.size() as i32).unwrap());
-                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Add_r64_rm64, Register::RAX, Register::RCX));
-                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Add_rm64_imm32, Register::RAX, array::LENGTH_SIZE as i32).unwrap());
+                self.compute_array_element_address(element, reference_register, index_register);
 
                 // Load the element
                 match element.size() {
@@ -279,8 +276,8 @@ impl<'a> CodeGenerator<'a> {
                     4 => {
                         self.encode_x86_instruction(X86Instruction::with_reg_mem(
                             Code::Mov_r32_rm32,
-                            Register::ECX,
-                            MemoryOperand::with_base(Register::RAX),
+                            Register::EAX,
+                            MemoryOperand::with_base(reference_register),
                         ));
                     }
                     1 => {
@@ -289,18 +286,16 @@ impl<'a> CodeGenerator<'a> {
                     _ => { panic!("unexpected."); }
                 }
 
-                self.push_register_operand_stack(function, compilation_data, Register::RCX);
+                self.push_register_operand_stack(function, compilation_data, Register::RAX);
             }
-            InstructionIR::StoreElement(element) => {
-                self.pop_register_operand_stack(function, compilation_data, Register::RDX); // The value to store
-                self.pop_register_operand_stack(function, compilation_data, Register::RCX); // The index of the element
-                self.pop_register_operand_stack(function, compilation_data, Register::RAX); // The array reference
+            InstructionIR::StoreElement(element, reference_register, index_register, value_register) => {
+                let value_register_32 = register_mapping::get(*value_register, false);
+                let reference_register = register_mapping::get(*reference_register, true);
+                let index_register = register_mapping::get(*index_register, true);
 
                 // TODO: add error checks
-                // Compute the address of the element
-                self.encode_x86_instruction(X86Instruction::try_with_reg_reg_i32(Code::Imul_r64_rm64_imm32, Register::RCX, Register::RCX, element.size() as i32).unwrap());
-                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Add_r64_rm64, Register::RAX, Register::RCX));
-                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Add_rm64_imm32, Register::RAX, array::LENGTH_SIZE as i32).unwrap());
+
+                self.compute_array_element_address(element, reference_register, index_register);
 
                 //Store the element
                 match element.size() {
@@ -310,8 +305,8 @@ impl<'a> CodeGenerator<'a> {
                     4 => {
                         self.encode_x86_instruction(X86Instruction::with_mem_reg(
                             Code::Mov_rm32_r32,
-                            MemoryOperand::with_base(Register::RAX),
-                            Register::EDX,
+                            MemoryOperand::with_base(reference_register),
+                            value_register_32,
                         ));
                     }
                     1 => {
@@ -356,6 +351,12 @@ impl<'a> CodeGenerator<'a> {
         );
     }
 
+    fn compute_array_element_address(&mut self, element: &Type, reference_register: Register, index_register: Register) {
+        self.encode_x86_instruction(X86Instruction::try_with_reg_reg_i32(Code::Imul_r64_rm64_imm32, index_register, index_register, element.size() as i32).unwrap());
+        self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Add_r64_rm64, reference_register, index_register));
+        self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Add_rm64_imm32, reference_register, array::LENGTH_SIZE as i32).unwrap());
+    }
+
     pub fn done(mut self) -> Vec<u8> {
         self.encoder.take_buffer()
     }
@@ -374,21 +375,19 @@ mod register_mapping {
     lazy_static! {
        static ref mapping_i64: Vec<Register> = {
            vec![
+                Register::RCX,
+                Register::RDX,
                 Register::R10,
-                Register::R11,
-                Register::R12,
-                Register::R13,
-                Register::R14,
+                Register::R11
             ]
        };
 
         static ref mapping_i32: Vec<Register> = {
             vec![
+                Register::ECX,
+                Register::EDX,
                 Register::R10D,
                 Register::R11D,
-                Register::R12D,
-                Register::R13D,
-                Register::R14D,
             ]
         };
 
