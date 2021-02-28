@@ -1,0 +1,1 @@
+pub const LENGTH_SIZE: usize = 4;

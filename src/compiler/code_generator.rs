@@ -6,7 +6,7 @@ use crate::engine::binder::Binder;
 use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments};
 use crate::ir::{HardwareRegisterExplicit, InstructionIR};
 use crate::model::function::{Function, FunctionType};
-use crate::runtime::runtime_interface;
+use crate::runtime::{runtime_interface, array};
 use crate::model::typesystem::{TypeStorage, Type};
 
 pub struct CodeGenerator<'a> {
@@ -261,10 +261,64 @@ impl<'a> CodeGenerator<'a> {
                 self.push_register_operand_stack(function, compilation_data, Register::RAX);
             }
             InstructionIR::LoadElement(element) => {
+                self.pop_register_operand_stack(function, compilation_data, Register::RCX); // The index of the element
+                self.pop_register_operand_stack(function, compilation_data, Register::RAX); // The array reference
 
+                // TODO: add error checks
+
+                // Compute the address of the element
+                self.encode_x86_instruction(X86Instruction::try_with_reg_reg_i32(Code::Imul_r64_rm64_imm32, Register::RCX, Register::RCX, element.size() as i32).unwrap());
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Add_r64_rm64, Register::RAX, Register::RCX));
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Add_rm64_imm32, Register::RAX, array::LENGTH_SIZE as i32).unwrap());
+
+                // Load the element
+                match element.size() {
+                    8 => {
+                        unimplemented!();
+                    }
+                    4 => {
+                        self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                            Code::Mov_r32_rm32,
+                            Register::ECX,
+                            MemoryOperand::with_base(Register::RAX),
+                        ));
+                    }
+                    1 => {
+                        unimplemented!();
+                    }
+                    _ => { panic!("unexpected."); }
+                }
+
+                self.push_register_operand_stack(function, compilation_data, Register::RCX);
             }
             InstructionIR::StoreElement(element) => {
+                self.pop_register_operand_stack(function, compilation_data, Register::RDX); // The value to store
+                self.pop_register_operand_stack(function, compilation_data, Register::RCX); // The index of the element
+                self.pop_register_operand_stack(function, compilation_data, Register::RAX); // The array reference
 
+                // TODO: add error checks
+                // Compute the address of the element
+                self.encode_x86_instruction(X86Instruction::try_with_reg_reg_i32(Code::Imul_r64_rm64_imm32, Register::RCX, Register::RCX, element.size() as i32).unwrap());
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Add_r64_rm64, Register::RAX, Register::RCX));
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Add_rm64_imm32, Register::RAX, array::LENGTH_SIZE as i32).unwrap());
+
+                //Store the element
+                match element.size() {
+                    8 => {
+                        unimplemented!();
+                    }
+                    4 => {
+                        self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                            Code::Mov_rm32_r32,
+                            MemoryOperand::with_base(Register::RAX),
+                            Register::EDX,
+                        ));
+                    }
+                    1 => {
+                        unimplemented!();
+                    }
+                    _ => { panic!("unexpected."); }
+                }
             }
         }
     }

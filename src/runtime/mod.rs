@@ -1,5 +1,6 @@
 pub mod memory;
 pub mod heap;
+pub mod array;
 
 pub mod runtime_interface {
     use crate::vm::get_vm;
