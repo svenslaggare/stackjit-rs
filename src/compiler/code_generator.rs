@@ -3,22 +3,26 @@ use iced_x86::Instruction as X86Instruction;
 
 use crate::compiler::{FunctionCallType, FunctionCompilationData, UnresolvedFunctionCall, stack_layout};
 use crate::engine::binder::Binder;
-use crate::compiler::calling_conventions::{CallingConventions};
+use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments};
 use crate::ir::{HardwareRegisterExplicit, InstructionIR};
 use crate::model::function::{Function, FunctionType};
+use crate::runtime::runtime_interface;
+use crate::model::typesystem::{TypeStorage, Type};
 
 pub struct CodeGenerator<'a> {
     encoder: Encoder,
     encode_offset: usize,
-    binder: &'a Binder
+    binder: &'a Binder,
+    type_storage: &'a mut TypeStorage
 }
 
 impl<'a> CodeGenerator<'a> {
-    pub fn new(binder: &'a Binder) -> CodeGenerator<'a> {
+    pub fn new(binder: &'a Binder, type_storage: &'a mut TypeStorage) -> CodeGenerator<'a> {
         CodeGenerator {
             encoder: Encoder::new(64),
             encode_offset: 0,
-            binder
+            binder,
+            type_storage
         }
     }
 
@@ -201,9 +205,10 @@ impl<'a> CodeGenerator<'a> {
 
                 match func_to_call.function_type() {
                     FunctionType::External => {
-                        let address = func_to_call.address().unwrap() as u64;
-                        self.encode_x86_instruction(X86Instruction::try_with_reg_u64(Code::Mov_r64_imm64, Register::RAX, address).unwrap());
-                        self.encode_x86_instruction(X86Instruction::with_reg(Code::Call_rm64, Register::RAX));
+                        call_direct(
+                            |instruction| self.encode_x86_instruction(instruction),
+                            func_to_call.address().unwrap() as u64
+                        )
                     }
                     FunctionType::Managed => {
                         compilation_data.unresolved_function_calls.push(UnresolvedFunctionCall {
@@ -240,6 +245,26 @@ impl<'a> CodeGenerator<'a> {
                 self.encode_x86_instruction(X86Instruction::with_reg(Code::Pop_rm64, Register::RBP));
 
                 self.encode_x86_instruction(X86Instruction::with(Code::Retnq));
+            }
+            InstructionIR::NewArray(element) => {
+                let array_type = Type::Array(Box::new(element.clone()));
+                let array_type_id = self.type_storage.add_or_get_type(array_type);
+
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Mov_rm64_imm32, register_call_arguments::ARG0, array_type_id.0).unwrap());
+                self.pop_register_operand_stack(function, compilation_data, register_call_arguments::ARG1);
+
+                call_direct(
+                    |instruction| self.encode_x86_instruction(instruction),
+                    runtime_interface::new_array as u64
+                );
+
+                self.push_register_operand_stack(function, compilation_data, Register::RAX);
+            }
+            InstructionIR::LoadElement(element) => {
+
+            }
+            InstructionIR::StoreElement(element) => {
+
             }
         }
     }
@@ -338,6 +363,11 @@ mod register_mapping {
             }
         }
     }
+}
+
+fn call_direct<F: FnMut(X86Instruction)>(mut encode_instruction: F, address: u64) {
+    encode_instruction(X86Instruction::try_with_reg_u64(Code::Mov_r64_imm64, Register::RAX, address).unwrap());
+    encode_instruction(X86Instruction::with_reg(Code::Call_rm64, Register::RAX));
 }
 
 pub fn push_r32<F: FnMut(X86Instruction)>(mut encode_instruction: F, register: Register) {

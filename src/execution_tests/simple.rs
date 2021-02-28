@@ -1,13 +1,13 @@
 use crate::model::function::{Function, FunctionDefinition};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
-use crate::engine::ExecutionEngine;
+use crate::vm::VirtualMachine;
 
 #[test]
 fn test1() {
-    let mut engine = ExecutionEngine::new();
+    let mut vm = VirtualMachine::new();
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -16,15 +16,15 @@ fn test1() {
         ]
     )).unwrap();
 
-    let execution_result = engine.execute().unwrap();
+    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
     assert_eq!(4711, execution_result);
 }
 
 #[test]
 fn test2() {
-    let mut engine = ExecutionEngine::new();
+    let mut vm = VirtualMachine::new();
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -35,15 +35,15 @@ fn test2() {
         ]
     )).unwrap();
 
-    let execution_result = engine.execute().unwrap();
+    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
     assert_eq!(4711 + 1337, execution_result);
 }
 
 #[test]
 fn test3() {
-    let mut engine = ExecutionEngine::new();
+    let mut vm = VirtualMachine::new();
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -54,15 +54,15 @@ fn test3() {
         ]
     )).unwrap();
 
-    let execution_result = engine.execute().unwrap();
+    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
     assert_eq!(4711 - 1337, execution_result);
 }
 
 #[test]
-fn locals1() {
-    let mut engine = ExecutionEngine::new();
+fn test_locals1() {
+    let mut vm = VirtualMachine::new();
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         vec![Type::Int32],
         vec![
@@ -73,15 +73,15 @@ fn locals1() {
         ]
     )).unwrap();
 
-    let execution_result = engine.execute().unwrap();
+    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
     assert_eq!(1337, execution_result);
 }
 
 #[test]
-fn locals2() {
-    let mut engine = ExecutionEngine::new();
+fn test_locals2() {
+    let mut vm = VirtualMachine::new();
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         vec![Type::Int32],
         vec![
@@ -94,6 +94,6 @@ fn locals2() {
         ]
     )).unwrap();
 
-    let execution_result = engine.execute().unwrap();
+    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
     assert_eq!(1337 + 4711, execution_result);
 }

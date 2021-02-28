@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
-use crate::engine::ExecutionEngine;
+use crate::vm::VirtualMachine;
 
 thread_local!(static FLOAT_RESULT: RefCell<f32> = RefCell::new(0.0));
 
@@ -28,16 +28,16 @@ fn test1() {
         *result.borrow_mut() = 0.0;
     });
 
-    let mut engine = ExecutionEngine::new();
+    let mut vm = VirtualMachine::new();
 
-    engine.binder_mut().define(
+    vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "print".to_owned(), vec![Type::Float32], Type::Void,
             print_float as *mut libc::c_void
         )
     );
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         vec![Type::Float32],
         vec![
@@ -50,7 +50,7 @@ fn test1() {
         ]
     )).unwrap();
 
-    let execution_result = engine.execute().unwrap();
+    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
     assert_eq!(0, execution_result);
     assert_eq!(13.37 + 47.11, FLOAT_RESULT.with(|result| *result.borrow()));
 }
@@ -61,23 +61,23 @@ fn test2() {
         *result.borrow_mut() = 0.0;
     });
 
-    let mut engine = ExecutionEngine::new();
+    let mut vm = VirtualMachine::new();
 
-    engine.binder_mut().define(
+    vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "print".to_owned(), vec![Type::Float32], Type::Void,
             print_float as *mut libc::c_void
         )
     );
 
-    engine.binder_mut().define(
+    vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "add".to_owned(), vec![Type::Float32, Type::Float32], Type::Float32,
             add as *mut libc::c_void
         )
     );
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         vec![Type::Float32],
         vec![
@@ -90,7 +90,7 @@ fn test2() {
         ]
     )).unwrap();
 
-    let execution_result = engine.execute().unwrap();
+    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
     assert_eq!(0, execution_result);
     assert_eq!(13.37 + 47.11, FLOAT_RESULT.with(|result| *result.borrow()));
 }
@@ -101,16 +101,16 @@ fn test3() {
         *result.borrow_mut() = 0.0;
     });
 
-    let mut engine = ExecutionEngine::new();
+    let mut vm = VirtualMachine::new();
 
-    engine.binder_mut().define(
+    vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "print".to_owned(), vec![Type::Float32], Type::Void,
             print_float as *mut libc::c_void
         )
     );
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("sum8".to_owned(), (0..8).map(|_| Type::Float32).collect(), Type::Float32),
         Vec::new(),
         vec![
@@ -133,7 +133,7 @@ fn test3() {
         ]
     )).unwrap();
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -152,7 +152,7 @@ fn test3() {
         ]
     )).unwrap();
 
-    let execution_result = engine.execute().unwrap();
+    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
     assert_eq!(0, execution_result);
     assert_eq!(1.1 + 2.1 + 3.1 + 4.1 + 5.1 + 6.1 + 7.1 + 8.1, FLOAT_RESULT.with(|result| *result.borrow()));
 }

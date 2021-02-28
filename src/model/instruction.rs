@@ -1,4 +1,5 @@
 use crate::model::function::FunctionSignature;
+use crate::model::typesystem::Type;
 
 #[derive(Debug, Clone)]
 pub enum Instruction {
@@ -10,7 +11,10 @@ pub enum Instruction {
     Sub,
     Call(FunctionSignature),
     LoadArgument(u32),
-    Return
+    Return,
+    NewArray(Type),
+    LoadElement(Type),
+    StoreElement(Type),
 }
 
 impl std::fmt::Display for Instruction {
@@ -42,6 +46,15 @@ impl std::fmt::Display for Instruction {
             }
             Instruction::Return => {
                 write!(f, "Return")
+            }
+            Instruction::NewArray(element) => {
+                write!(f, "NewArray {}", element)
+            }
+            Instruction::LoadElement(element) => {
+                write!(f, "LoadElement {}", element)
+            }
+            Instruction::StoreElement(element) => {
+                write!(f, "StoreElement {}", element)
             }
         }
     }

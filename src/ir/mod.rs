@@ -1,6 +1,7 @@
 pub mod compiler;
 
 use crate::model::function::FunctionSignature;
+use crate::model::typesystem::Type;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum HardwareRegister {
@@ -35,5 +36,8 @@ pub enum InstructionIR {
     SubFloat32(HardwareRegister, HardwareRegister),
     MoveInt32ToMemory(i32, i32),
     Call(FunctionSignature),
-    Return
+    Return,
+    NewArray(Type),
+    LoadElement(Type),
+    StoreElement(Type),
 }

@@ -7,6 +7,7 @@ use crate::compiler::allocator::ExecutableMemoryAllocator;
 use crate::compiler::code_generator::{CodeGenerator};
 use crate::engine::binder::Binder;
 use crate::compiler::{FunctionCompilationData, FunctionCallType};
+use crate::model::typesystem::{TypeStorage};
 
 pub struct JitCompiler {
     memory_allocator: ExecutableMemoryAllocator,
@@ -21,13 +22,19 @@ impl JitCompiler {
         }
     }
 
-    pub fn compile_function(&mut self, binder: &mut Binder, function: &Function) {
+    pub fn compile_function(&mut self, binder: &mut Binder, type_storage: &mut TypeStorage, function: &Function) {
         println!("{}", function.definition().signature());
         println!("{{");
 
         let mut compilation_data = FunctionCompilationData::new();
         let instructions_ir = self.compile_ir(binder, function, &mut compilation_data);
-        let function_code_bytes = self.generate_code(binder, function, &mut compilation_data, &instructions_ir);
+        let function_code_bytes = self.generate_code(
+            binder,
+            type_storage,
+            function,
+            &mut compilation_data,
+            &instructions_ir
+        );
 
         println!("}}");
         println!();
@@ -85,10 +92,11 @@ impl JitCompiler {
 
     fn generate_code(&self,
                      binder: &Binder,
+                     type_storage: &mut TypeStorage,
                      function: &Function,
                      compilation_data: &mut FunctionCompilationData,
                      instructions_ir: &Vec<InstructionIR>) -> Vec<u8> {
-        let mut code_generator = CodeGenerator::new(binder);
+        let mut code_generator = CodeGenerator::new(binder, type_storage);
         code_generator.generate(function, compilation_data, instructions_ir);
         code_generator.done()
     }

@@ -223,7 +223,7 @@ impl CallingConventions {
     }
 }
 
-mod register_call_arguments {
+pub mod register_call_arguments {
     use iced_x86::Register;
 
     use crate::model::typesystem::Type;
@@ -269,7 +269,7 @@ mod register_call_arguments {
     pub const RETURN_VALUE: Register = Register::RAX;
 }
 
-mod float_register_call_arguments {
+pub mod float_register_call_arguments {
     use iced_x86::Register;
 
     use crate::model::typesystem::Type;

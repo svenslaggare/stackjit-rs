@@ -1,7 +1,9 @@
-use crate::compiler::jit::{JitCompiler, EntryPoint};
-use crate::model::function::{Function, FunctionSignature};
+use crate::compiler::jit::{JitCompiler};
+use crate::model::function::{Function, FunctionSignature, FunctionAddress};
 use crate::model::verifier::{Verifier, VerifyError};
 use crate::engine::binder::Binder;
+use crate::model::typesystem::TypeStorage;
+use crate::vm::{Execution};
 
 #[derive(Debug)]
 pub enum ExecutionEngineError {
@@ -32,26 +34,31 @@ impl ExecutionEngine {
         Ok(())
     }
 
-    pub fn execute(&mut self) -> ExecutionEngineResult<i32> {
-        let entrypoint = self.prepare_execution()?;
-        Ok((entrypoint)())
+    pub fn prepare_execution(&mut self, type_storage: &mut TypeStorage) -> ExecutionEngineResult<Execution> {
+        self.compile_functions(type_storage)?;
+
+        self.compiler.resolve_calls(&self.binder);
+        let address = self.get_entrypoint()?;
+        let entrypoint = unsafe { std::mem::transmute(address) };
+        Ok(Execution::new(entrypoint))
     }
 
-    fn prepare_execution(&mut self) -> ExecutionEngineResult<EntryPoint> {
+    fn compile_functions(&mut self, type_storage: &mut TypeStorage) -> ExecutionEngineResult<()> {
         for function in &mut self.functions {
             let mut verifier = Verifier::new(&self.binder, function);
             verifier.verify().map_err(|err| ExecutionEngineError::Verify(err))?;
-            self.compiler.compile_function(&mut self.binder, function);
+            self.compiler.compile_function(&mut self.binder, type_storage, function);
         }
 
-        self.compiler.resolve_calls(&self.binder);
-        let address = self.binder
+        Ok(())
+    }
+
+    fn get_entrypoint(&self) -> ExecutionEngineResult<FunctionAddress> {
+        self.binder
             .get(&FunctionSignature { name: "main".to_owned(), parameters: Vec::new() })
             .ok_or(ExecutionEngineError::NoMainFunction)?
             .address()
-            .ok_or(ExecutionEngineError::NoMainFunction)?;
-
-        Ok(unsafe { std::mem::transmute(address) })
+            .ok_or(ExecutionEngineError::NoMainFunction)
     }
 
     pub fn binder(&self) -> &Binder {

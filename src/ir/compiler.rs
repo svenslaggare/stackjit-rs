@@ -125,6 +125,15 @@ impl<'a> InstructionIRCompiler<'a> {
                 CallingConventions::new().make_return_value(self.function, &mut self.instructions);
                 self.instructions.push(InstructionIR::Return);
             }
+            Instruction::NewArray(element) => {
+                self.instructions.push(InstructionIR::NewArray(element.clone()));
+            }
+            Instruction::LoadElement(element) => {
+                self.instructions.push(InstructionIR::LoadElement(element.clone()));
+            }
+            Instruction::StoreElement(element) => {
+                self.instructions.push(InstructionIR::StoreElement(element.clone()));
+            }
         }
     }
 

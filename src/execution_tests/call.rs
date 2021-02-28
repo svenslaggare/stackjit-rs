@@ -1,7 +1,7 @@
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
-use crate::engine::ExecutionEngine;
+use crate::vm::VirtualMachine;
 
 extern "C" fn sum(x: i32, y: i32) -> i32 {
     return x + y;
@@ -16,17 +16,17 @@ extern "C" fn sub(x: i32, y: i32) -> i32 {
 }
 
 #[test]
-fn external1() {
-    let mut engine = ExecutionEngine::new();
+fn test_external1() {
+    let mut vm = VirtualMachine::new();
 
-    engine.binder_mut().define(
+    vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "sum".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32,
             sum as *mut libc::c_void
         )
     );
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -37,22 +37,22 @@ fn external1() {
         ]
     )).unwrap();
 
-    let execution_result = engine.execute().unwrap();
+    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
     assert_eq!(1337 + 4711, execution_result);
 }
 
 #[test]
-fn external2() {
-    let mut engine = ExecutionEngine::new();
+fn test_external2() {
+    let mut vm = VirtualMachine::new();
 
-    engine.binder_mut().define(
+    vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "sub".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32,
             sub as *mut libc::c_void
         )
     );
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -63,22 +63,22 @@ fn external2() {
         ]
     )).unwrap();
 
-    let execution_result = engine.execute().unwrap();
+    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
     assert_eq!(4711 - 1337, execution_result);
 }
 
 #[test]
-fn external3() {
-    let mut engine = ExecutionEngine::new();
+fn test_external3() {
+    let mut vm = VirtualMachine::new();
 
-    engine.binder_mut().define(
+    vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "sum8".to_owned(), (0..8).map(|_| Type::Int32).collect(), Type::Int32,
             sum8 as *mut libc::c_void
         )
     );
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -95,15 +95,15 @@ fn external3() {
         ]
     )).unwrap();
 
-    let execution_result = engine.execute().unwrap();
+    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
     assert_eq!(36, execution_result);
 }
 
 #[test]
-fn managed1() {
-    let mut engine = ExecutionEngine::new();
+fn test_managed1() {
+    let mut vm = VirtualMachine::new();
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("sum".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32),
         Vec::new(),
         vec![
@@ -114,7 +114,7 @@ fn managed1() {
         ]
     )).unwrap();
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -125,15 +125,15 @@ fn managed1() {
         ]
     )).unwrap();
 
-    let execution_result = engine.execute().unwrap();
+    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
     assert_eq!(1337 + 4711, execution_result);
 }
 
 #[test]
-fn managed2() {
-    let mut engine = ExecutionEngine::new();
+fn test_managed2() {
+    let mut vm = VirtualMachine::new();
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("sum".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32),
         vec![Type::Int32],
         vec![
@@ -146,7 +146,7 @@ fn managed2() {
         ]
     )).unwrap();
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -157,15 +157,15 @@ fn managed2() {
         ]
     )).unwrap();
 
-    let execution_result = engine.execute().unwrap();
+    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
     assert_eq!(1337 + 4711, execution_result);
 }
 
 #[test]
-fn managed3() {
-    let mut engine = ExecutionEngine::new();
+fn test_managed3() {
+    let mut vm = VirtualMachine::new();
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("sum8".to_owned(), (0..8).map(|_| Type::Int32).collect(), Type::Int32),
         Vec::new(),
         vec![
@@ -188,7 +188,7 @@ fn managed3() {
         ]
     )).unwrap();
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -205,15 +205,15 @@ fn managed3() {
         ]
     )).unwrap();
 
-    let execution_result = engine.execute().unwrap();
+    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
     assert_eq!(36, execution_result);
 }
 
 #[test]
-fn managed4() {
-    let mut engine = ExecutionEngine::new();
+fn test_managed4() {
+    let mut vm = VirtualMachine::new();
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("sum7".to_owned(), (0..7).map(|_| Type::Int32).collect(), Type::Int32),
         Vec::new(),
         vec![
@@ -234,7 +234,7 @@ fn managed4() {
         ]
     )).unwrap();
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("sum9".to_owned(), (0..9).map(|_| Type::Int32).collect(), Type::Int32),
         Vec::new(),
         vec![
@@ -259,7 +259,7 @@ fn managed4() {
         ]
     )).unwrap();
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -284,15 +284,15 @@ fn managed4() {
         ]
     )).unwrap();
 
-    let execution_result = engine.execute().unwrap();
+    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
     assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16].iter().sum::<i32>(), execution_result);
 }
 
 #[test]
-fn managed5() {
-    let mut engine = ExecutionEngine::new();
+fn test_managed5() {
+    let mut vm = VirtualMachine::new();
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
@@ -303,7 +303,7 @@ fn managed5() {
         ]
     )).unwrap();
 
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("sum".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32),
         Vec::new(),
         vec![
@@ -314,6 +314,6 @@ fn managed5() {
         ]
     )).unwrap();
 
-    let execution_result = engine.execute().unwrap();
+    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
     assert_eq!(1337 + 4711, execution_result);
 }

@@ -4,13 +4,15 @@ extern crate lazy_static;
 mod model;
 mod ir;
 mod compiler;
+mod runtime;
 mod engine;
+mod vm;
 mod execution_tests;
 
 use crate::model::instruction::Instruction;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::typesystem::Type;
-use crate::engine::ExecutionEngine;
+use crate::vm::VirtualMachine;
 
 extern "C" fn push() -> i32 {
     return 4711;
@@ -32,83 +34,47 @@ extern "C" fn print_float(x: f32) {
     println!("{}", x);
 }
 
-fn main() {
-    let mut engine = ExecutionEngine::new();
+extern "C" fn print_array(ptr: u64) {
+    println!("0x{:x}", ptr);
+}
 
-    engine.binder_mut().define(
+fn main() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "sum8".to_owned(), (0..8).map(|_| Type::Int32).collect(), Type::Int32,
             sum8 as *mut libc::c_void
         )
     );
 
-    engine.binder_mut().define(
+    vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "print".to_owned(), vec![Type::Float32], Type::Void,
             print_float as *mut libc::c_void
         )
     );
 
-    // jit_compiler.compile_function(&Function::new(
-    //     FunctionDefinition::new_managed("sum8".to_owned(), (0..8).map(|_| Type::Int32).collect(), Type::Int32),
-    //     Vec::new(),
-    //     vec![
-    //         Instruction::LoadArgument(0),
-    //         Instruction::LoadArgument(1),
-    //         Instruction::Add,
-    //         Instruction::LoadArgument(2),
-    //         Instruction::Add,
-    //         Instruction::LoadArgument(3),
-    //         Instruction::Add,
-    //         Instruction::LoadArgument(4),
-    //         Instruction::Add,
-    //         Instruction::LoadArgument(5),
-    //         Instruction::Add,
-    //         Instruction::LoadArgument(6),
-    //         Instruction::Add,
-    //         Instruction::LoadArgument(7),
-    //         Instruction::Add,
-    //         Instruction::Return,
-    //     ]
-    // ));
-    // println!();
-    // println!();
+    vm.engine.binder_mut().define(
+        FunctionDefinition::new_external(
+            "print_array".to_owned(), vec![Type::Array(Box::new(Type::Int32))], Type::Void,
+            print_array as *mut libc::c_void
+        )
+    );
 
-    // let instructions = vec![
-    //     Instruction::LoadInt32(1),
-    //     Instruction::LoadInt32(2),
-    //     Instruction::LoadInt32(3),
-    //     Instruction::LoadInt32(4),
-    //     Instruction::LoadInt32(5),
-    //     Instruction::LoadInt32(6),
-    //     Instruction::LoadInt32(7),
-    //     Instruction::LoadInt32(8),
-    //     Instruction::Call(FunctionSignature::new("sum8".to_owned(), (0..8).map(|_| Type::Int32).collect())),
-    //     Instruction::Return,
-    // ];
-    //
-    // let function = Function::new(
-    //     FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-    //     // Vec::new(),
-    //     vec![Type::Int32],
-    //     instructions
-    // );
-
-    // jit_compiler.compile_function(&function);
-
-    engine.add_function(Function::new(
+    vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Float32],
+        vec![Type::Array(Box::new(Type::Int32))],
         vec![
-            Instruction::LoadFloat32(13.37),
-            Instruction::LoadFloat32(47.11),
-            Instruction::Add,
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![Type::Float32] }),
+            Instruction::LoadInt32(4000),
+            Instruction::NewArray(Type::Int32),
+            // Instruction::StoreLocal(0),
+            Instruction::Call(FunctionSignature { name: "print_array".to_owned(), parameters: vec![Type::Array(Box::new(Type::Int32))] }),
             Instruction::LoadInt32(0),
-            Instruction::Return
+            Instruction::Return,
         ]
     )).unwrap();
 
-    let execution_result = engine.execute().unwrap();
+    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
     println!("Result: {}", execution_result);
 }

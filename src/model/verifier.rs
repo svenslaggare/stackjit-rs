@@ -1,4 +1,4 @@
-use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
+use crate::model::function::{Function, FunctionSignature, FunctionDefinition};
 use crate::model::typesystem::Type;
 use crate::model::instruction::Instruction;
 use crate::engine::binder::Binder;
@@ -119,6 +119,29 @@ impl<'a> Verifier<'a> {
                         let operand = self.pop_operand_stack()?;
                         self.same_type(self.function.definition().return_type(), &operand)?;
                     }
+                }
+                Instruction::NewArray(element) => {
+                    let length = self.pop_operand_stack()?;
+                    self.same_type(&Type::Int32, &length)?;
+                    self.operand_stack.push(Type::Array(Box::new(element.clone())));
+                }
+                Instruction::LoadElement(element) => {
+                    let array_index = self.pop_operand_stack()?;
+                    let array_reference = self.pop_operand_stack()?;
+
+                    self.same_type(&Type::Int32, &array_index)?;
+                    self.same_type(&Type::Array(Box::new(element.clone())), &array_reference)?;
+
+                    self.operand_stack.push(element.clone());
+                }
+                Instruction::StoreElement(element) => {
+                    let array_value = self.pop_operand_stack()?;
+                    let array_index = self.pop_operand_stack()?;
+                    let array_reference = self.pop_operand_stack()?;
+
+                    self.same_type(&Type::Int32, &array_index)?;
+                    self.same_type(&Type::Array(Box::new(element.clone())), &array_reference)?;
+                    self.same_type(&array_value, &element)?;
                 }
             }
         }
@@ -368,4 +391,63 @@ fn test_call4() {
 
     let mut verifier = Verifier::new(&binder, &mut function);
     assert_eq!(Err(VerifyError::WrongType(Type::Float32, Type::Int32)), verifier.verify());
+}
+
+#[test]
+fn test_array1() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), Type::Int32),
+        Vec::new(),
+        vec![
+            Instruction::LoadInt32(4711),
+            Instruction::NewArray(Type::Int32),
+            Instruction::LoadInt32(1000),
+            Instruction::LoadElement(Type::Int32),
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let mut verifier = Verifier::new(&binder, &mut function);
+    assert_eq!(Ok(()), verifier.verify());
+}
+
+#[test]
+fn test_array2() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), Type::Void),
+        Vec::new(),
+        vec![
+            Instruction::LoadInt32(4711),
+            Instruction::NewArray(Type::Float32),
+            Instruction::LoadInt32(1000),
+            Instruction::LoadFloat32(47.11),
+            Instruction::StoreElement(Type::Float32),
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let mut verifier = Verifier::new(&binder, &mut function);
+    assert_eq!(Ok(()), verifier.verify());
+}
+
+#[test]
+fn test_array3() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), Type::Void),
+        Vec::new(),
+        vec![
+            Instruction::LoadInt32(4711),
+            Instruction::NewArray(Type::Int32),
+            Instruction::LoadInt32(1000),
+            Instruction::LoadFloat32(47.11),
+            Instruction::StoreElement(Type::Float32),
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let mut verifier = Verifier::new(&binder, &mut function);
+    assert_eq!(Err(VerifyError::WrongType(Type::Array(Box::new(Type::Float32)), Type::Array(Box::new(Type::Int32)))), verifier.verify());
 }
