@@ -375,8 +375,8 @@ mod register_mapping {
     lazy_static! {
        static ref mapping_i64: Vec<Register> = {
            vec![
-                Register::RCX,
-                Register::RDX,
+                Register::R8,
+                Register::R9,
                 Register::R10,
                 Register::R11
             ]
@@ -384,8 +384,8 @@ mod register_mapping {
 
         static ref mapping_i32: Vec<Register> = {
             vec![
-                Register::ECX,
-                Register::EDX,
+                Register::R8D,
+                Register::R9D,
                 Register::R10D,
                 Register::R11D,
             ]
