@@ -352,9 +352,14 @@ impl<'a> CodeGenerator<'a> {
     }
 
     fn compute_array_element_address(&mut self, element: &Type, reference_register: Register, index_register: Register) {
-        self.encode_x86_instruction(X86Instruction::try_with_reg_reg_i32(Code::Imul_r64_rm64_imm32, index_register, index_register, element.size() as i32).unwrap());
-        self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Add_r64_rm64, reference_register, index_register));
-        self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Add_rm64_imm32, reference_register, array::LENGTH_SIZE as i32).unwrap());
+        self.encode_x86_instruction(X86Instruction::with_reg_mem(
+            Code::Lea_r64_m,
+            reference_register,
+            MemoryOperand::with_base_index_scale_displ_size(
+                reference_register,
+                index_register, element.size() as u32, array::LENGTH_SIZE as i32, 1
+            )
+        ));
     }
 
     pub fn done(mut self) -> Vec<u8> {
