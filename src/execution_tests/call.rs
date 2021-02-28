@@ -22,7 +22,7 @@ fn test_external1() {
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "sum".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32,
-            sum as *mut libc::c_void
+            sum as *mut std::ffi::c_void
         )
     );
 
@@ -48,7 +48,7 @@ fn test_external2() {
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "sub".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32,
-            sub as *mut libc::c_void
+            sub as *mut std::ffi::c_void
         )
     );
 
@@ -74,7 +74,7 @@ fn test_external3() {
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "sum8".to_owned(), (0..8).map(|_| Type::Int32).collect(), Type::Int32,
-            sum8 as *mut libc::c_void
+            sum8 as *mut std::ffi::c_void
         )
     );
 

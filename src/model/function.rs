@@ -1,7 +1,7 @@
 use crate::model::typesystem::Type;
 use crate::model::instruction::Instruction;
 
-pub type FunctionAddress = *mut libc::c_void;
+pub type FunctionAddress = *mut std::ffi::c_void;
 
 #[derive(Debug, Clone)]
 pub enum FunctionType {

@@ -44,21 +44,21 @@ fn main() {
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "sum8".to_owned(), (0..8).map(|_| Type::Int32).collect(), Type::Int32,
-            sum8 as *mut libc::c_void
+            sum8 as *mut std::ffi::c_void
         )
     );
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "print".to_owned(), vec![Type::Float32], Type::Void,
-            print_float as *mut libc::c_void
+            print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "print_array".to_owned(), vec![Type::Array(Box::new(Type::Int32))], Type::Void,
-            print_array as *mut libc::c_void
+            print_array as *mut std::ffi::c_void
         )
     );
 

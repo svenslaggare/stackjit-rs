@@ -33,7 +33,7 @@ fn test1() {
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "print".to_owned(), vec![Type::Float32], Type::Void,
-            print_float as *mut libc::c_void
+            print_float as *mut std::ffi::c_void
         )
     );
 
@@ -66,14 +66,14 @@ fn test2() {
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "print".to_owned(), vec![Type::Float32], Type::Void,
-            print_float as *mut libc::c_void
+            print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "add".to_owned(), vec![Type::Float32, Type::Float32], Type::Float32,
-            add as *mut libc::c_void
+            add as *mut std::ffi::c_void
         )
     );
 
@@ -106,7 +106,7 @@ fn test3() {
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
             "print".to_owned(), vec![Type::Float32], Type::Void,
-            print_float as *mut libc::c_void
+            print_float as *mut std::ffi::c_void
         )
     );
 

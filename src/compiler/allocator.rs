@@ -9,7 +9,7 @@ impl ExecutableMemoryAllocator {
         }
     }
 
-    pub fn allocate(&mut self, size: usize) -> *mut libc::c_void {
+    pub fn allocate(&mut self, size: usize) -> *mut std::ffi::c_void {
         for page in &mut self.pages {
             if let Some(address) = page.try_allocate(size) {
                 return address;
@@ -26,7 +26,7 @@ impl ExecutableMemoryAllocator {
 }
 
 struct ExecutablePage {
-    address: *mut libc::c_void,
+    address: *mut std::ffi::c_void,
     size: usize,
     current_offset: usize
 }
@@ -57,7 +57,7 @@ impl ExecutablePage {
         }
     }
 
-    pub fn try_allocate(&mut self, size: usize) -> Option<*mut libc::c_void> {
+    pub fn try_allocate(&mut self, size: usize) -> Option<*mut std::ffi::c_void> {
         let size_left = self.size - self.current_offset;
         if size_left >= size {
             let ptr = unsafe { self.address.add(self.current_offset) };
