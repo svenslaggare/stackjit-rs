@@ -16,7 +16,7 @@ fn test1() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     assert_eq!(4711, execution_result);
 }
 
@@ -35,7 +35,7 @@ fn test2() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     assert_eq!(4711 + 1337, execution_result);
 }
 
@@ -54,7 +54,7 @@ fn test3() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     assert_eq!(4711 - 1337, execution_result);
 }
 
@@ -73,7 +73,7 @@ fn test_locals1() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     assert_eq!(1337, execution_result);
 }
 
@@ -94,6 +94,6 @@ fn test_locals2() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     assert_eq!(1337 + 4711, execution_result);
 }

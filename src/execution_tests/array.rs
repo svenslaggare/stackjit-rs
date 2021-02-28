@@ -19,6 +19,6 @@ fn test_create1() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     assert_eq!(0, execution_result);
 }

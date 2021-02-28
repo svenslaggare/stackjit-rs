@@ -37,7 +37,7 @@ fn test_external1() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     assert_eq!(1337 + 4711, execution_result);
 }
 
@@ -63,7 +63,7 @@ fn test_external2() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     assert_eq!(4711 - 1337, execution_result);
 }
 
@@ -95,7 +95,7 @@ fn test_external3() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     assert_eq!(36, execution_result);
 }
 
@@ -125,7 +125,7 @@ fn test_managed1() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     assert_eq!(1337 + 4711, execution_result);
 }
 
@@ -157,7 +157,7 @@ fn test_managed2() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     assert_eq!(1337 + 4711, execution_result);
 }
 
@@ -205,7 +205,7 @@ fn test_managed3() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     assert_eq!(36, execution_result);
 }
 
@@ -284,7 +284,7 @@ fn test_managed4() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16].iter().sum::<i32>(), execution_result);
 }
 
@@ -314,6 +314,6 @@ fn test_managed5() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     assert_eq!(1337 + 4711, execution_result);
 }

@@ -50,7 +50,7 @@ fn test1() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     assert_eq!(0, execution_result);
     assert_eq!(13.37 + 47.11, FLOAT_RESULT.with(|result| *result.borrow()));
 }
@@ -90,7 +90,7 @@ fn test2() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     assert_eq!(0, execution_result);
     assert_eq!(13.37 + 47.11, FLOAT_RESULT.with(|result| *result.borrow()));
 }
@@ -152,7 +152,7 @@ fn test3() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     assert_eq!(0, execution_result);
     assert_eq!(1.1 + 2.1 + 3.1 + 4.1 + 5.1 + 6.1 + 7.1 + 8.1, FLOAT_RESULT.with(|result| *result.borrow()));
 }

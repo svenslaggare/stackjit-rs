@@ -24,6 +24,10 @@ impl VirtualMachine {
         }
     }
 
+    pub fn execute(mut self) -> ExecutionEngineResult<i32> {
+        self.prepare_execution()?.execute(self)
+    }
+
     pub fn prepare_execution(&mut self) -> ExecutionEngineResult<Execution> {
         self.engine.prepare_execution(&mut self.type_storage)
     }

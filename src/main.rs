@@ -75,6 +75,6 @@ fn main() {
         ]
     )).unwrap();
 
-    let execution_result = vm.prepare_execution().unwrap().execute(vm).unwrap();
+    let execution_result = vm.execute().unwrap();
     println!("Result: {}", execution_result);
 }
