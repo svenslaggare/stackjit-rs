@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::Deref;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Type {
@@ -15,6 +16,14 @@ impl Type {
             Type::Int32 => 4,
             Type::Float32 => 4,
             Type::Array(_) => 8
+        }
+    }
+
+    pub fn element_type(&self) -> Option<&Type> {
+        if let Type::Array(element) = self {
+            Some(element.deref())
+        } else {
+            None
         }
     }
 }

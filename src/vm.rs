@@ -3,14 +3,14 @@ use std::rc::Rc;
 use std::ops::DerefMut;
 
 use crate::engine::ExecutionEngine;
-use crate::runtime::{Runtime};
 use crate::model::typesystem::{TypeStorage};
 use crate::engine::execution::{ExecutionEngineResult};
 use crate::compiler::jit::EntryPoint;
+use crate::runtime::memory::MemoryManager;
 
 pub struct VirtualMachine {
     pub engine: ExecutionEngine,
-    pub runtime: Runtime,
+    pub memory_manager: MemoryManager,
     pub type_storage: TypeStorage
 }
 
@@ -19,7 +19,7 @@ impl VirtualMachine {
 
         VirtualMachine {
             engine: ExecutionEngine::new(),
-            runtime: Runtime::new(),
+            memory_manager: MemoryManager::new(),
             type_storage: TypeStorage::new()
         }
     }
@@ -29,7 +29,7 @@ impl VirtualMachine {
     }
 
     pub fn prepare_execution(&mut self) -> ExecutionEngineResult<Execution> {
-        self.engine.prepare_execution(&mut self.type_storage)
+        self.engine.create_execution(&mut self.type_storage)
     }
 }
 

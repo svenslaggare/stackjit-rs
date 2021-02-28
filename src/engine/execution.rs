@@ -34,10 +34,10 @@ impl ExecutionEngine {
         Ok(())
     }
 
-    pub fn prepare_execution(&mut self, type_storage: &mut TypeStorage) -> ExecutionEngineResult<Execution> {
+    pub fn create_execution(&mut self, type_storage: &mut TypeStorage) -> ExecutionEngineResult<Execution> {
         self.compile_functions(type_storage)?;
-
         self.compiler.resolve_calls(&self.binder);
+
         let address = self.get_entrypoint()?;
         let entrypoint = unsafe { std::mem::transmute(address) };
         Ok(Execution::new(entrypoint))
