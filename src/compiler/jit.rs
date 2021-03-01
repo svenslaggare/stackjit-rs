@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::mem::size_of;
 
 use crate::model::function::{Function, FunctionSignature, FunctionDefinition};
 use crate::ir::compiler::InstructionIRCompiler;
@@ -8,7 +9,6 @@ use crate::compiler::code_generator::{CodeGenerator};
 use crate::engine::binder::Binder;
 use crate::compiler::{FunctionCompilationData, FunctionCallType};
 use crate::model::typesystem::{TypeStorage};
-use std::mem::size_of;
 
 pub struct JitCompiler {
     memory_allocator: ExecutableMemoryAllocator,
