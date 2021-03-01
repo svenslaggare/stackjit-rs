@@ -58,13 +58,11 @@ impl JitCompiler {
     pub fn resolve_calls_and_branches(&mut self, binder: &Binder) {
         for (signature, compiled_function) in &mut self.compiled_functions {
             if !compiled_function.unresolved_function_calls.is_empty() {
-                let function = binder.get(signature).unwrap();
-                JitCompiler::resolve_calls(binder, function, compiled_function);
+                JitCompiler::resolve_calls(binder, binder.get(signature).unwrap(), compiled_function);
             }
 
             if !compiled_function.unresolved_branches.is_empty() {
-                let function = binder.get(signature).unwrap();
-                JitCompiler::resolve_branches(binder, function, compiled_function);
+                JitCompiler::resolve_branches(binder.get(signature).unwrap(), compiled_function);
             }
         }
     }
@@ -94,9 +92,7 @@ impl JitCompiler {
         compiled_function.unresolved_function_calls.clear();
     }
 
-    fn resolve_branches(binder: &Binder,
-                        function: &FunctionDefinition,
-                        compiled_function: &mut FunctionCompilationData) {
+    fn resolve_branches(function: &FunctionDefinition, compiled_function: &mut FunctionCompilationData) {
         for (&branch_source, &(branch_target_label, branch_instruction_size)) in &compiled_function.unresolved_branches {
             let branch_target = compiled_function.branch_targets[&branch_target_label];
 
