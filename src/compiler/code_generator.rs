@@ -315,6 +315,34 @@ impl<'a> CodeGenerator<'a> {
                     _ => { panic!("unexpected."); }
                 }
             }
+            InstructionIR::BranchLabel(label) => {
+                compilation_data.branch_targets.insert(*label, self.encode_offset);
+            }
+            InstructionIR::Branch(target) => {
+                //As the exact target in native instructions isn't known, defer to later.
+                let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Jmp_rel32_64, 0).unwrap());
+                compilation_data.unresolved_branches.insert(self.encode_offset - instruction_size, (*target, instruction_size));
+            }
+            InstructionIR::BranchEqual(target, op1, op2) => {
+                let op1 = register_mapping::get(*op1, false);
+                let op2 = register_mapping::get(*op2, false);
+
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_r32_rm32, Register::EAX, op1));
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Cmp_r32_rm32, Register::EAX, op2));
+                let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Je_rel32_64, 0).unwrap());
+
+                compilation_data.unresolved_branches.insert(self.encode_offset - instruction_size, (*target, instruction_size));
+            }
+            InstructionIR::BranchNotEqual(target, op1, op2) => {
+                let op1 = register_mapping::get(*op1, false);
+                let op2 = register_mapping::get(*op2, false);
+
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_r32_rm32, Register::EAX, op1));
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Cmp_r32_rm32, Register::EAX, op2));
+                let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Jne_rel32_64, 0).unwrap());
+
+                compilation_data.unresolved_branches.insert(self.encode_offset - instruction_size, (*target, instruction_size));
+            }
         }
     }
 
@@ -367,8 +395,14 @@ impl<'a> CodeGenerator<'a> {
     }
 
     pub fn encode_x86_instruction(&mut self, instruction: X86Instruction) {
+        self.encode_x86_instruction_with_size(instruction);
+    }
+
+    fn encode_x86_instruction_with_size(&mut self, instruction: X86Instruction) -> usize {
         println!("\t\t{}", instruction);
-        self.encode_offset += self.encoder.encode(&instruction, 0).unwrap();
+        let size = self.encoder.encode(&instruction, 0).unwrap();
+        self.encode_offset += size;
+        size
     }
 }
 

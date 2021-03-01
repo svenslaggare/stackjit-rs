@@ -1,5 +1,6 @@
-use crate::ir::{HardwareRegisterExplicit, InstructionIR};
+use crate::ir::{HardwareRegisterExplicit, InstructionIR, BranchLabel};
 use crate::model::function::{Function, FunctionSignature};
+use std::collections::HashMap;
 
 pub mod code_generator;
 pub mod allocator;
@@ -9,6 +10,8 @@ pub mod calling_conventions;
 
 pub struct FunctionCompilationData {
     pub unresolved_function_calls: Vec<UnresolvedFunctionCall>,
+    pub branch_targets: HashMap<BranchLabel, usize>,
+    pub unresolved_branches: HashMap<usize, (BranchLabel, usize)>,
     pub operand_stack: OperandStack
 }
 
@@ -16,6 +19,8 @@ impl FunctionCompilationData {
     pub fn new() -> FunctionCompilationData {
         FunctionCompilationData {
             unresolved_function_calls: Vec::new(),
+            unresolved_branches: HashMap::new(),
+            branch_targets: HashMap::new(),
             operand_stack: OperandStack::new()
         }
     }
@@ -31,6 +36,7 @@ pub struct UnresolvedFunctionCall {
     pub call_offset: usize,
     pub signature: FunctionSignature
 }
+
 
 pub struct OperandStack {
     top_index: Option<usize>

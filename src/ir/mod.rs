@@ -1,8 +1,9 @@
 pub mod compiler;
 
+use iced_x86::Register;
+
 use crate::model::function::FunctionSignature;
 use crate::model::typesystem::Type;
-use iced_x86::Register;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum HardwareRegister {
@@ -12,6 +13,8 @@ pub enum HardwareRegister {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct HardwareRegisterExplicit(pub iced_x86::Register);
+
+pub type BranchLabel = u32;
 
 #[derive(Debug)]
 pub enum InstructionIR {
@@ -41,4 +44,8 @@ pub enum InstructionIR {
     NewArray(Type),
     LoadElement(Type, HardwareRegister, HardwareRegister),
     StoreElement(Type, HardwareRegister, HardwareRegister, HardwareRegister),
+    BranchLabel(BranchLabel),
+    Branch(BranchLabel),
+    BranchEqual(BranchLabel, HardwareRegister, HardwareRegister),
+    BranchNotEqual(BranchLabel, HardwareRegister, HardwareRegister)
 }

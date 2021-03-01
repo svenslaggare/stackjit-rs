@@ -36,7 +36,7 @@ impl ExecutionEngine {
 
     pub fn create_execution(&mut self, type_storage: &mut TypeStorage) -> ExecutionEngineResult<Execution> {
         self.compile_functions(type_storage)?;
-        self.compiler.resolve_calls(&self.binder);
+        self.compiler.resolve_calls_and_branches(&self.binder);
 
         let address = self.get_entrypoint()?;
         let entrypoint = unsafe { std::mem::transmute(address) };

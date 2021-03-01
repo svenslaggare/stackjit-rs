@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::model::function::{Function, FunctionSignature};
+use crate::model::function::{Function, FunctionSignature, FunctionDefinition};
 use crate::ir::compiler::InstructionIRCompiler;
 use crate::ir::InstructionIR;
 use crate::compiler::allocator::ExecutableMemoryAllocator;
@@ -8,6 +8,7 @@ use crate::compiler::code_generator::{CodeGenerator};
 use crate::engine::binder::Binder;
 use crate::compiler::{FunctionCompilationData, FunctionCallType};
 use crate::model::typesystem::{TypeStorage};
+use std::mem::size_of;
 
 pub struct JitCompiler {
     memory_allocator: ExecutableMemoryAllocator,
@@ -54,31 +55,61 @@ impl JitCompiler {
         binder.set_address(&function.definition().call_signature(), function_code_ptr);
     }
 
-    pub fn resolve_calls(&mut self, binder: &Binder) {
+    pub fn resolve_calls_and_branches(&mut self, binder: &Binder) {
         for (signature, compiled_function) in &mut self.compiled_functions {
             if !compiled_function.unresolved_function_calls.is_empty() {
                 let function = binder.get(signature).unwrap();
+                JitCompiler::resolve_calls(binder, function, compiled_function);
+            }
 
-                for unresolved_function_call in &compiled_function.unresolved_function_calls {
-                    let function_to_call = binder.get(&unresolved_function_call.signature).unwrap();
+            if !compiled_function.unresolved_branches.is_empty() {
+                let function = binder.get(signature).unwrap();
+                JitCompiler::resolve_branches(binder, function, compiled_function);
+            }
+        }
+    }
 
-                    match unresolved_function_call.call_type {
-                        FunctionCallType::Relative => {
-                            let target = (function_to_call.address().unwrap() as i64
-                                          - (function.address().unwrap() as i64 + unresolved_function_call.call_offset as i64 + 5)) as i32;
+    fn resolve_calls(binder: &Binder,
+                     function: &FunctionDefinition,
+                     compiled_function: &mut FunctionCompilationData) {
+        for unresolved_function_call in &compiled_function.unresolved_function_calls {
+            let function_to_call = binder.get(&unresolved_function_call.signature).unwrap();
 
-                            unsafe {
-                                let function_code_ptr = function.address().unwrap().add(unresolved_function_call.call_offset + 1) as *mut i32;
-                                *function_code_ptr = target;
-                            }
-                        }
-                        FunctionCallType::Absolute => {
+            match unresolved_function_call.call_type {
+                FunctionCallType::Relative => {
+                    let target = (function_to_call.address().unwrap() as i64
+                        - (function.address().unwrap() as i64 + unresolved_function_call.call_offset as i64 + 5)) as i32;
 
-                        }
+                    unsafe {
+                        let function_code_ptr = function.address().unwrap().add(unresolved_function_call.call_offset + 1) as *mut i32;
+                        *function_code_ptr = target;
                     }
+                }
+                FunctionCallType::Absolute => {
+
                 }
             }
         }
+
+        compiled_function.unresolved_function_calls.clear();
+    }
+
+    fn resolve_branches(binder: &Binder,
+                        function: &FunctionDefinition,
+                        compiled_function: &mut FunctionCompilationData) {
+        for (&branch_source, &(branch_target_label, branch_instruction_size)) in &compiled_function.unresolved_branches {
+            let branch_target = compiled_function.branch_targets[&branch_target_label];
+
+            let target = branch_target as i32 - branch_source as i32 - branch_instruction_size as i32;
+            let source_offset = branch_source as i32 + branch_instruction_size as i32 - std::mem::size_of::<i32>() as i32;
+
+            unsafe {
+                let function_code_ptr = function.address().unwrap().add(source_offset as usize) as *mut i32;
+                *function_code_ptr = target;
+            }
+        }
+
+        compiled_function.unresolved_branches.clear();
     }
 
     fn compile_ir(&self,

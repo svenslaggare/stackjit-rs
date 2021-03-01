@@ -1,6 +1,8 @@
 use crate::model::function::FunctionSignature;
 use crate::model::typesystem::Type;
 
+pub type BranchTarget = u32;
+
 #[derive(Debug, Clone)]
 pub enum Instruction {
     LoadInt32(i32),
@@ -15,6 +17,20 @@ pub enum Instruction {
     NewArray(Type),
     LoadElement(Type),
     StoreElement(Type),
+    Branch(BranchTarget),
+    BranchEqual(BranchTarget),
+    BranchNotEqual(BranchTarget)
+}
+
+impl Instruction {
+    pub fn branch_target(&self) -> Option<BranchTarget> {
+        match self {
+            Instruction::Branch(target) | Instruction::BranchEqual(target) | Instruction::BranchNotEqual(target) => {
+                Some(*target)
+            }
+            _ => None
+        }
+    }
 }
 
 impl std::fmt::Display for Instruction {
@@ -55,6 +71,15 @@ impl std::fmt::Display for Instruction {
             }
             Instruction::StoreElement(element) => {
                 write!(f, "StoreElement {}", element)
+            }
+            Instruction::Branch(target) => {
+                write!(f, "Branch {}", target)
+            }
+            Instruction::BranchEqual(target) => {
+                write!(f, "BranchEqual {}", target)
+            }
+            Instruction::BranchNotEqual(target) => {
+                write!(f, "BranchNotEqual {}", target)
             }
         }
     }

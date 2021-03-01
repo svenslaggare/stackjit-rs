@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use crate::model::function::Function;
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
@@ -5,13 +7,17 @@ use crate::compiler::FunctionCompilationData;
 use crate::compiler::stack_layout;
 use crate::compiler::calling_conventions::{CallingConventions};
 use crate::engine::binder::Binder;
-use crate::ir::{InstructionIR, HardwareRegister};
+use crate::ir::{InstructionIR, HardwareRegister, BranchLabel};
+use crate::model::instruction;
 
 pub struct InstructionIRCompiler<'a> {
     binder: &'a Binder,
     function: &'a Function,
     compilation_data: &'a mut FunctionCompilationData,
-    instructions: Vec<InstructionIR>
+    instructions: Vec<InstructionIR>,
+    branch_targets: HashSet<instruction::BranchTarget>,
+    branch_labels: HashMap<instruction::BranchTarget, BranchLabel>,
+    next_branch_label: BranchLabel
 }
 
 impl<'a> InstructionIRCompiler<'a> {
@@ -20,15 +26,33 @@ impl<'a> InstructionIRCompiler<'a> {
             binder,
             function,
             compilation_data,
-            instructions: Vec::new()
+            instructions: Vec::new(),
+            branch_targets: HashSet::new(),
+            branch_labels: HashMap::new(),
+            next_branch_label: 0
         }
     }
 
     pub fn compile(&mut self, instructions: &Vec<Instruction>) {
         self.compile_initialize_function();
+        self.define_branch_labels(instructions);
 
         for (instruction_index, instruction) in instructions.iter().enumerate() {
             self.compile_instruction(instruction_index, instruction);
+        }
+    }
+
+    fn define_branch_labels(&mut self, instructions: &Vec<Instruction>) {
+        for instruction in instructions {
+            if let Some(target) = instruction.branch_target() {
+                self.branch_targets.insert(target);
+
+                if !self.branch_labels.contains_key(&target) {
+                    let label = self.next_branch_label;
+                    self.next_branch_label += 1;
+                    self.branch_labels.insert(target, label);
+                }
+            }
         }
     }
 
@@ -58,6 +82,11 @@ impl<'a> InstructionIRCompiler<'a> {
 
     fn compile_instruction(&mut self, instruction_index: usize, instruction: &Instruction) {
         self.instructions.push(InstructionIR::Marker(instruction_index));
+
+        let branch_target = instruction_index as instruction::BranchTarget;
+        if self.branch_targets.contains(&branch_target) {
+            self.instructions.push(InstructionIR::BranchLabel(self.branch_labels[&branch_target]));
+        }
 
         match instruction {
             Instruction::LoadInt32(value) => {
@@ -138,6 +167,19 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1))); // The index of the element
                 self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0))); // The array reference
                 self.instructions.push(InstructionIR::StoreElement(element.clone(), HardwareRegister::Int(0), HardwareRegister::Int(1), HardwareRegister::Int(2)));
+            }
+            Instruction::Branch(target) => {
+                self.instructions.push(InstructionIR::Branch(self.branch_labels[target]));
+            }
+            Instruction::BranchEqual(target) => {
+                self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1)));
+                self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0)));
+                self.instructions.push(InstructionIR::BranchEqual(self.branch_labels[target], HardwareRegister::Int(0), HardwareRegister::Int(1)));
+            }
+            Instruction::BranchNotEqual(target) => {
+                self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1)));
+                self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0)));
+                self.instructions.push(InstructionIR::BranchNotEqual(self.branch_labels[target], HardwareRegister::Int(0), HardwareRegister::Int(1)));
             }
         }
     }
