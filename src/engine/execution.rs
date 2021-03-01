@@ -8,7 +8,8 @@ use crate::vm::{Execution};
 #[derive(Debug)]
 pub enum ExecutionEngineError {
     Verify(VerifyError),
-    NoMainFunction
+    NoMainFunction,
+    NoMainFunctionCompiled
 }
 
 pub type ExecutionEngineResult<T> = Result<T, ExecutionEngineError>;
@@ -58,7 +59,7 @@ impl ExecutionEngine {
             .get(&FunctionSignature { name: "main".to_owned(), parameters: Vec::new() })
             .ok_or(ExecutionEngineError::NoMainFunction)?
             .address()
-            .ok_or(ExecutionEngineError::NoMainFunction)
+            .ok_or(ExecutionEngineError::NoMainFunctionCompiled)
     }
 
     pub fn binder(&self) -> &Binder {
