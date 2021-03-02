@@ -171,40 +171,28 @@ impl<'a> InstructionIRCompiler<'a> {
             Instruction::Branch(target) => {
                 self.instructions.push(InstructionIR::Branch(self.branch_labels[target]));
             }
-            Instruction::BranchEqual(target) => {
-                match &self.function.instruction_operand_types(instruction_index)[0] {
-                    Type::Int32 => {
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1)));
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0)));
-                        self.instructions.push(InstructionIR::BranchCondition(
-                            JumpCondition::Equal,
-                            Type::Int32,
-                            self.branch_labels[target],
-                            HardwareRegister::Int(0),
-                            HardwareRegister::Int(1)
-                        ));
-                    }
-                    Type::Float32 => {
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Float(1)));
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Float(0)));
-                        self.instructions.push(InstructionIR::BranchCondition(
-                            JumpCondition::Equal,
-                            Type::Float32,
-                            self.branch_labels[target],
-                            HardwareRegister::Float(0),
-                            HardwareRegister::Float(1)
-                        ));
-                    }
+            Instruction::BranchEqual(target)
+            | Instruction::BranchNotEqual(target)
+            | Instruction::BranchGreaterThan(target)
+            | Instruction::BranchGreaterThanOrEqual(target)
+            | Instruction::BranchLessThan(target)
+            | Instruction::BranchLessThanOrEqual(target) => {
+                let condition = match instruction {
+                    Instruction::BranchEqual(_) => JumpCondition::Equal,
+                    Instruction::BranchNotEqual(_) => JumpCondition::NotEqual,
+                    Instruction::BranchGreaterThan(_) => JumpCondition::GreaterThan,
+                    Instruction::BranchGreaterThanOrEqual(_) => JumpCondition::GreaterThanOrEqual,
+                    Instruction::BranchLessThan(_) => JumpCondition::LessThan,
+                    Instruction::BranchLessThanOrEqual(_) => JumpCondition::LessThanOrEqual,
                     _ => { panic!("unexpected."); }
-                }
-            }
-            Instruction::BranchNotEqual(target) => {
+                };
+
                 match &self.function.instruction_operand_types(instruction_index)[0] {
                     Type::Int32 => {
                         self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1)));
                         self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0)));
                         self.instructions.push(InstructionIR::BranchCondition(
-                            JumpCondition::NotEqual,
+                            condition,
                             Type::Int32,
                             self.branch_labels[target],
                             HardwareRegister::Int(0),
@@ -215,115 +203,7 @@ impl<'a> InstructionIRCompiler<'a> {
                         self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Float(1)));
                         self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Float(0)));
                         self.instructions.push(InstructionIR::BranchCondition(
-                            JumpCondition::NotEqual,
-                            Type::Float32,
-                            self.branch_labels[target],
-                            HardwareRegister::Float(0),
-                            HardwareRegister::Float(1)
-                        ));
-                    }
-                    _ => { panic!("unexpected."); }
-                }
-            }
-            Instruction::BranchGreaterThan(target) => {
-                match &self.function.instruction_operand_types(instruction_index)[0] {
-                    Type::Int32 => {
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1)));
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0)));
-                        self.instructions.push(InstructionIR::BranchCondition(
-                            JumpCondition::GreaterThan,
-                            Type::Int32,
-                            self.branch_labels[target],
-                            HardwareRegister::Int(0),
-                            HardwareRegister::Int(1)
-                        ));
-                    }
-                    Type::Float32 => {
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Float(1)));
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Float(0)));
-                        self.instructions.push(InstructionIR::BranchCondition(
-                            JumpCondition::GreaterThan,
-                            Type::Float32,
-                            self.branch_labels[target],
-                            HardwareRegister::Float(0),
-                            HardwareRegister::Float(1)
-                        ));
-                    }
-                    _ => { panic!("unexpected."); }
-                }
-            }
-            Instruction::BranchGreaterThanOrEqual(target) => {
-                match &self.function.instruction_operand_types(instruction_index)[0] {
-                    Type::Int32 => {
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1)));
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0)));
-                        self.instructions.push(InstructionIR::BranchCondition(
-                            JumpCondition::GreaterThanOrEqual,
-                            Type::Int32,
-                            self.branch_labels[target],
-                            HardwareRegister::Int(0),
-                            HardwareRegister::Int(1)
-                        ));
-                    }
-                    Type::Float32 => {
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Float(1)));
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Float(0)));
-                        self.instructions.push(InstructionIR::BranchCondition(
-                            JumpCondition::GreaterThanOrEqual,
-                            Type::Float32,
-                            self.branch_labels[target],
-                            HardwareRegister::Float(0),
-                            HardwareRegister::Float(1)
-                        ));
-                    }
-                    _ => { panic!("unexpected."); }
-                }
-            }
-            Instruction::BranchLessThan(target) => {
-                match &self.function.instruction_operand_types(instruction_index)[0] {
-                    Type::Int32 => {
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1)));
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0)));
-                        self.instructions.push(InstructionIR::BranchCondition(
-                            JumpCondition::LessThan,
-                            Type::Int32,
-                            self.branch_labels[target],
-                            HardwareRegister::Int(0),
-                            HardwareRegister::Int(1)
-                        ));
-                    }
-                    Type::Float32 => {
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Float(1)));
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Float(0)));
-                        self.instructions.push(InstructionIR::BranchCondition(
-                            JumpCondition::LessThan,
-                            Type::Float32,
-                            self.branch_labels[target],
-                            HardwareRegister::Float(0),
-                            HardwareRegister::Float(1)
-                        ));
-                    }
-                    _ => { panic!("unexpected."); }
-                }
-            }
-            Instruction::BranchLessThanOrEqual(target) => {
-                match &self.function.instruction_operand_types(instruction_index)[0] {
-                    Type::Int32 => {
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1)));
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0)));
-                        self.instructions.push(InstructionIR::BranchCondition(
-                            JumpCondition::LessThanOrEqual,
-                            Type::Int32,
-                            self.branch_labels[target],
-                            HardwareRegister::Int(0),
-                            HardwareRegister::Int(1)
-                        ));
-                    }
-                    Type::Float32 => {
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Float(1)));
-                        self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Float(0)));
-                        self.instructions.push(InstructionIR::BranchCondition(
-                            JumpCondition::LessThanOrEqual,
+                            condition,
                             Type::Float32,
                             self.branch_labels[target],
                             HardwareRegister::Float(0),
