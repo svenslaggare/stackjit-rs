@@ -19,13 +19,23 @@ pub enum Instruction {
     StoreElement(Type),
     Branch(BranchTarget),
     BranchEqual(BranchTarget),
-    BranchNotEqual(BranchTarget)
+    BranchNotEqual(BranchTarget),
+    BranchGreaterThan(BranchTarget),
+    BranchGreaterThanOrEqual(BranchTarget),
+    BranchLessThan(BranchTarget),
+    BranchLessThanOrEqual(BranchTarget)
 }
 
 impl Instruction {
     pub fn branch_target(&self) -> Option<BranchTarget> {
         match self {
-            Instruction::Branch(target) | Instruction::BranchEqual(target) | Instruction::BranchNotEqual(target) => {
+            Instruction::Branch(target)
+            | Instruction::BranchEqual(target)
+            | Instruction::BranchNotEqual(target)
+            | Instruction::BranchGreaterThan(target)
+            | Instruction::BranchGreaterThanOrEqual(target)
+            | Instruction::BranchLessThan(target)
+            | Instruction::BranchLessThanOrEqual(target) => {
                 Some(*target)
             }
             _ => None
@@ -80,6 +90,18 @@ impl std::fmt::Display for Instruction {
             }
             Instruction::BranchNotEqual(target) => {
                 write!(f, "BranchNotEqual {}", target)
+            }
+            Instruction::BranchGreaterThan(target) => {
+                write!(f, "BranchGreaterThan {}", target)
+            }
+            Instruction::BranchGreaterThanOrEqual(target) => {
+                write!(f, "BranchGreaterThanOrEqual {}", target)
+            }
+            Instruction::BranchLessThan(target) => {
+                write!(f, "BranchLessThan {}", target)
+            }
+            Instruction::BranchLessThanOrEqual(target) => {
+                write!(f, "BranchLessThanOrEqual {}", target)
             }
         }
     }

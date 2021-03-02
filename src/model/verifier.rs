@@ -38,7 +38,8 @@ pub enum VerifyErrorMessage {
     ParameterCannotBeVoid,
     LocalCannotBeVoid,
     InvalidBranchTarget,
-    BranchDifferentNumberOfOperands(usize, usize)
+    BranchDifferentNumberOfOperands(usize, usize),
+    ExpectedComparableType
 }
 
 pub type VerifyResult<T> = Result<T, VerifyError>;
@@ -189,6 +190,27 @@ impl<'a> Verifier<'a> {
                     self.same_type(instruction_index, &op1, &op2)?;
                     if *target >= self.function.instructions().len() as u32 {
                         return Err(VerifyError::with_index(instruction_index, VerifyErrorMessage::InvalidBranchTarget));
+                    }
+
+                    self.branches.push((instruction_index, *target as usize, self.operand_stack.clone()));
+                }
+                Instruction::BranchGreaterThan(target)
+                | Instruction::BranchGreaterThanOrEqual(target)
+                | Instruction::BranchLessThan(target)
+                | Instruction::BranchLessThanOrEqual(target) => {
+                    let op2 = self.pop_operand_stack(instruction_index)?;
+                    let op1 = self.pop_operand_stack(instruction_index)?;
+
+                    self.same_type(instruction_index, &op1, &op2)?;
+                    if *target >= self.function.instructions().len() as u32 {
+                        return Err(VerifyError::with_index(instruction_index, VerifyErrorMessage::InvalidBranchTarget));
+                    }
+
+                    match op1 {
+                        Type::Int32 | Type::Float32 => {}
+                        _ => {
+                            return Err(VerifyError::with_index(instruction_index, VerifyErrorMessage::ExpectedComparableType));
+                        }
                     }
 
                     self.branches.push((instruction_index, *target as usize, self.operand_stack.clone()));
@@ -639,6 +661,57 @@ fn test_branches4() {
     let mut verifier = Verifier::new(&binder, &mut function);
     assert_eq!(
         Err(VerifyError::with_index(3, VerifyErrorMessage::BranchDifferentNumberOfOperands(1, 2))),
+        verifier.verify()
+    );
+}
+
+#[test]
+fn test_branches5() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), Type::Int32),
+        vec![Type::Int32],
+        vec![
+            Instruction::LoadInt32(1),
+            Instruction::LoadInt32(2),
+            Instruction::BranchLessThanOrEqual(6),
+            Instruction::LoadInt32(1337),
+            Instruction::StoreLocal(0),
+            Instruction::Branch(8),
+            Instruction::LoadInt32(4711),
+            Instruction::StoreLocal(0),
+            Instruction::LoadLocal(0),
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let mut verifier = Verifier::new(&binder, &mut function);
+    assert_eq!(Ok(()), verifier.verify());
+}
+
+#[test]
+fn test_branches6() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), Type::Int32),
+        vec![Type::Array(Box::new(Type::Int32))],
+        vec![
+            Instruction::LoadLocal(0),
+            Instruction::LoadLocal(0),
+            Instruction::BranchLessThanOrEqual(6),
+            Instruction::LoadInt32(1337),
+            Instruction::StoreLocal(0),
+            Instruction::Branch(8),
+            Instruction::LoadInt32(4711),
+            Instruction::StoreLocal(0),
+            Instruction::LoadLocal(0),
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let mut verifier = Verifier::new(&binder, &mut function);
+    assert_eq!(
+        Err(VerifyError::with_index(2, VerifyErrorMessage::ExpectedComparableType)),
         verifier.verify()
     );
 }

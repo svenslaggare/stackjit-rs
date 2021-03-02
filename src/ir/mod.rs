@@ -17,6 +17,16 @@ pub struct HardwareRegisterExplicit(pub iced_x86::Register);
 pub type BranchLabel = u32;
 
 #[derive(Debug)]
+pub enum JumpCondition {
+    Equal,
+    NotEqual,
+    LessThan,
+    LessThanOrEqual,
+    GreaterThan,
+    GreaterThanOrEqual
+}
+
+#[derive(Debug)]
 pub enum InstructionIR {
     Marker(usize),
     InitializeFunction,
@@ -46,6 +56,5 @@ pub enum InstructionIR {
     StoreElement(Type, HardwareRegister, HardwareRegister, HardwareRegister),
     BranchLabel(BranchLabel),
     Branch(BranchLabel),
-    BranchEqual(BranchLabel, HardwareRegister, HardwareRegister),
-    BranchNotEqual(BranchLabel, HardwareRegister, HardwareRegister)
+    BranchCondition(JumpCondition, Type, BranchLabel, HardwareRegister, HardwareRegister)
 }

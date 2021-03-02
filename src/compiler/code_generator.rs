@@ -4,7 +4,7 @@ use iced_x86::Instruction as X86Instruction;
 use crate::compiler::{FunctionCallType, FunctionCompilationData, UnresolvedFunctionCall, stack_layout};
 use crate::engine::binder::Binder;
 use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments};
-use crate::ir::{HardwareRegisterExplicit, InstructionIR};
+use crate::ir::{HardwareRegisterExplicit, InstructionIR, JumpCondition};
 use crate::model::function::{Function, FunctionType};
 use crate::runtime::{runtime_interface, array};
 use crate::model::typesystem::{TypeStorage, Type};
@@ -323,24 +323,42 @@ impl<'a> CodeGenerator<'a> {
                 let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Jmp_rel32_64, 0).unwrap());
                 compilation_data.unresolved_branches.insert(self.encode_offset - instruction_size, (*target, instruction_size));
             }
-            InstructionIR::BranchEqual(target, op1, op2) => {
+            InstructionIR::BranchCondition(condition, op_type, target, op1, op2) => {
                 let op1 = register_mapping::get(*op1, false);
                 let op2 = register_mapping::get(*op2, false);
 
-                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_r32_rm32, Register::EAX, op1));
-                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Cmp_r32_rm32, Register::EAX, op2));
-                let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Je_rel32_64, 0).unwrap());
+                let unsigned = match op_type {
+                    Type::Float32 => {
+                        self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Ucomiss_xmm_xmmm32, op1, op2));
+                        true
+                    }
+                    _ => {
+                        self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Cmp_r32_rm32, op1, op2));
+                        false
+                    }
+                };
 
-                compilation_data.unresolved_branches.insert(self.encode_offset - instruction_size, (*target, instruction_size));
-            }
-            InstructionIR::BranchNotEqual(target, op1, op2) => {
-                let op1 = register_mapping::get(*op1, false);
-                let op2 = register_mapping::get(*op2, false);
+                let compare_code = if unsigned {
+                    match condition {
+                        JumpCondition::Equal => Code::Je_rel32_64,
+                        JumpCondition::NotEqual => Code::Jne_rel32_64,
+                        JumpCondition::LessThan => Code::Jb_rel32_64,
+                        JumpCondition::LessThanOrEqual => Code::Jbe_rel32_64,
+                        JumpCondition::GreaterThan => Code::Ja_rel32_64,
+                        JumpCondition::GreaterThanOrEqual => Code::Jae_rel32_64
+                    }
+                } else {
+                    match condition {
+                        JumpCondition::Equal => Code::Je_rel32_64,
+                        JumpCondition::NotEqual => Code::Jne_rel32_64,
+                        JumpCondition::LessThan => Code::Jl_rel32_64,
+                        JumpCondition::LessThanOrEqual => Code::Jle_rel32_64,
+                        JumpCondition::GreaterThan => Code::Jg_rel32_64,
+                        JumpCondition::GreaterThanOrEqual => Code::Jge_rel32_64
+                    }
+                };
 
-                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_r32_rm32, Register::EAX, op1));
-                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Cmp_r32_rm32, Register::EAX, op2));
-                let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Jne_rel32_64, 0).unwrap());
-
+                let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(compare_code, 0).unwrap());
                 compilation_data.unresolved_branches.insert(self.encode_offset - instruction_size, (*target, instruction_size));
             }
         }
