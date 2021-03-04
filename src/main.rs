@@ -62,18 +62,39 @@ fn main() {
         )
     );
 
+    // vm.engine.add_function(Function::new(
+    //     FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+    //     vec![Type::Array(Box::new(Type::Int32))],
+    //     vec![
+    //         Instruction::LoadInt32(4000),
+    //         Instruction::NewArray(Type::Int32),
+    //         Instruction::Call(FunctionSignature { name: "print_array".to_owned(), parameters: vec![Type::Array(Box::new(Type::Int32))] }),
+    //         Instruction::LoadInt32(0),
+    //         Instruction::Return,
+    //     ]
+    // )).unwrap();
+
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Array(Box::new(Type::Int32))],
+        FunctionDefinition::new_managed("new_array".to_owned(), Vec::new(), Type::Int32),
+        vec![],
         vec![
-            Instruction::LoadInt32(4000),
-            Instruction::NewArray(Type::Int32),
-            Instruction::Call(FunctionSignature { name: "print_array".to_owned(), parameters: vec![Type::Array(Box::new(Type::Int32))] }),
-            Instruction::LoadInt32(0),
-            Instruction::Return,
+            Instruction::LoadNull,
+            Instruction::LoadInt32(1000),
+            Instruction::LoadElement(Type::Int32),
+            Instruction::Return
         ]
     )).unwrap();
 
-    let execution_result = vm.execute().unwrap();
-    println!("Result: {}", execution_result);
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![],
+        vec![
+            Instruction::LoadInt32(2000),
+            Instruction::Call(FunctionSignature { name: "new_array".to_owned(), parameters: vec![] }),
+            Instruction::Add,
+            Instruction::Return
+        ]
+    )).unwrap();
+
+    println!("Result: {:?}", vm.execute());
 }

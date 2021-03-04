@@ -96,6 +96,9 @@ impl<'a> InstructionIRCompiler<'a> {
                 let value: i32 = unsafe { std::mem::transmute(*value) };
                 self.instructions.push(InstructionIR::LoadInt32(value));
             }
+            Instruction::LoadNull => {
+                self.instructions.push(InstructionIR::LoadInt32(0));
+            }
             Instruction::LoadLocal(index) => {
                 let local_offset = stack_layout::local_stack_offset(self.function, *index);
                 self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), local_offset));
@@ -160,6 +163,7 @@ impl<'a> InstructionIRCompiler<'a> {
             Instruction::LoadElement(element) => {
                 self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1))); // The index of the element
                 self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0))); // The array reference
+                self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
                 self.instructions.push(InstructionIR::LoadElement(element.clone(), HardwareRegister::Int(0), HardwareRegister::Int(1)));
             }
             Instruction::StoreElement(element) => {

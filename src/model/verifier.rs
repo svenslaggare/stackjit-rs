@@ -94,6 +94,9 @@ impl<'a> Verifier<'a> {
                 Instruction::LoadFloat32(_) => {
                     self.operand_stack.push(Type::Float32);
                 }
+                Instruction::LoadNull => {
+                    self.operand_stack.push(Type::Null);
+                }
                 Instruction::LoadLocal(index) => {
                     let local_type = self.function.locals().get(*index as usize)
                         .ok_or(VerifyError::with_index(instruction_index, VerifyErrorMessage::LocalIndexOutOfRange))?;
@@ -260,7 +263,7 @@ impl<'a> Verifier<'a> {
     }
 
     fn same_type(&self, instruction_index: usize, expected: &Type, actual: &Type) -> VerifyResult<()> {
-        if expected != actual {
+        if !expected.is_same_type(actual) {
             Err(VerifyError::with_index(
                 instruction_index,
                 VerifyErrorMessage::WrongType(expected.clone(), actual.clone())
@@ -575,6 +578,28 @@ fn test_array3() {
 }
 
 #[test]
+fn test_array4() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), Type::Int32),
+        Vec::new(),
+        vec![
+            Instruction::LoadInt32(4711),
+            Instruction::LoadInt32(5411),
+            Instruction::LoadInt32(1000),
+            Instruction::LoadElement(Type::Int32),
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let mut verifier = Verifier::new(&binder, &mut function);
+    assert_eq!(
+        Err(VerifyError::with_index(3, VerifyErrorMessage::WrongType(Type::Array(Box::new(Type::Int32)), Type::Int32))),
+        verifier.verify()
+    );
+}
+
+#[test]
 fn test_branches1() {
     let mut function = Function::new(
         FunctionDefinition::new_managed("test".to_owned(), Vec::new(), Type::Void),
@@ -714,4 +739,40 @@ fn test_branches6() {
         Err(VerifyError::with_index(2, VerifyErrorMessage::ExpectedComparableType)),
         verifier.verify()
     );
+}
+
+#[test]
+fn test_null1() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), Type::Int32),
+        vec![Type::Array(Box::new(Type::Int32))],
+        vec![
+            Instruction::LoadNull,
+            Instruction::StoreLocal(0),
+            Instruction::LoadInt32(4711),
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let mut verifier = Verifier::new(&binder, &mut function);
+    assert_eq!(Ok(()), verifier.verify());
+}
+
+#[test]
+fn test_null2() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), Type::Int32),
+        Vec::new(),
+        vec![
+            Instruction::LoadNull,
+            Instruction::LoadInt32(1000),
+            Instruction::LoadElement(Type::Int32),
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let mut verifier = Verifier::new(&binder, &mut function);
+    assert_eq!(Ok(()), verifier.verify());
 }

@@ -5,6 +5,7 @@ use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::vm::{VirtualMachine, get_vm};
 use crate::runtime::array;
+use crate::engine::execution::{ExecutionEngineError, RuntimeError};
 
 thread_local!(static ARRAY_RESULT: RefCell<u64> = RefCell::new(0));
 
@@ -109,7 +110,7 @@ fn test_store1() {
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(146),
             Instruction::LoadElement(Type::Int32),
-            Instruction::Return,
+            Instruction::Return
         ]
     )).unwrap();
 
@@ -142,10 +143,59 @@ fn test_store2() {
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(1),
             Instruction::LoadElement(Type::Int32),
-            Instruction::Return,
+            Instruction::Return
         ]
     )).unwrap();
 
     let execution_result = vm.execute().unwrap();
     assert_eq!(1337, execution_result);
+}
+
+#[test]
+fn test_checks1() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        Vec::new(),
+        vec![
+            Instruction::LoadNull,
+            Instruction::LoadInt32(1000),
+            Instruction::LoadElement(Type::Int32),
+            Instruction::Return
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute();
+    assert_eq!(Err(ExecutionEngineError::Runtime(RuntimeError::NullReference)), execution_result);
+}
+
+#[test]
+fn test_checks2() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("new_array".to_owned(), Vec::new(), Type::Int32),
+        vec![],
+        vec![
+            Instruction::LoadNull,
+            Instruction::LoadInt32(1000),
+            Instruction::LoadElement(Type::Int32),
+            Instruction::Return
+        ]
+    )).unwrap();
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![],
+        vec![
+            Instruction::LoadInt32(2000),
+            Instruction::Call(FunctionSignature { name: "new_array".to_owned(), parameters: vec![] }),
+            Instruction::Add,
+            Instruction::Return
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute();
+    assert_eq!(Err(ExecutionEngineError::Runtime(RuntimeError::NullReference)), execution_result);
 }

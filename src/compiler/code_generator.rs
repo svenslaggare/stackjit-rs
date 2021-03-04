@@ -44,6 +44,10 @@ impl<'a> CodeGenerator<'a> {
         }
     }
 
+    pub fn done(mut self) -> Vec<u8> {
+        self.encoder.take_buffer()
+    }
+
     fn generate_instruction(&mut self,
                             function: &Function,
                             compilation_data: &mut FunctionCompilationData,
@@ -51,9 +55,37 @@ impl<'a> CodeGenerator<'a> {
         match instruction {
             InstructionIR::Marker(_) => {},
             InstructionIR::InitializeFunction => {
+                let is_entry_point = function.definition().is_entry_point();
+                if is_entry_point {
+                    self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                        Code::Mov_r64_rm64,
+                        register_call_arguments::ARG0,
+                        MemoryOperand::with_base_displ(Register::RSP, 0)
+                    ));
+
+                    self.encode_x86_instruction(X86Instruction::with_reg_reg(
+                        Code::Mov_r64_rm64,
+                        register_call_arguments::ARG1,
+                        Register::RBP
+                    ));
+
+                    self.encode_x86_instruction(X86Instruction::with_reg_reg(
+                        Code::Mov_r64_rm64,
+                        register_call_arguments::ARG2,
+                        Register::RSP
+                    ));
+                }
+
                 // Save the base pointer
                 self.encode_x86_instruction(X86Instruction::with_reg(Code::Push_r64, Register::RBP));
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_r64_rm64, Register::RBP, Register::RSP));
+
+                if is_entry_point {
+                    call_direct(
+                        |instruction| self.encode_x86_instruction(instruction),
+                        runtime_interface::set_error_return as u64
+                    );
+                }
             },
             InstructionIR::LoadInt32(value) => {
                 let push_instruction = compilation_data.operand_stack.push_i32(function, *value);
@@ -246,6 +278,29 @@ impl<'a> CodeGenerator<'a> {
 
                 self.encode_x86_instruction(X86Instruction::with(Code::Retnq));
             }
+            InstructionIR::NullReferenceCheck(reference_register) => {
+                let reference_register = register_mapping::get(*reference_register, true);
+
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Xor_r64_rm64, Register::RAX, Register::RAX));
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Cmp_r64_rm64, reference_register, Register::RAX));
+
+                let branch_offset = self.encode_offset;
+                let branch_instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Jne_rel32_64, 0).unwrap());
+
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Sub_rm64_imm32, Register::RSP, 32).unwrap());
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_rm64_r64, register_call_arguments::ARG0, Register::RSP));
+
+                // Error path
+                call_direct(
+                    |instruction| self.encode_x86_instruction(instruction),
+                    runtime_interface::null_error as u64
+                );
+
+                self.error_return();
+
+                // Set target that jumps over the error exiting code
+                self.set_jump_target(branch_offset, branch_instruction_size);
+            }
             InstructionIR::NewArray(element) => {
                 let array_type = Type::Array(Box::new(element.clone()));
                 let array_type_id = self.type_storage.add_or_get_type(array_type);
@@ -263,8 +318,6 @@ impl<'a> CodeGenerator<'a> {
             InstructionIR::LoadElement(element, reference_register, index_register) => {
                 let reference_register = register_mapping::get(*reference_register, true);
                 let index_register = register_mapping::get(*index_register, true);
-
-                // TODO: add error checks
 
                 self.compute_array_element_address(element, reference_register, index_register);
 
@@ -408,8 +461,41 @@ impl<'a> CodeGenerator<'a> {
         ));
     }
 
-    pub fn done(mut self) -> Vec<u8> {
-        self.encoder.take_buffer()
+    fn set_jump_target(&mut self, branch_offset: usize, branch_instruction_size: usize) {
+        let jump_amount = (self.encode_offset - branch_offset) as i32 - branch_instruction_size as i32;
+        let mut buffer = self.encoder.take_buffer();
+
+        let source_offset = branch_offset as i32 + branch_instruction_size as i32 - std::mem::size_of::<i32>() as i32;
+        unsafe {
+            let ptr = buffer.as_mut_ptr().add(source_offset as usize) as *mut i32;
+            *ptr = jump_amount;
+        }
+
+        self.encoder.set_buffer(buffer);
+    }
+
+    fn error_return(&mut self) {
+        self.encode_x86_instruction(X86Instruction::with_reg_mem(
+            Code::Mov_r64_rm64,
+            Register::RDI,
+            MemoryOperand::with_base_displ(Register::RSP, 0)
+        ));
+
+        self.encode_x86_instruction(X86Instruction::with_reg_mem(
+            Code::Mov_r64_rm64,
+            Register::RBP,
+            MemoryOperand::with_base_displ(Register::RSP, 8)
+        ));
+
+        self.encode_x86_instruction(X86Instruction::with_reg_mem(
+            Code::Mov_r64_rm64,
+            Register::RSP,
+            MemoryOperand::with_base_displ(Register::RSP, 16)
+        ));
+
+        // Simulate return instruction with custom address
+        self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Add_rm64_imm32, Register::RSP, 8).unwrap());
+        self.encode_x86_instruction(X86Instruction::with_reg(Code::Jmp_rm64, Register::RDI, ));
     }
 
     pub fn encode_x86_instruction(&mut self, instruction: X86Instruction) {

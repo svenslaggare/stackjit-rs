@@ -3,7 +3,7 @@ use crate::model::instruction::Instruction;
 
 pub type FunctionAddress = *mut std::ffi::c_void;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FunctionType {
     External,
     Managed
@@ -69,6 +69,13 @@ impl FunctionDefinition {
 
     pub fn set_address(&mut self, address: FunctionAddress) {
         self.address = Some(address);
+    }
+
+    pub fn is_entry_point(&self) -> bool {
+        &self.function_type == &FunctionType::Managed
+        && self.name() == "main"
+        && self.parameters().is_empty()
+        && self.return_type() == &Type::Int32
     }
 }
 

@@ -1,15 +1,21 @@
 use crate::compiler::jit::{JitCompiler};
 use crate::model::function::{Function, FunctionSignature, FunctionAddress};
 use crate::model::verifier::{Verifier, VerifyError};
-use crate::engine::binder::Binder;
 use crate::model::typesystem::TypeStorage;
-use crate::vm::{Execution};
+use crate::engine::binder::Binder;
+use crate::vm::Execution;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ExecutionEngineError {
     Verify(VerifyError),
     NoMainFunction,
-    NoMainFunctionCompiled
+    NoMainFunctionCompiled,
+    Runtime(RuntimeError)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RuntimeError {
+    NullReference
 }
 
 pub type ExecutionEngineResult<T> = Result<T, ExecutionEngineError>;
@@ -17,7 +23,8 @@ pub type ExecutionEngineResult<T> = Result<T, ExecutionEngineError>;
 pub struct ExecutionEngine {
     compiler: JitCompiler,
     binder: Binder,
-    functions: Vec<Function>
+    functions: Vec<Function>,
+    pub runtime_error: RuntimeErrorManager
 }
 
 impl ExecutionEngine {
@@ -25,7 +32,8 @@ impl ExecutionEngine {
         ExecutionEngine {
             compiler: JitCompiler::new(),
             binder: Binder::new(),
-            functions: Vec::new()
+            functions: Vec::new(),
+            runtime_error: RuntimeErrorManager::new()
         }
     }
 
@@ -42,6 +50,10 @@ impl ExecutionEngine {
         let address = self.get_entrypoint()?;
         let entrypoint = unsafe { std::mem::transmute(address) };
         Ok(Execution::new(entrypoint))
+    }
+
+    pub fn take_runtime_error(&mut self) -> Option<RuntimeError> {
+        self.runtime_error.has_error.take()
     }
 
     fn compile_functions(&mut self, type_storage: &mut TypeStorage) -> ExecutionEngineResult<()> {
@@ -68,5 +80,23 @@ impl ExecutionEngine {
 
     pub fn binder_mut(&mut self) -> &mut Binder {
         &mut self.binder
+    }
+}
+
+pub struct RuntimeErrorManager {
+    pub has_error: Option<RuntimeError>,
+    pub return_address: u64,
+    pub base_pointer: u64,
+    pub stack_pointer: u64
+}
+
+impl RuntimeErrorManager {
+    pub fn new() -> RuntimeErrorManager {
+        RuntimeErrorManager {
+            has_error: None,
+            return_address: 0,
+            base_pointer: 0,
+            stack_pointer: 0
+        }
     }
 }

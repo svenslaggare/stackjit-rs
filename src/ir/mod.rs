@@ -51,6 +51,7 @@ pub enum InstructionIR {
     MoveInt32ToMemory(i32, i32),
     Call(FunctionSignature),
     Return,
+    NullReferenceCheck(HardwareRegister),
     NewArray(Type),
     LoadElement(Type, HardwareRegister, HardwareRegister),
     StoreElement(Type, HardwareRegister, HardwareRegister, HardwareRegister),

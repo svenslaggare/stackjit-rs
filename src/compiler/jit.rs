@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::mem::size_of;
 
 use crate::model::function::{Function, FunctionSignature, FunctionDefinition};
 use crate::ir::compiler::InstructionIRCompiler;

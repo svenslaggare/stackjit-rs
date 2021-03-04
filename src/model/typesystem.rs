@@ -4,6 +4,7 @@ use std::ops::Deref;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Type {
     Void,
+    Null,
     Int32,
     Float32,
     Array(Box<Type>)
@@ -13,6 +14,7 @@ impl Type {
     pub fn size(&self) -> usize {
         match self {
             Type::Void => 0,
+            Type::Null => 0,
             Type::Int32 => 4,
             Type::Float32 => 4,
             Type::Array(_) => 8
@@ -26,6 +28,24 @@ impl Type {
             None
         }
     }
+
+    pub fn is_reference(&self) -> bool {
+        match self {
+            Type::Null | Type::Array(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_null(&self) -> bool {
+        match self {
+            Type::Null => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_same_type(&self, other: &Type) -> bool {
+        self == other || (self.is_reference() && other.is_null()) || (self.is_null() && other.is_reference())
+    }
 }
 
 impl std::fmt::Display for Type {
@@ -33,6 +53,9 @@ impl std::fmt::Display for Type {
         match self {
             Type::Void => {
                 write!(f, "Void")
+            }
+            Type::Null => {
+                write!(f, "Null")
             }
             Type::Int32 => {
                 write!(f, "Int32")
@@ -63,6 +86,7 @@ impl TypeStorage {
         };
 
         type_storage.add_or_get_type(Type::Void);
+        type_storage.add_or_get_type(Type::Null);
         type_storage.add_or_get_type(Type::Int32);
         type_storage.add_or_get_type(Type::Float32);
 
