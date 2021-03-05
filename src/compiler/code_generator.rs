@@ -287,16 +287,8 @@ impl<'a> CodeGenerator<'a> {
                 let branch_offset = self.encode_offset;
                 let branch_instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Jne_rel32_64, 0).unwrap());
 
-                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Sub_rm64_imm32, Register::RSP, 32).unwrap());
-                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_rm64_r64, register_call_arguments::ARG0, Register::RSP));
-
                 // Error path
-                call_direct(
-                    |instruction| self.encode_x86_instruction(instruction),
-                    runtime_interface::null_error as u64
-                );
-
-                self.error_return();
+                self.error_return(runtime_interface::null_error as u64);
 
                 // Set target that jumps over the error exiting code
                 self.set_jump_target(branch_offset, branch_instruction_size);
@@ -473,7 +465,15 @@ impl<'a> CodeGenerator<'a> {
         self.encoder.set_buffer(buffer);
     }
 
-    fn error_return(&mut self) {
+    fn error_return(&mut self, error_func_address: u64) {
+        self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Sub_rm64_imm32, Register::RSP, 32).unwrap());
+        self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_rm64_r64, register_call_arguments::ARG0, Register::RSP));
+
+        call_direct(
+            |instruction| self.encode_x86_instruction(instruction),
+            error_func_address
+        );
+
         // Return address (entrypoint invoker)
         self.encode_x86_instruction(X86Instruction::with_reg_mem(
             Code::Mov_r64_rm64,
