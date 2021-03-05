@@ -466,21 +466,22 @@ impl<'a> CodeGenerator<'a> {
         let mut buffer = self.encoder.take_buffer();
 
         let source_offset = branch_offset as i32 + branch_instruction_size as i32 - std::mem::size_of::<i32>() as i32;
-        unsafe {
-            let ptr = buffer.as_mut_ptr().add(source_offset as usize) as *mut i32;
-            *ptr = jump_amount;
+        for (i, byte) in jump_amount.to_le_bytes().iter().enumerate() {
+            buffer[source_offset as usize + i] = *byte;
         }
 
         self.encoder.set_buffer(buffer);
     }
 
     fn error_return(&mut self) {
+        // Return address (entrypoint invoker)
         self.encode_x86_instruction(X86Instruction::with_reg_mem(
             Code::Mov_r64_rm64,
             Register::RDI,
             MemoryOperand::with_base_displ(Register::RSP, 0)
         ));
 
+        // Base & stack pointer when entrypoint was called
         self.encode_x86_instruction(X86Instruction::with_reg_mem(
             Code::Mov_r64_rm64,
             Register::RBP,
