@@ -8,20 +8,25 @@ use crate::ir::{HardwareRegisterExplicit, InstructionIR, JumpCondition};
 use crate::model::function::{Function, FunctionType};
 use crate::runtime::{runtime_interface, array};
 use crate::model::typesystem::{TypeStorage, Type};
+use crate::compiler::error_handling::ErrorHandling;
 
 pub struct CodeGenerator<'a> {
     encoder: Encoder,
     encode_offset: usize,
     binder: &'a Binder,
+    error_handling: &'a ErrorHandling,
     type_storage: &'a mut TypeStorage
 }
 
 impl<'a> CodeGenerator<'a> {
-    pub fn new(binder: &'a Binder, type_storage: &'a mut TypeStorage) -> CodeGenerator<'a> {
+    pub fn new(binder: &'a Binder,
+               error_handling: &'a ErrorHandling,
+               type_storage: &'a mut TypeStorage) -> CodeGenerator<'a> {
         CodeGenerator {
             encoder: Encoder::new(64),
             encode_offset: 0,
             binder,
+            error_handling,
             type_storage
         }
     }
@@ -284,14 +289,11 @@ impl<'a> CodeGenerator<'a> {
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Xor_r64_rm64, Register::RAX, Register::RAX));
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Cmp_r64_rm64, reference_register, Register::RAX));
 
-                let branch_offset = self.encode_offset;
-                let branch_instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Jne_rel32_64, 0).unwrap());
-
-                // Error path
-                self.error_return(runtime_interface::null_error as u64);
-
-                // Set target that jumps over the error exiting code
-                self.set_jump_target(branch_offset, branch_instruction_size);
+                let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Je_rel32_64, 0).unwrap());
+                compilation_data.unresolved_native_branches.insert(
+                    self.encode_offset - instruction_size,
+                    self.error_handling.null_check_handler as usize
+                );
             }
             InstructionIR::NewArray(element) => {
                 let array_type = Type::Array(Box::new(element.clone()));
@@ -463,40 +465,6 @@ impl<'a> CodeGenerator<'a> {
         }
 
         self.encoder.set_buffer(buffer);
-    }
-
-    fn error_return(&mut self, error_func_address: u64) {
-        self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Sub_rm64_imm32, Register::RSP, 32).unwrap());
-        self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_rm64_r64, register_call_arguments::ARG0, Register::RSP));
-
-        call_direct(
-            |instruction| self.encode_x86_instruction(instruction),
-            error_func_address
-        );
-
-        // Return address (entrypoint invoker)
-        self.encode_x86_instruction(X86Instruction::with_reg_mem(
-            Code::Mov_r64_rm64,
-            Register::RDI,
-            MemoryOperand::with_base_displ(Register::RSP, 0)
-        ));
-
-        // Base & stack pointer when entrypoint was called
-        self.encode_x86_instruction(X86Instruction::with_reg_mem(
-            Code::Mov_r64_rm64,
-            Register::RBP,
-            MemoryOperand::with_base_displ(Register::RSP, 8)
-        ));
-
-        self.encode_x86_instruction(X86Instruction::with_reg_mem(
-            Code::Mov_r64_rm64,
-            Register::RSP,
-            MemoryOperand::with_base_displ(Register::RSP, 16)
-        ));
-
-        // Simulate return instruction with custom address
-        self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Add_rm64_imm32, Register::RSP, 8).unwrap());
-        self.encode_x86_instruction(X86Instruction::with_reg(Code::Jmp_rm64, Register::RDI, ));
     }
 
     pub fn encode_x86_instruction(&mut self, instruction: X86Instruction) {
