@@ -91,6 +91,26 @@ fn test_load1() {
 }
 
 #[test]
+fn test_load1_no_null_check() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        Vec::new(),
+        vec![
+            Instruction::LoadInt32(4711),
+            Instruction::NewArray(Type::Int32),
+            Instruction::LoadInt32(1000),
+            Instruction::LoadElement(Type::Int32),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(0, execution_result);
+}
+
+#[test]
 fn test_store1() {
     let mut vm = VirtualMachine::new();
 

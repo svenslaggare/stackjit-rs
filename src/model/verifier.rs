@@ -45,10 +45,25 @@ pub enum VerifyErrorMessage {
 
 pub type VerifyResult<T> = Result<T, VerifyError>;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OperandTypeInfo {
+    pub value_type: Type,
+    pub non_null: bool
+}
+
+impl OperandTypeInfo {
+    pub fn new(value_type: Type) -> OperandTypeInfo {
+        OperandTypeInfo {
+            value_type,
+            non_null: false
+        }
+    }
+}
+
 pub struct Verifier<'a> {
     function: &'a mut Function,
     binder: &'a Binder,
-    operand_stack: Vec<Type>,
+    operand_stack: Vec<OperandTypeInfo>,
     branches: Vec<(usize, usize, Vec<Type>)>
 }
 
@@ -90,19 +105,20 @@ impl<'a> Verifier<'a> {
 
             match instruction {
                 Instruction::LoadInt32(_) => {
-                    self.operand_stack.push(Type::Int32);
+                    self.push_operand_stack(Type::Int32);
                 }
                 Instruction::LoadFloat32(_) => {
-                    self.operand_stack.push(Type::Float32);
+                    self.push_operand_stack(Type::Float32);
                 }
                 Instruction::LoadNull => {
-                    self.operand_stack.push(Type::Null);
+                    self.push_operand_stack(Type::Null);
                 }
                 Instruction::LoadLocal(index) => {
                     let local_type = self.function.locals().get(*index as usize)
-                        .ok_or(VerifyError::with_index(instruction_index, VerifyErrorMessage::LocalIndexOutOfRange))?;
+                        .ok_or(VerifyError::with_index(instruction_index, VerifyErrorMessage::LocalIndexOutOfRange))?
+                        .clone();
 
-                    self.operand_stack.push(local_type.clone());
+                    self.push_operand_stack(local_type);
                 }
                 Instruction::StoreLocal(index) => {
                     let operand = self.pop_operand_stack(instruction_index)?;
@@ -115,10 +131,10 @@ impl<'a> Verifier<'a> {
                     let op1 = self.pop_operand_stack(instruction_index)?;
                     match (&op1, &op2) {
                         (Type::Int32, Type::Int32) => {
-                            self.operand_stack.push(op1);
+                            self.push_operand_stack(op1);
                         }
                         (Type::Float32, Type::Float32) => {
-                            self.operand_stack.push(op1);
+                            self.push_operand_stack(op1);
                         }
                         _ => {
                             return Err(VerifyError::with_index(instruction_index, VerifyErrorMessage::WrongArithmeticOperands));
@@ -142,14 +158,15 @@ impl<'a> Verifier<'a> {
                     }
 
                     if func_to_call.return_type() != &Type::Void {
-                        self.operand_stack.push(func_to_call.return_type().clone());
+                        self.push_operand_stack(func_to_call.return_type().clone());
                     }
                 }
                 Instruction::LoadArgument(index) => {
                     let argument_type = self.function.definition().parameters().get(*index as usize)
-                        .ok_or(VerifyError::with_index(instruction_index, VerifyErrorMessage::ArgumentIndexOutOfRange))?;
+                        .ok_or(VerifyError::with_index(instruction_index, VerifyErrorMessage::ArgumentIndexOutOfRange))?
+                        .clone();
 
-                    self.operand_stack.push(argument_type.clone());
+                    self.push_operand_stack(argument_type);
                 }
                 Instruction::Return => {
                     if self.function.definition().return_type() != &Type::Void {
@@ -160,41 +177,44 @@ impl<'a> Verifier<'a> {
                 Instruction::NewArray(element) => {
                     let length = self.pop_operand_stack(instruction_index)?;
                     self.same_type(instruction_index, &Type::Int32, &length)?;
-                    self.operand_stack.push(Type::Array(Box::new(element.clone())));
+                    self.push_non_null_operand_stack(Type::Array(Box::new(element.clone())));
                 }
                 Instruction::LoadElement(element) => {
                     let array_index = self.pop_operand_stack(instruction_index)?;
-                    let array_reference = self.pop_operand_stack(instruction_index)?;
+                    let array_reference_info = self.pop_operand_stack_with_info(instruction_index)?;
+                    let array_reference = &array_reference_info.value_type;
 
                     self.same_type(instruction_index, &Type::Int32, &array_index)?;
-                    self.same_type(instruction_index, &Type::Array(Box::new(element.clone())), &array_reference)?;
+                    self.same_type(instruction_index, &Type::Array(Box::new(element.clone())), array_reference)?;
 
-                    self.operand_stack.push(element.clone());
+                    self.push_operand_stack(element.clone());
                 }
                 Instruction::StoreElement(element) => {
                     let array_value = self.pop_operand_stack(instruction_index)?;
                     let array_index = self.pop_operand_stack(instruction_index)?;
-                    let array_reference = self.pop_operand_stack(instruction_index)?;
+                    let array_reference_info = self.pop_operand_stack_with_info(instruction_index)?;
+                    let array_reference = &array_reference_info.value_type;
 
                     self.same_type(instruction_index, &Type::Int32, &array_index)?;
-                    self.same_type(instruction_index, &Type::Array(Box::new(element.clone())), &array_reference)?;
+                    self.same_type(instruction_index, &Type::Array(Box::new(element.clone())), array_reference)?;
                     self.same_type(instruction_index, &array_value, &element)?;
                 }
                 Instruction::LoadArrayLength => {
-                    let array_reference = self.pop_operand_stack(instruction_index)?;
+                    let array_reference_info = self.pop_operand_stack_with_info(instruction_index)?;
+                    let array_reference = &array_reference_info.value_type;
 
                     if !(array_reference.is_array() || array_reference.is_null()) {
                         return Err(VerifyError::with_index(instruction_index, VerifyErrorMessage::ExpectedArrayReference));
                     }
 
-                    self.operand_stack.push(Type::Int32);
+                    self.push_operand_stack(Type::Int32);
                 }
                 Instruction::Branch(target) => {
                     if *target >= self.function.instructions().len() as u32 {
                         return Err(VerifyError::with_index(instruction_index, VerifyErrorMessage::InvalidBranchTarget));
                     }
 
-                    self.branches.push((instruction_index, *target as usize, self.operand_stack.clone()));
+                    self.branches.push((instruction_index, *target as usize, self.clone_operand_stack()));
                 }
                 Instruction::BranchEqual(target) | Instruction::BranchNotEqual(target) => {
                     let op2 = self.pop_operand_stack(instruction_index)?;
@@ -205,7 +225,7 @@ impl<'a> Verifier<'a> {
                         return Err(VerifyError::with_index(instruction_index, VerifyErrorMessage::InvalidBranchTarget));
                     }
 
-                    self.branches.push((instruction_index, *target as usize, self.operand_stack.clone()));
+                    self.branches.push((instruction_index, *target as usize, self.clone_operand_stack()));
                 }
                 Instruction::BranchGreaterThan(target)
                 | Instruction::BranchGreaterThanOrEqual(target)
@@ -226,7 +246,7 @@ impl<'a> Verifier<'a> {
                         }
                     }
 
-                    self.branches.push((instruction_index, *target as usize, self.operand_stack.clone()));
+                    self.branches.push((instruction_index, *target as usize, self.clone_operand_stack()));
                 }
             }
         }
@@ -253,8 +273,8 @@ impl<'a> Verifier<'a> {
             if branch_source_operands.len() == branch_target_operands.len() {
                 for index in 0..branch_source_operands.len() {
                     let source_type = &branch_source_operands[index];
-                    let target_type = &branch_target_operands[index];
-                    self.same_type(*branch_source, &source_type, &target_type)?;
+                    let target_type = &branch_target_operands[index].value_type;
+                    self.same_type(*branch_source, source_type, target_type)?;
                 }
             } else {
                 return Err(VerifyError::with_index(
@@ -267,9 +287,25 @@ impl<'a> Verifier<'a> {
         Ok(())
     }
 
-    fn pop_operand_stack(&mut self, instruction_index: usize) -> VerifyResult<Type> {
+    fn push_operand_stack(&mut self, value_type: Type) {
+        self.operand_stack.push(OperandTypeInfo { value_type, non_null: false });
+    }
+
+    fn push_non_null_operand_stack(&mut self, value_type: Type) {
+        self.operand_stack.push(OperandTypeInfo { value_type, non_null: true });
+    }
+
+    fn pop_operand_stack_with_info(&mut self, instruction_index: usize) -> VerifyResult<OperandTypeInfo> {
         self.operand_stack.pop()
             .ok_or(VerifyError::with_index(instruction_index, VerifyErrorMessage::EmptyOperandStack))
+    }
+
+    fn pop_operand_stack(&mut self, instruction_index: usize) -> VerifyResult<Type> {
+        self.pop_operand_stack_with_info(instruction_index).map(|o| o.value_type)
+    }
+
+    fn clone_operand_stack(&self) -> Vec<Type> {
+        self.operand_stack.iter().map(|o| o.value_type.clone()).collect()
     }
 
     fn same_type(&self, instruction_index: usize, expected: &Type, actual: &Type) -> VerifyResult<()> {
@@ -316,7 +352,7 @@ fn test_simple2() {
     let binder = Binder::new();
     let mut verifier = Verifier::new(&binder, &mut function);
     assert_eq!(Ok(()), verifier.verify());
-    assert_eq!(&vec![Type::Int32, Type::Int32], function.instruction_operand_types(2));
+    assert_eq!(&vec![OperandTypeInfo::new(Type::Int32), OperandTypeInfo::new(Type::Int32)], function.instruction_operand_types(2));
 }
 
 #[test]
@@ -335,7 +371,7 @@ fn test_simple3() {
     let binder = Binder::new();
     let mut verifier = Verifier::new(&binder, &mut function);
     assert_eq!(Ok(()), verifier.verify());
-    assert_eq!(&vec![Type::Float32, Type::Float32], function.instruction_operand_types(2));
+    assert_eq!(&vec![OperandTypeInfo::new(Type::Float32), OperandTypeInfo::new(Type::Float32)], function.instruction_operand_types(2));
 }
 
 #[test]
@@ -449,7 +485,7 @@ fn test_call1() {
     let binder = Binder::new();
     let mut verifier = Verifier::new(&binder, &mut function);
     assert_eq!(Ok(()), verifier.verify());
-    assert_eq!(&vec![Type::Int32], function.instruction_operand_types(1));
+    assert_eq!(&vec![OperandTypeInfo::new(Type::Int32)], function.instruction_operand_types(1));
 }
 
 #[test]

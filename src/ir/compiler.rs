@@ -110,7 +110,7 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::StoreMemory(local_offset, HardwareRegister::Int(0)));
             }
             Instruction::Add => {
-                match &self.function.instruction_operand_types(instruction_index)[0] {
+                match &self.function.instruction_operand_types(instruction_index)[0].value_type {
                     Type::Int32 => {
                         self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1)));
                         self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0)));
@@ -127,7 +127,7 @@ impl<'a> InstructionIRCompiler<'a> {
                 }
             }
             Instruction::Sub => {
-                match &self.function.instruction_operand_types(instruction_index)[0] {
+                match &self.function.instruction_operand_types(instruction_index)[0].value_type {
                     Type::Int32 => {
                         self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1)));
                         self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0)));
@@ -161,23 +161,40 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::NewArray(element.clone()));
             }
             Instruction::LoadElement(element) => {
+                let is_non_null = &self.function.instruction_operand_types(instruction_index)[0].non_null;
+
                 self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1))); // The index of the element
                 self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0))); // The array reference
-                self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+
+                if !is_non_null {
+                    self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+                }
                 self.instructions.push(InstructionIR::ArrayBoundsCheck(HardwareRegister::Int(0), HardwareRegister::Int(1)));
+
                 self.instructions.push(InstructionIR::LoadElement(element.clone(), HardwareRegister::Int(0), HardwareRegister::Int(1)));
             }
             Instruction::StoreElement(element) => {
+                let is_non_null = &self.function.instruction_operand_types(instruction_index)[0].non_null;
+
                 self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(2))); // The value to store
                 self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1))); // The index of the element
                 self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0))); // The array reference
-                self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+
+                if !is_non_null {
+                    self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+                }
                 self.instructions.push(InstructionIR::ArrayBoundsCheck(HardwareRegister::Int(0), HardwareRegister::Int(1)));
+
                 self.instructions.push(InstructionIR::StoreElement(element.clone(), HardwareRegister::Int(0), HardwareRegister::Int(1), HardwareRegister::Int(2)));
             }
             Instruction::LoadArrayLength => {
+                let is_non_null = &self.function.instruction_operand_types(instruction_index)[0].non_null;
                 self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0))); // The array reference
-                self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+
+                if !is_non_null {
+                    self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+                }
+                
                 self.instructions.push(InstructionIR::LoadArrayLength(HardwareRegister::Int(0)));
             }
             Instruction::Branch(target) => {
@@ -199,7 +216,7 @@ impl<'a> InstructionIRCompiler<'a> {
                     _ => { panic!("unexpected."); }
                 };
 
-                match &self.function.instruction_operand_types(instruction_index)[0] {
+                match &self.function.instruction_operand_types(instruction_index)[0].value_type {
                     Type::Int32 => {
                         self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1)));
                         self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0)));
