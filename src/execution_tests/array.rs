@@ -152,6 +152,52 @@ fn test_store2() {
 }
 
 #[test]
+fn test_load_length1() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![Type::Array(Box::new(Type::Int32))],
+        vec![
+            Instruction::LoadInt32(4711),
+            Instruction::NewArray(Type::Int32),
+            Instruction::LoadArrayLength,
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(4711, execution_result);
+}
+
+#[test]
+fn test_load_length2() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![Type::Array(Box::new(Type::Int32))],
+        vec![
+            Instruction::LoadInt32(4711),
+            Instruction::NewArray(Type::Int32),
+            Instruction::StoreLocal(0),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(0),
+            Instruction::LoadInt32(-1),
+            Instruction::StoreElement(Type::Int32),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadArrayLength,
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(4711, execution_result);
+}
+
+#[test]
 fn test_checks1() {
     let mut vm = VirtualMachine::new();
 
@@ -198,4 +244,106 @@ fn test_checks2() {
 
     let execution_result = vm.execute();
     assert_eq!(Err(ExecutionEngineError::Runtime(RuntimeError::NullReference)), execution_result);
+}
+
+#[test]
+fn test_checks3() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![Type::Array(Box::new(Type::Int32))],
+        vec![
+            Instruction::LoadInt32(1000),
+            Instruction::NewArray(Type::Int32),
+            Instruction::LoadInt32(1000),
+            Instruction::LoadElement(Type::Int32),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute();
+    assert_eq!(Err(ExecutionEngineError::Runtime(RuntimeError::ArrayBounds)), execution_result);
+}
+
+#[test]
+fn test_check4() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![Type::Array(Box::new(Type::Int32))],
+        vec![
+            Instruction::LoadInt32(1000),
+            Instruction::NewArray(Type::Int32),
+            Instruction::LoadInt32(-1),
+            Instruction::LoadElement(Type::Int32),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute();
+    assert_eq!(Err(ExecutionEngineError::Runtime(RuntimeError::ArrayBounds)), execution_result);
+}
+
+#[test]
+fn test_check5() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![Type::Array(Box::new(Type::Int32))],
+        vec![
+            Instruction::LoadInt32(1000),
+            Instruction::NewArray(Type::Int32),
+            Instruction::LoadInt32(-1),
+            Instruction::LoadInt32(1337),
+            Instruction::StoreElement(Type::Int32),
+            Instruction::LoadInt32(4711),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute();
+    assert_eq!(Err(ExecutionEngineError::Runtime(RuntimeError::ArrayBounds)), execution_result);
+}
+
+#[test]
+fn test_check6() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![Type::Array(Box::new(Type::Int32))],
+        vec![
+            Instruction::LoadInt32(-1),
+            Instruction::NewArray(Type::Int32),
+            Instruction::StoreLocal(0),
+            Instruction::LoadInt32(4711),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute();
+    assert_eq!(Err(ExecutionEngineError::Runtime(RuntimeError::ArrayCreate)), execution_result);
+}
+
+#[test]
+fn test_check7() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![Type::Array(Box::new(Type::Int32))],
+        vec![
+            Instruction::LoadInt32(0),
+            Instruction::NewArray(Type::Int32),
+            Instruction::StoreLocal(0),
+            Instruction::LoadInt32(4711),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute();
+    assert_eq!(Ok(4711), execution_result);
 }

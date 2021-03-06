@@ -39,7 +39,8 @@ pub enum VerifyErrorMessage {
     LocalCannotBeVoid,
     InvalidBranchTarget,
     BranchDifferentNumberOfOperands(usize, usize),
-    ExpectedComparableType
+    ExpectedComparableType,
+    ExpectedArrayReference
 }
 
 pub type VerifyResult<T> = Result<T, VerifyError>;
@@ -178,6 +179,15 @@ impl<'a> Verifier<'a> {
                     self.same_type(instruction_index, &Type::Int32, &array_index)?;
                     self.same_type(instruction_index, &Type::Array(Box::new(element.clone())), &array_reference)?;
                     self.same_type(instruction_index, &array_value, &element)?;
+                }
+                Instruction::LoadArrayLength => {
+                    let array_reference = self.pop_operand_stack(instruction_index)?;
+
+                    if !(array_reference.is_array() || array_reference.is_null()) {
+                        return Err(VerifyError::with_index(instruction_index, VerifyErrorMessage::ExpectedArrayReference));
+                    }
+
+                    self.operand_stack.push(Type::Int32);
                 }
                 Instruction::Branch(target) => {
                     if *target >= self.function.instructions().len() as u32 {
@@ -597,6 +607,24 @@ fn test_array4() {
         Err(VerifyError::with_index(3, VerifyErrorMessage::WrongType(Type::Array(Box::new(Type::Int32)), Type::Int32))),
         verifier.verify()
     );
+}
+
+#[test]
+fn test_array5() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), Type::Int32),
+        Vec::new(),
+        vec![
+            Instruction::LoadInt32(4711),
+            Instruction::NewArray(Type::Float32),
+            Instruction::LoadArrayLength,
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let mut verifier = Verifier::new(&binder, &mut function);
+    assert_eq!(Ok(()), verifier.verify());
 }
 
 #[test]

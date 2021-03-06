@@ -9,6 +9,7 @@ use crate::model::function::{Function, FunctionType};
 use crate::runtime::{runtime_interface, array};
 use crate::model::typesystem::{TypeStorage, Type};
 use crate::compiler::error_handling::ErrorHandling;
+use iced_x86::OpKind::Memory;
 
 pub struct CodeGenerator<'a> {
     encoder: Encoder,
@@ -295,12 +296,37 @@ impl<'a> CodeGenerator<'a> {
                     self.error_handling.null_check_handler as usize
                 );
             }
+            InstructionIR::ArrayBoundsCheck(reference_register, index_register) => {
+                let reference_register = register_mapping::get(*reference_register, true);
+                let index_register = register_mapping::get(*index_register, true);
+
+                self.encode_x86_instruction(X86Instruction::with_reg_mem(Code::Mov_r32_rm32, Register::EAX, MemoryOperand::with_base(reference_register))); // Array length
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Cmp_r64_rm64, index_register, Register::RAX));
+
+                // By using an unsigned comparison, we only need one check.
+                let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Jae_rel32_64, 0).unwrap());
+                compilation_data.unresolved_native_branches.insert(
+                    self.encode_offset - instruction_size,
+                    self.error_handling.array_bounds_check_handler as usize
+                );
+            }
             InstructionIR::NewArray(element) => {
                 let array_type = Type::Array(Box::new(element.clone()));
                 let array_type_id = self.type_storage.add_or_get_type(array_type);
 
-                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Mov_rm64_imm32, register_call_arguments::ARG0, array_type_id.0).unwrap());
                 self.pop_register_operand_stack(function, compilation_data, register_call_arguments::ARG1);
+
+                // Check that the size is valid
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Xor_r64_rm64, Register::RAX, Register::RAX));
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Cmp_r64_rm64, Register::RAX, register_call_arguments::ARG1));
+
+                let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Jg_rel32_64, 0).unwrap());
+                compilation_data.unresolved_native_branches.insert(
+                    self.encode_offset - instruction_size,
+                    self.error_handling.array_create_check_handler as usize
+                );
+
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Mov_rm64_imm32, register_call_arguments::ARG0, array_type_id.0).unwrap());
 
                 call_direct(
                     |instruction| self.encode_x86_instruction(instruction),
@@ -340,8 +366,6 @@ impl<'a> CodeGenerator<'a> {
                 let reference_register = register_mapping::get(*reference_register, true);
                 let index_register = register_mapping::get(*index_register, true);
 
-                // TODO: add error checks
-
                 self.compute_array_element_address(element, reference_register, index_register);
 
                 //Store the element
@@ -362,6 +386,11 @@ impl<'a> CodeGenerator<'a> {
                     _ => { panic!("unexpected."); }
                 }
             }
+            InstructionIR::LoadArrayLength(reference_register) => {
+                let reference_register = register_mapping::get(*reference_register, true);
+                self.encode_x86_instruction(X86Instruction::with_reg_mem(Code::Mov_r32_rm32, Register::EAX, MemoryOperand::with_base(reference_register)));
+                self.push_register_operand_stack(function, compilation_data, Register::RAX);
+            },
             InstructionIR::BranchLabel(label) => {
                 compilation_data.branch_targets.insert(*label, self.encode_offset);
             }

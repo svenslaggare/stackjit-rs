@@ -21,6 +21,14 @@ pub extern "C" fn null_error(result_ptr: *mut u64) {
     runtime_error(result_ptr, RuntimeError::NullReference)
 }
 
+pub extern "C" fn array_create_error(result_ptr: *mut u64) {
+    runtime_error(result_ptr, RuntimeError::ArrayCreate)
+}
+
+pub extern "C" fn array_bounds_error(result_ptr: *mut u64) {
+    runtime_error(result_ptr, RuntimeError::ArrayBounds)
+}
+
 fn runtime_error(result_ptr: *mut u64, runtime_error: RuntimeError) {
     get_vm(|vm| {
         vm.engine.runtime_error.has_error = Some(runtime_error.clone());

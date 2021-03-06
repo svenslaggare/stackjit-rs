@@ -43,6 +43,13 @@ impl Type {
         }
     }
 
+    pub fn is_array(&self) -> bool {
+        match self {
+            Type::Array(_) => true,
+            _ => false,
+        }
+    }
+
     pub fn is_same_type(&self, other: &Type) -> bool {
         self == other || (self.is_reference() && other.is_null()) || (self.is_null() && other.is_reference())
     }

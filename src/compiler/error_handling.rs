@@ -6,7 +6,9 @@ use crate::runtime::runtime_interface;
 use crate::compiler::allocator::ExecutableMemoryAllocator;
 
 pub struct ErrorHandling {
-    pub null_check_handler: *const std::ffi::c_void
+    pub null_check_handler: *const std::ffi::c_void,
+    pub array_create_check_handler: *const std::ffi::c_void,
+    pub array_bounds_check_handler: *const std::ffi::c_void
 }
 
 impl ErrorHandling {
@@ -14,6 +16,8 @@ impl ErrorHandling {
         // Create handler calls
         let mut encoder = Encoder::new(64);
         let null_check_handler_offset = ErrorHandling::generate_handler(&mut encoder, runtime_interface::null_error as u64);
+        let array_create_check_handler_offset = ErrorHandling::generate_handler(&mut encoder, runtime_interface::array_create_error as u64);
+        let array_bounds_check_handler_offset = ErrorHandling::generate_handler(&mut encoder, runtime_interface::array_bounds_error as u64);
 
         // Allocate and copy memory
         let handler_buffer = encoder.take_buffer();
@@ -23,7 +27,9 @@ impl ErrorHandling {
         }
 
         ErrorHandling {
-            null_check_handler: unsafe { handler_ptr.add(null_check_handler_offset) }
+            null_check_handler: unsafe { handler_ptr.add(null_check_handler_offset) },
+            array_create_check_handler: unsafe { handler_ptr.add(array_create_check_handler_offset) },
+            array_bounds_check_handler: unsafe { handler_ptr.add(array_bounds_check_handler_offset) }
         }
     }
 

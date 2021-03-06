@@ -164,13 +164,21 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1))); // The index of the element
                 self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0))); // The array reference
                 self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+                self.instructions.push(InstructionIR::ArrayBoundsCheck(HardwareRegister::Int(0), HardwareRegister::Int(1)));
                 self.instructions.push(InstructionIR::LoadElement(element.clone(), HardwareRegister::Int(0), HardwareRegister::Int(1)));
             }
             Instruction::StoreElement(element) => {
                 self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(2))); // The value to store
                 self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1))); // The index of the element
                 self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0))); // The array reference
+                self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+                self.instructions.push(InstructionIR::ArrayBoundsCheck(HardwareRegister::Int(0), HardwareRegister::Int(1)));
                 self.instructions.push(InstructionIR::StoreElement(element.clone(), HardwareRegister::Int(0), HardwareRegister::Int(1), HardwareRegister::Int(2)));
+            }
+            Instruction::LoadArrayLength => {
+                self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0))); // The array reference
+                self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+                self.instructions.push(InstructionIR::LoadArrayLength(HardwareRegister::Int(0)));
             }
             Instruction::Branch(target) => {
                 self.instructions.push(InstructionIR::Branch(self.branch_labels[target]));

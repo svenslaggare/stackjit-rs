@@ -15,7 +15,9 @@ pub enum ExecutionEngineError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RuntimeError {
-    NullReference
+    NullReference,
+    ArrayCreate,
+    ArrayBounds
 }
 
 pub type ExecutionEngineResult<T> = Result<T, ExecutionEngineError>;

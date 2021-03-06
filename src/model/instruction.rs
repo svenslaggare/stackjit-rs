@@ -18,6 +18,7 @@ pub enum Instruction {
     NewArray(Type),
     LoadElement(Type),
     StoreElement(Type),
+    LoadArrayLength,
     Branch(BranchTarget),
     BranchEqual(BranchTarget),
     BranchNotEqual(BranchTarget),
@@ -85,6 +86,9 @@ impl std::fmt::Display for Instruction {
             }
             Instruction::StoreElement(element) => {
                 write!(f, "StoreElement {}", element)
+            }
+            Instruction::LoadArrayLength => {
+                write!(f, "LoadArrayLength")
             }
             Instruction::Branch(target) => {
                 write!(f, "Branch {}", target)

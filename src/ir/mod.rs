@@ -52,9 +52,11 @@ pub enum InstructionIR {
     Call(FunctionSignature),
     Return,
     NullReferenceCheck(HardwareRegister),
+    ArrayBoundsCheck(HardwareRegister, HardwareRegister),
     NewArray(Type),
     LoadElement(Type, HardwareRegister, HardwareRegister),
     StoreElement(Type, HardwareRegister, HardwareRegister, HardwareRegister),
+    LoadArrayLength(HardwareRegister),
     BranchLabel(BranchLabel),
     Branch(BranchLabel),
     BranchCondition(JumpCondition, Type, BranchLabel, HardwareRegister, HardwareRegister)
