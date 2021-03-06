@@ -1,14 +1,16 @@
 use std::collections::HashMap;
 
 use crate::model::function::{Function, FunctionSignature, FunctionDefinition};
-use crate::ir::compiler::InstructionIRCompiler;
-use crate::ir::InstructionIR;
+use crate::ir::low::compiler::InstructionIRCompiler;
+use crate::ir::low::InstructionIR;
 use crate::compiler::allocator::ExecutableMemoryAllocator;
 use crate::compiler::code_generator::{CodeGenerator};
 use crate::engine::binder::Binder;
 use crate::compiler::{FunctionCompilationData, FunctionCallType};
 use crate::model::typesystem::{TypeStorage};
 use crate::compiler::error_handling::ErrorHandling;
+use crate::ir::mid::compiler::InstructionMIRCompiler;
+use crate::ir::mid::mir_to_ir::InstructionMIRToIRCompiler;
 
 pub struct JitCompiler {
     memory_allocator: ExecutableMemoryAllocator,
@@ -45,8 +47,6 @@ impl JitCompiler {
         println!("}}");
         println!();
         let function_code_ptr = self.memory_allocator.allocate(function_code_bytes.len());
-
-        // println!("Function address: 0x{:x}", function_code_ptr as usize);
 
         unsafe {
             function_code_ptr.copy_from(function_code_bytes.as_ptr() as *const _, function_code_bytes.len());
@@ -139,6 +139,14 @@ impl JitCompiler {
         let mut instruction_ir_compiler = InstructionIRCompiler::new(&binder, function, compilation_data);
         instruction_ir_compiler.compile(function.instructions());
         instruction_ir_compiler.done()
+
+        // let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function, compilation_data);
+        // mir_compiler.compile(function.instructions());
+        // let instructions_mir = mir_compiler.done();
+        //
+        // let mut mir_to_ir_compiler = InstructionMIRToIRCompiler::new(&binder, &function, compilation_data);
+        // mir_to_ir_compiler.compile(&instructions_mir);
+        // mir_to_ir_compiler.done()
     }
 
     fn generate_code(&self,

@@ -1,15 +1,14 @@
 use iced_x86::{Code, Encoder, MemoryOperand, Register};
 use iced_x86::Instruction as X86Instruction;
 
-use crate::compiler::{FunctionCallType, FunctionCompilationData, UnresolvedFunctionCall, stack_layout};
-use crate::engine::binder::Binder;
+use crate::compiler::{FunctionCallType, FunctionCompilationData, stack_layout, UnresolvedFunctionCall};
 use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments};
-use crate::ir::{HardwareRegisterExplicit, InstructionIR, JumpCondition};
-use crate::model::function::{Function, FunctionType};
-use crate::runtime::{runtime_interface, array};
-use crate::model::typesystem::{TypeStorage, Type};
 use crate::compiler::error_handling::ErrorHandling;
-use iced_x86::OpKind::Memory;
+use crate::engine::binder::Binder;
+use crate::ir::low::{HardwareRegisterExplicit, InstructionIR, JumpCondition};
+use crate::model::function::{Function, FunctionType};
+use crate::model::typesystem::{Type, TypeStorage};
+use crate::runtime::{array, runtime_interface};
 
 pub struct CodeGenerator<'a> {
     encoder: Encoder,
@@ -511,7 +510,7 @@ impl<'a> CodeGenerator<'a> {
 mod register_mapping {
     use iced_x86::Register;
 
-    use crate::ir::HardwareRegister;
+    use crate::ir::low::HardwareRegister;
 
     lazy_static! {
        static ref mapping_i64: Vec<Register> = {

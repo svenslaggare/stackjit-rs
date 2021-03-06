@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
+use crate::ir::low::{BranchLabel, HardwareRegisterExplicit, InstructionIR};
+use crate::model::function::{Function, FunctionSignature};
+
 pub mod code_generator;
 pub mod allocator;
 pub mod stack_layout;
 pub mod jit;
 pub mod calling_conventions;
 pub mod error_handling;
-
-use crate::ir::{HardwareRegisterExplicit, InstructionIR, BranchLabel};
-use crate::model::function::{Function, FunctionSignature};
 
 pub struct FunctionCompilationData {
     pub unresolved_function_calls: Vec<UnresolvedFunctionCall>,

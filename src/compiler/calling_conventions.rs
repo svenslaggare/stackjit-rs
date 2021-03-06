@@ -1,10 +1,10 @@
-use iced_x86::{Register};
+use iced_x86::Register;
 
 use crate::compiler::{FunctionCompilationData, stack_layout};
-use crate::model::function::{Function, FunctionSignature, FunctionDefinition};
-use crate::model::typesystem::Type;
 use crate::compiler::stack_layout::{STACK_ENTRY_SIZE, STACK_OFFSET};
-use crate::ir::{InstructionIR, HardwareRegisterExplicit};
+use crate::ir::low::{HardwareRegisterExplicit, InstructionIR};
+use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
+use crate::model::typesystem::Type;
 
 pub struct CallingConventions {
 
