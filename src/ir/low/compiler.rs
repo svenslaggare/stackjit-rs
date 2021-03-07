@@ -1,7 +1,7 @@
 use crate::model::function::Function;
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
-use crate::ir::low::{HardwareRegister, InstructionIR, JumpCondition, CallArgumentSource, HardwareRegisterExplicit};
+use crate::ir::low::{HardwareRegister, InstructionIR, JumpCondition, Variable, HardwareRegisterExplicit};
 use crate::ir::branches::BranchManager;
 use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments};
 use crate::compiler::FunctionCompilationData;
@@ -123,7 +123,7 @@ impl<'a> InstructionIRCompiler<'a> {
             }
             Instruction::Call(signature) => {
                 let func_to_call = self.binder.get(signature).unwrap();
-                let arguments = func_to_call.parameters().iter().map(|_| CallArgumentSource::OperandStack).collect();
+                let arguments = func_to_call.parameters().iter().map(|_| Variable::OperandStack).collect();
                 self.instructions.push(InstructionIR::Call(signature.clone(), arguments));
                 CallingConventions::new().handle_return_value(self.function, &mut self.instructions, func_to_call);
             }

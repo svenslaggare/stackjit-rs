@@ -1,5 +1,5 @@
 use crate::ir::mid::{InstructionMIR, VirtualRegister};
-use crate::ir::low::{InstructionIR, HardwareRegister, HardwareRegisterExplicit, CallArgumentSource};
+use crate::ir::low::{InstructionIR, HardwareRegister, HardwareRegisterExplicit, Variable};
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::verifier::Verifier;
@@ -114,7 +114,7 @@ impl<'a> InstructionMIRToIRCompiler<'a> {
             InstructionMIR::Call(signature, return_value, arguments) => {
                 let arguments_source = arguments
                     .iter()
-                    .map(|argument| CallArgumentSource::Memory(self.get_stack_offset(argument)))
+                    .map(|argument| Variable::Memory(self.get_stack_offset(argument)))
                     .collect::<Vec<_>>();
 
                 self.instructions.push(InstructionIR::Call(signature.clone(), arguments_source));

@@ -194,9 +194,6 @@ impl<'a> InstructionMIRCompiler<'a> {
                     op2_reg
                 ));
             }
-            _ => {
-
-            }
         }
     }
 
