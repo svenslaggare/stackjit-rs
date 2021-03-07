@@ -2,7 +2,7 @@ use crate::model::typesystem::Type;
 use crate::model::function::FunctionSignature;
 
 pub mod compiler;
-pub mod mir_to_ir;
+pub mod ir_compiler;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct VirtualRegister {

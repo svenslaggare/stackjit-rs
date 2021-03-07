@@ -10,7 +10,7 @@ use crate::compiler::{FunctionCompilationData, FunctionCallType};
 use crate::model::typesystem::{TypeStorage};
 use crate::compiler::error_handling::ErrorHandling;
 use crate::ir::mid::compiler::InstructionMIRCompiler;
-use crate::ir::mid::mir_to_ir::InstructionMIRToIRCompiler;
+use crate::ir::mid::ir_compiler::InstructionMIRToIRCompiler;
 
 pub struct JitCompiler {
     memory_allocator: ExecutableMemoryAllocator,

@@ -261,11 +261,6 @@ impl<'a> CodeGenerator<'a> {
                     }
                 }
 
-                //Unalign the stack
-                if stack_alignment > 0 {
-                    self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Add_rm64_imm32, Register::RSP, stack_alignment).unwrap());
-                }
-
                 //If we have passed arguments via the stack, adjust the stack pointer.
                 let num_stack_arguments = calling_conventions.num_stack_arguments(func_to_call.parameters());
                 if num_stack_arguments > 0 {
@@ -274,6 +269,11 @@ impl<'a> CodeGenerator<'a> {
                         Register::RSP,
                         num_stack_arguments as i32 * stack_layout::STACK_ENTRY_SIZE
                     ).unwrap());
+                }
+
+                //Unalign the stack
+                if stack_alignment > 0 {
+                    self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Add_rm64_imm32, Register::RSP, stack_alignment).unwrap());
                 }
             }
             InstructionIR::Return => {
