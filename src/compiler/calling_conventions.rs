@@ -1,6 +1,6 @@
 use iced_x86::Register;
 
-use crate::compiler::{FunctionCompilationData, stack_layout};
+use crate::compiler::{stack_layout};
 use crate::compiler::stack_layout::{STACK_ENTRY_SIZE, STACK_OFFSET};
 use crate::ir::low::{HardwareRegisterExplicit, InstructionIR, Variable};
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
@@ -61,7 +61,6 @@ impl CallingConventions {
                                         instructions: &mut Vec<InstructionIR>) {
         let relative_index = register_call_arguments::get_relative_index(&function_to_call.parameters, argument_index);
         if relative_index >= register_call_arguments::NUM_ARGUMENTS {
-            //Move to the normal stack
             argument_source.move_to_stack(instructions);
         } else {
             argument_source.move_to_explicit(
@@ -78,7 +77,6 @@ impl CallingConventions {
                                     instructions: &mut Vec<InstructionIR>) {
         let relative_index = float_register_call_arguments::get_relative_index(&function_to_call.parameters, argument_index);
         if relative_index >= float_register_call_arguments::NUM_ARGUMENTS {
-            //Move to the normal stack
             argument_source.move_to_stack(instructions);
         } else {
             argument_source.move_to_explicit(
