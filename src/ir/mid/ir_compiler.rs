@@ -9,16 +9,16 @@ use crate::ir::mid::compiler::InstructionMIRCompiler;
 use crate::model::typesystem::Type;
 use crate::compiler::calling_conventions::{register_call_arguments, float_register_call_arguments, CallingConventions};
 
-pub struct InstructionMIRToIRCompiler<'a> {
+pub struct InstructionIRCompiler<'a> {
     binder: &'a Binder,
     function: &'a Function,
     compilation_data: &'a mut FunctionCompilationData,
     instructions: Vec<InstructionIR>
 }
 
-impl<'a> InstructionMIRToIRCompiler<'a> {
-    pub fn new(binder: &'a Binder, function: &'a Function, compilation_data: &'a mut FunctionCompilationData) -> InstructionMIRToIRCompiler<'a> {
-        InstructionMIRToIRCompiler {
+impl<'a> InstructionIRCompiler<'a> {
+    pub fn new(binder: &'a Binder, function: &'a Function, compilation_data: &'a mut FunctionCompilationData) -> InstructionIRCompiler<'a> {
+        InstructionIRCompiler {
             binder,
             function,
             compilation_data,
@@ -241,7 +241,7 @@ fn test_simple1() {
     mir_compiler.compile(function.instructions());
     let instructions_mir = mir_compiler.done();
 
-    let mut mir_to_ir_compiler = InstructionMIRToIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mut compilation_data);
     mir_to_ir_compiler.compile(&instructions_mir);
     let instructions_ir = mir_to_ir_compiler.done();
 
@@ -272,7 +272,7 @@ fn test_simple2() {
     mir_compiler.compile(function.instructions());
     let instructions_mir = mir_compiler.done();
 
-    let mut mir_to_ir_compiler = InstructionMIRToIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mut compilation_data);
     mir_to_ir_compiler.compile(&instructions_mir);
     let instructions_ir = mir_to_ir_compiler.done();
 
@@ -307,7 +307,7 @@ fn test_simple3() {
     mir_compiler.compile(function.instructions());
     let instructions_mir = mir_compiler.done();
 
-    let mut mir_to_ir_compiler = InstructionMIRToIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mut compilation_data);
     mir_to_ir_compiler.compile(&instructions_mir);
     let instructions_ir = mir_to_ir_compiler.done();
 
@@ -338,7 +338,7 @@ fn test_simple4() {
     mir_compiler.compile(function.instructions());
     let instructions_mir = mir_compiler.done();
 
-    let mut mir_to_ir_compiler = InstructionMIRToIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mut compilation_data);
     mir_to_ir_compiler.compile(&instructions_mir);
     let instructions_ir = mir_to_ir_compiler.done();
 
@@ -373,7 +373,7 @@ fn test_simple5() {
     mir_compiler.compile(function.instructions());
     let instructions_mir = mir_compiler.done();
 
-    let mut mir_to_ir_compiler = InstructionMIRToIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mut compilation_data);
     mir_to_ir_compiler.compile(&instructions_mir);
     let instructions_ir = mir_to_ir_compiler.done();
 
