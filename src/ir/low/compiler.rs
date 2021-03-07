@@ -1,12 +1,9 @@
-use std::collections::{HashMap, HashSet};
-
 use crate::model::function::Function;
-use crate::model::instruction;
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
-use crate::ir::low::{BranchLabel, HardwareRegister, InstructionIR, JumpCondition, CallArgumentSource, HardwareRegisterExplicit};
+use crate::ir::low::{HardwareRegister, InstructionIR, JumpCondition, CallArgumentSource, HardwareRegisterExplicit};
 use crate::ir::branches::BranchManager;
-use crate::compiler::calling_conventions::{CallingConventions, float_register_call_arguments, register_call_arguments};
+use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments};
 use crate::compiler::FunctionCompilationData;
 use crate::compiler::stack_layout;
 use crate::engine::binder::Binder;

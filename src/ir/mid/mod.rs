@@ -1,5 +1,6 @@
 use crate::model::typesystem::Type;
 use crate::model::function::FunctionSignature;
+use crate::ir::low::{BranchLabel, JumpCondition};
 
 pub mod compiler;
 pub mod ir_compiler;
@@ -42,4 +43,7 @@ pub enum InstructionMIR {
     LoadElement(Type, VirtualRegister, VirtualRegister, VirtualRegister),
     StoreElement(Type, VirtualRegister, VirtualRegister, VirtualRegister),
     LoadArrayLength(VirtualRegister, VirtualRegister),
+    BranchLabel(BranchLabel),
+    Branch(BranchLabel),
+    BranchCondition(JumpCondition, Type, BranchLabel, VirtualRegister, VirtualRegister)
 }

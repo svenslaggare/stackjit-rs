@@ -186,6 +186,39 @@ impl<'a> InstructionMIRToIRCompiler<'a> {
                     HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)
                 ));
             }
+            InstructionMIR::BranchLabel(label) => {
+                self.instructions.push(InstructionIR::BranchLabel(*label));
+            }
+            InstructionMIR::Branch(label) => {
+                self.instructions.push(InstructionIR::Branch(*label));
+            }
+            InstructionMIR::BranchCondition(condition, compare_type, label, operand1, operand2) => {
+                match compare_type {
+                    Type::Int32 => {
+                        self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_stack_offset(operand1)));
+                        self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(1), self.get_stack_offset(operand2)));
+                        self.instructions.push(InstructionIR::BranchCondition(
+                            *condition,
+                            Type::Int32,
+                            *label,
+                            HardwareRegister::Int(0),
+                            HardwareRegister::Int(1)
+                        ));
+                    }
+                    Type::Float32 => {
+                        self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Float(0), self.get_stack_offset(operand1)));
+                        self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Float(1), self.get_stack_offset(operand2)));
+                        self.instructions.push(InstructionIR::BranchCondition(
+                            *condition,
+                            Type::Float32,
+                            *label,
+                            HardwareRegister::Float(0),
+                            HardwareRegister::Float(1)
+                        ));
+                    }
+                    _ => { panic!("unexpected."); }
+                }
+            }
         }
     }
 

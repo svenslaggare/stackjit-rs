@@ -7,12 +7,15 @@ use crate::engine::binder::Binder;
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
+use crate::ir::branches::BranchManager;
+use crate::ir::low::JumpCondition;
 
 pub struct InstructionMIRCompiler<'a> {
     binder: &'a Binder,
     function: &'a Function,
     compilation_data: &'a mut FunctionCompilationData,
     instructions: Vec<InstructionMIR>,
+    branch_manager: BranchManager,
     local_virtual_registers: HashMap<u32, VirtualRegister>,
     next_stack_virtual_register: u32
 }
@@ -23,6 +26,7 @@ impl<'a> InstructionMIRCompiler<'a> {
             binder,
             function,
             compilation_data,
+            branch_manager: BranchManager::new(),
             instructions: Vec::new(),
             local_virtual_registers: HashMap::new(),
             next_stack_virtual_register: 0
@@ -30,6 +34,8 @@ impl<'a> InstructionMIRCompiler<'a> {
     }
 
     pub fn compile(&mut self, instructions: &Vec<Instruction>) {
+        self.branch_manager.define_branch_labels(instructions);
+
         for (local_index, local_type) in self.function.locals().iter().enumerate() {
             self.local_virtual_registers.insert(local_index as u32, VirtualRegister::new(self.next_stack_virtual_register, local_type.clone()));
             self.next_stack_virtual_register += 1;
@@ -44,6 +50,10 @@ impl<'a> InstructionMIRCompiler<'a> {
         let operand_types = self.function.instruction_operand_types(instruction_index);
 
         self.instructions.push(InstructionMIR::Marker(instruction_index));
+
+        if let Some(branch_label) = self.branch_manager.is_branch(instruction_index) {
+            self.instructions.push(InstructionMIR::BranchLabel(branch_label));
+        }
 
         match instruction {
             Instruction::LoadInt32(value) => {
@@ -152,6 +162,37 @@ impl<'a> InstructionMIRCompiler<'a> {
                 let array_ref_reg = self.use_stack_register(operand_types[0].value_type.clone());
                 let assign_reg = self.assign_stack_register(Type::Int32);
                 self.instructions.push(InstructionMIR::LoadArrayLength(assign_reg, array_ref_reg));
+            }
+            Instruction::Branch(target) => {
+                self.instructions.push(InstructionMIR::Branch(self.branch_manager.get_label(*target).unwrap()));
+            }
+            Instruction::BranchEqual(target)
+            | Instruction::BranchNotEqual(target)
+            | Instruction::BranchGreaterThan(target)
+            | Instruction::BranchGreaterThanOrEqual(target)
+            | Instruction::BranchLessThan(target)
+            | Instruction::BranchLessThanOrEqual(target) => {
+                let condition = match instruction {
+                    Instruction::BranchEqual(_) => JumpCondition::Equal,
+                    Instruction::BranchNotEqual(_) => JumpCondition::NotEqual,
+                    Instruction::BranchGreaterThan(_) => JumpCondition::GreaterThan,
+                    Instruction::BranchGreaterThanOrEqual(_) => JumpCondition::GreaterThanOrEqual,
+                    Instruction::BranchLessThan(_) => JumpCondition::LessThan,
+                    Instruction::BranchLessThanOrEqual(_) => JumpCondition::LessThanOrEqual,
+                    _ => { panic!("unexpected."); }
+                };
+
+                let compare_type = operand_types[0].value_type.clone();
+                let label = self.branch_manager.get_label(*target).unwrap();
+                let op2_reg = self.use_stack_register(compare_type.clone());
+                let op1_reg = self.use_stack_register(compare_type.clone());
+                self.instructions.push(InstructionMIR::BranchCondition(
+                    condition,
+                    compare_type,
+                    label,
+                    op1_reg,
+                    op2_reg
+                ));
             }
             _ => {
 
