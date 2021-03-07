@@ -5,7 +5,7 @@ use crate::model::instruction::Instruction;
 use crate::model::verifier::Verifier;
 use crate::engine::binder::Binder;
 use crate::compiler::{FunctionCompilationData, stack_layout};
-use crate::ir::mid::compiler::InstructionMIRCompiler;
+use crate::ir::mid::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::model::typesystem::Type;
 use crate::compiler::calling_conventions::{register_call_arguments, float_register_call_arguments, CallingConventions};
 
@@ -26,18 +26,18 @@ impl<'a> InstructionIRCompiler<'a> {
         }
     }
 
-    pub fn compile(&mut self, instructions: &Vec<InstructionMIR>) {
-        self.compile_initialize_function();
+    pub fn compile(&mut self, mir_result: &MIRCompilationResult) {
+        self.compile_initialize_function(mir_result);
 
-        for (instruction_index, instruction) in instructions.iter().enumerate() {
+        for (instruction_index, instruction) in mir_result.instructions.iter().enumerate() {
             self.compile_instruction(instruction_index, instruction);
         }
     }
 
-    fn compile_initialize_function(&mut self) {
+    fn compile_initialize_function(&mut self, mir_result: &MIRCompilationResult) {
         self.instructions.push(InstructionIR::InitializeFunction);
 
-        let stack_size = stack_layout::aligned_stack_size(self.function);
+        let stack_size = stack_layout::align_size(stack_layout::stack_size_mir(self.function, mir_result));
         if stack_size > 0 {
             self.instructions.push(InstructionIR::SubFromStackPointer(stack_size));
         }
@@ -48,9 +48,11 @@ impl<'a> InstructionIRCompiler<'a> {
         let num_locals = self.function.locals().len();
         if num_locals > 0 {
             self.instructions.push(InstructionIR::LoadZeroToRegister(HardwareRegister::Int(0)));
-            for local_index in 0..(num_locals as u32) {
-                let local_offset = stack_layout::local_stack_offset(self.function, local_index);
-                self.instructions.push(InstructionIR::StoreMemory(local_offset, HardwareRegister::Int(0)));
+            for register in &mir_result.need_zero_initialize_registers {
+                self.instructions.push(InstructionIR::StoreMemory(
+                    self.get_register_stack_offset(register),
+                    HardwareRegister::Int(0)
+                ));
             }
         }
     }
@@ -61,45 +63,45 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::Marker(*index));
             }
             InstructionMIR::LoadInt32(destination, value) => {
-                self.instructions.push(InstructionIR::MoveInt32ToMemory(self.get_stack_offset(destination), *value));
+                self.instructions.push(InstructionIR::MoveInt32ToMemory(self.get_register_stack_offset(destination), *value));
             }
             InstructionMIR::LoadFloat32(destination, value) => {
                 let value: i32 = unsafe { std::mem::transmute(*value) };
-                self.instructions.push(InstructionIR::MoveInt32ToMemory(self.get_stack_offset(destination), value));
+                self.instructions.push(InstructionIR::MoveInt32ToMemory(self.get_register_stack_offset(destination), value));
             }
             InstructionMIR::Move(destination, source) => {
-                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_stack_offset(source)));
-                self.instructions.push(InstructionIR::StoreMemory(self.get_stack_offset(destination), HardwareRegister::Int(0)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_register_stack_offset(source)));
+                self.instructions.push(InstructionIR::StoreMemory(self.get_register_stack_offset(destination), HardwareRegister::Int(0)));
             }
             InstructionMIR::AddInt32(destination, operand1, operand2) => {
-                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_stack_offset(operand1)));
-                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(1), self.get_stack_offset(operand2)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_register_stack_offset(operand1)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(1), self.get_register_stack_offset(operand2)));
                 self.instructions.push(InstructionIR::AddInt32(HardwareRegister::Int(0), HardwareRegister::Int(1)));
-                self.instructions.push(InstructionIR::StoreMemory(self.get_stack_offset(destination), HardwareRegister::Int(0)));
+                self.instructions.push(InstructionIR::StoreMemory(self.get_register_stack_offset(destination), HardwareRegister::Int(0)));
             }
             InstructionMIR::SubInt32(destination, operand1, operand2) => {
-                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_stack_offset(operand1)));
-                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(1), self.get_stack_offset(operand2)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_register_stack_offset(operand1)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(1), self.get_register_stack_offset(operand2)));
                 self.instructions.push(InstructionIR::SubInt32(HardwareRegister::Int(0), HardwareRegister::Int(1)));
-                self.instructions.push(InstructionIR::StoreMemory(self.get_stack_offset(destination), HardwareRegister::Int(0)));
+                self.instructions.push(InstructionIR::StoreMemory(self.get_register_stack_offset(destination), HardwareRegister::Int(0)));
             }
             InstructionMIR::AddFloat32(destination, operand1, operand2) => {
-                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Float(0), self.get_stack_offset(operand1)));
-                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Float(1), self.get_stack_offset(operand2)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Float(0), self.get_register_stack_offset(operand1)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Float(1), self.get_register_stack_offset(operand2)));
                 self.instructions.push(InstructionIR::AddFloat32(HardwareRegister::Float(0), HardwareRegister::Float(1)));
-                self.instructions.push(InstructionIR::StoreMemory(self.get_stack_offset(destination), HardwareRegister::Float(0)));
+                self.instructions.push(InstructionIR::StoreMemory(self.get_register_stack_offset(destination), HardwareRegister::Float(0)));
             }
             InstructionMIR::SubFloat32(destination, operand1, operand2) => {
-                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Float(0), self.get_stack_offset(operand1)));
-                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Float(1), self.get_stack_offset(operand2)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Float(0), self.get_register_stack_offset(operand1)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Float(1), self.get_register_stack_offset(operand2)));
                 self.instructions.push(InstructionIR::SubFloat32(HardwareRegister::Float(0), HardwareRegister::Float(1)));
-                self.instructions.push(InstructionIR::StoreMemory(self.get_stack_offset(destination), HardwareRegister::Float(0)));
+                self.instructions.push(InstructionIR::StoreMemory(self.get_register_stack_offset(destination), HardwareRegister::Float(0)));
             }
             InstructionMIR::Return(source) => {
                 if let Some(source) = source {
                     CallingConventions::new().make_return_value(
                         self.function,
-                        &Variable::Memory(self.get_stack_offset(source)),
+                        &Variable::Memory(self.get_register_stack_offset(source)),
                         &mut self.instructions
                     );
                 }
@@ -111,7 +113,7 @@ impl<'a> InstructionIRCompiler<'a> {
 
                 let arguments_source = arguments
                     .iter()
-                    .map(|argument| Variable::Memory(self.get_stack_offset(argument)))
+                    .map(|argument| Variable::Memory(self.get_register_stack_offset(argument)))
                     .collect::<Vec<_>>();
 
                 self.instructions.push(InstructionIR::Call(signature.clone(), arguments_source));
@@ -119,7 +121,7 @@ impl<'a> InstructionIRCompiler<'a> {
                 if let Some(return_value) = return_value {
                     CallingConventions::new().handle_return_value(
                         self.function,
-                        &Variable::Memory(self.get_stack_offset(return_value)),
+                        &Variable::Memory(self.get_register_stack_offset(return_value)),
                         func_to_call,
                         &mut self.instructions
                     );
@@ -127,39 +129,39 @@ impl<'a> InstructionIRCompiler<'a> {
             }
             InstructionMIR::LoadArgument(argument_index, destination) => {
                 let argument_offset = stack_layout::argument_stack_offset(self.function, *argument_index);
-                let register_offset = self.get_stack_offset(destination);
+                let register_offset = self.get_register_stack_offset(destination);
 
                 self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), argument_offset));
                 self.instructions.push(InstructionIR::StoreMemory(register_offset, HardwareRegister::Int(0)));
             }
             InstructionMIR::LoadNull(destination) => {
-                self.instructions.push(InstructionIR::MoveInt32ToMemory(self.get_stack_offset(destination), 0));
+                self.instructions.push(InstructionIR::MoveInt32ToMemory(self.get_register_stack_offset(destination), 0));
             }
             InstructionMIR::NewArray(element, destination, size) => {
-                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_stack_offset(size)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_register_stack_offset(size)));
                 self.instructions.push(InstructionIR::NewArray(element.clone(), HardwareRegister::Int(0)));
                 self.instructions.push(InstructionIR::StoreMemoryExplicit(
-                    self.get_stack_offset(destination),
+                    self.get_register_stack_offset(destination),
                     HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)
                 ));
             }
             InstructionMIR::LoadElement(element, destination, array_ref, index) => {
-                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(1), self.get_stack_offset(index)));
-                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_stack_offset(array_ref)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(1), self.get_register_stack_offset(index)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_register_stack_offset(array_ref)));
 
                 self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
                 self.instructions.push(InstructionIR::ArrayBoundsCheck(HardwareRegister::Int(0), HardwareRegister::Int(1)));
 
                 self.instructions.push(InstructionIR::LoadElement(element.clone(), HardwareRegister::Int(0), HardwareRegister::Int(1)));
                 self.instructions.push(InstructionIR::StoreMemoryExplicit(
-                    self.get_stack_offset(destination),
+                    self.get_register_stack_offset(destination),
                     HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)
                 ));
             }
             InstructionMIR::StoreElement(element, array_ref, index, value) => {
-                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(2), self.get_stack_offset(value)));
-                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(1), self.get_stack_offset(index)));
-                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_stack_offset(array_ref)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(2), self.get_register_stack_offset(value)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(1), self.get_register_stack_offset(index)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_register_stack_offset(array_ref)));
 
                 self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
                 self.instructions.push(InstructionIR::ArrayBoundsCheck(HardwareRegister::Int(0), HardwareRegister::Int(1)));
@@ -167,11 +169,11 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::StoreElement(element.clone(), HardwareRegister::Int(0), HardwareRegister::Int(1), HardwareRegister::Int(2)));
             }
             InstructionMIR::LoadArrayLength(destination, array_ref) => {
-                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_stack_offset(array_ref)));
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_register_stack_offset(array_ref)));
                 self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
                 self.instructions.push(InstructionIR::LoadArrayLength(HardwareRegister::Int(0)));
                 self.instructions.push(InstructionIR::StoreMemoryExplicit(
-                    self.get_stack_offset(destination),
+                    self.get_register_stack_offset(destination),
                     HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)
                 ));
             }
@@ -184,8 +186,8 @@ impl<'a> InstructionIRCompiler<'a> {
             InstructionMIR::BranchCondition(condition, compare_type, label, operand1, operand2) => {
                 match compare_type {
                     Type::Int32 => {
-                        self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_stack_offset(operand1)));
-                        self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(1), self.get_stack_offset(operand2)));
+                        self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_register_stack_offset(operand1)));
+                        self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(1), self.get_register_stack_offset(operand2)));
                         self.instructions.push(InstructionIR::BranchCondition(
                             *condition,
                             Type::Int32,
@@ -195,8 +197,8 @@ impl<'a> InstructionIRCompiler<'a> {
                         ));
                     }
                     Type::Float32 => {
-                        self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Float(0), self.get_stack_offset(operand1)));
-                        self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Float(1), self.get_stack_offset(operand2)));
+                        self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Float(0), self.get_register_stack_offset(operand1)));
+                        self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Float(1), self.get_register_stack_offset(operand2)));
                         self.instructions.push(InstructionIR::BranchCondition(
                             *condition,
                             Type::Float32,
@@ -211,9 +213,8 @@ impl<'a> InstructionIRCompiler<'a> {
         }
     }
 
-    fn get_stack_offset(&self, register: &VirtualRegister) -> i32 {
-        -stack_layout::STACK_ENTRY_SIZE
-        * (stack_layout::STACK_OFFSET + self.function.definition().parameters().len() as u32 + register.number) as i32
+    fn get_register_stack_offset(&self, register: &VirtualRegister) -> i32 {
+        stack_layout::virtual_register_stack_offset(self.function, register.number)
     }
 
     pub fn done(self) -> Vec<InstructionIR> {
@@ -243,10 +244,10 @@ fn test_simple1() {
 
     let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
     mir_compiler.compile(function.instructions());
-    let instructions_mir = mir_compiler.done();
+    let mir_result = mir_compiler.done();
 
     let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mut compilation_data);
-    mir_to_ir_compiler.compile(&instructions_mir);
+    mir_to_ir_compiler.compile(&mir_result);
     let instructions_ir = mir_to_ir_compiler.done();
 
     println_vec(function.instructions(), &instructions_ir);
@@ -274,10 +275,10 @@ fn test_simple2() {
 
     let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
     mir_compiler.compile(function.instructions());
-    let instructions_mir = mir_compiler.done();
+    let mir_result = mir_compiler.done();
 
     let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mut compilation_data);
-    mir_to_ir_compiler.compile(&instructions_mir);
+    mir_to_ir_compiler.compile(&mir_result);
     let instructions_ir = mir_to_ir_compiler.done();
 
     println_vec(function.instructions(), &instructions_ir);
@@ -309,10 +310,10 @@ fn test_simple3() {
 
     let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
     mir_compiler.compile(function.instructions());
-    let instructions_mir = mir_compiler.done();
+    let mir_result = mir_compiler.done();
 
     let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mut compilation_data);
-    mir_to_ir_compiler.compile(&instructions_mir);
+    mir_to_ir_compiler.compile(&mir_result);
     let instructions_ir = mir_to_ir_compiler.done();
 
     println_vec(function.instructions(), &instructions_ir);
@@ -340,10 +341,10 @@ fn test_simple4() {
 
     let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
     mir_compiler.compile(function.instructions());
-    let instructions_mir = mir_compiler.done();
+    let mir_result = mir_compiler.done();
 
     let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mut compilation_data);
-    mir_to_ir_compiler.compile(&instructions_mir);
+    mir_to_ir_compiler.compile(&mir_result);
     let instructions_ir = mir_to_ir_compiler.done();
 
     println_vec(function.instructions(), &instructions_ir);
@@ -375,10 +376,10 @@ fn test_simple5() {
 
     let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
     mir_compiler.compile(function.instructions());
-    let instructions_mir = mir_compiler.done();
+    let mir_result = mir_compiler.done();
 
     let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mut compilation_data);
-    mir_to_ir_compiler.compile(&instructions_mir);
+    mir_to_ir_compiler.compile(&mir_result);
     let instructions_ir = mir_to_ir_compiler.done();
 
     println_vec(function.instructions(), &instructions_ir);

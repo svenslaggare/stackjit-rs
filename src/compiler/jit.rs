@@ -142,10 +142,10 @@ impl JitCompiler {
 
         let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function, compilation_data);
         mir_compiler.compile(function.instructions());
-        let instructions_mir = mir_compiler.done();
+        let mir_result = mir_compiler.done();
 
         let mut ir_compiler = mid::ir_compiler::InstructionIRCompiler::new(&binder, &function, compilation_data);
-        ir_compiler.compile(&instructions_mir);
+        ir_compiler.compile(&mir_result);
         ir_compiler.done()
     }
 

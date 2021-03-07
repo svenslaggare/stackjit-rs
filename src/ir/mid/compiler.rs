@@ -10,6 +10,12 @@ use crate::model::verifier::Verifier;
 use crate::ir::branches::BranchManager;
 use crate::ir::low::JumpCondition;
 
+pub struct MIRCompilationResult {
+    pub instructions: Vec<InstructionMIR>,
+    pub num_virtual_registers: usize,
+    pub need_zero_initialize_registers: Vec<VirtualRegister>
+}
+
 pub struct InstructionMIRCompiler<'a> {
     binder: &'a Binder,
     function: &'a Function,
@@ -17,7 +23,8 @@ pub struct InstructionMIRCompiler<'a> {
     instructions: Vec<InstructionMIR>,
     branch_manager: BranchManager,
     local_virtual_registers: HashMap<u32, VirtualRegister>,
-    next_stack_virtual_register: u32
+    next_operand_virtual_register: u32,
+    max_num_virtual_register: usize
 }
 
 impl<'a> InstructionMIRCompiler<'a> {
@@ -29,7 +36,8 @@ impl<'a> InstructionMIRCompiler<'a> {
             branch_manager: BranchManager::new(),
             instructions: Vec::new(),
             local_virtual_registers: HashMap::new(),
-            next_stack_virtual_register: 0
+            next_operand_virtual_register: 0,
+            max_num_virtual_register: 0
         }
     }
 
@@ -37,9 +45,15 @@ impl<'a> InstructionMIRCompiler<'a> {
         self.branch_manager.define_branch_labels(instructions);
 
         for (local_index, local_type) in self.function.locals().iter().enumerate() {
-            self.local_virtual_registers.insert(local_index as u32, VirtualRegister::new(self.next_stack_virtual_register, local_type.clone()));
-            self.next_stack_virtual_register += 1;
+            self.local_virtual_registers.insert(
+                local_index as u32,
+                VirtualRegister::new(self.next_operand_virtual_register, local_type.clone())
+            );
+
+            self.next_operand_virtual_register += 1;
         }
+
+        self.max_num_virtual_register = self.local_virtual_registers.len();
 
         for (instruction_index, instruction) in instructions.iter().enumerate() {
             self.compile_instruction(instruction_index, instruction);
@@ -197,23 +211,35 @@ impl<'a> InstructionMIRCompiler<'a> {
     }
 
     fn use_stack_register(&mut self, value_type: Type) -> VirtualRegister {
-        if self.next_stack_virtual_register == 0 {
+        if self.next_operand_virtual_register == 0 {
             panic!("Invalid stack virtual register.");
         }
 
-        self.next_stack_virtual_register -= 1;
-        let number = self.next_stack_virtual_register;
+        self.next_operand_virtual_register -= 1;
+        let number = self.next_operand_virtual_register;
         VirtualRegister::new(number, value_type)
     }
 
     fn assign_stack_register(&mut self, value_type: Type) -> VirtualRegister {
-        let number = self.next_stack_virtual_register;
-        self.next_stack_virtual_register += 1;
+        let number = self.next_operand_virtual_register;
+        self.next_operand_virtual_register += 1;
+        self.max_num_virtual_register = self.max_num_virtual_register.max(self.next_operand_virtual_register as usize);
         VirtualRegister::new(number, value_type)
     }
 
-    pub fn done(self) -> Vec<InstructionMIR> {
-        self.instructions
+    pub fn done(self) -> MIRCompilationResult {
+        let mut need_zero_initialize_registers = self.local_virtual_registers
+            .values()
+            .cloned()
+            .collect::<Vec<_>>();
+
+        need_zero_initialize_registers.sort_by_key(|reg| reg.number);
+
+        MIRCompilationResult {
+            instructions: self.instructions,
+            num_virtual_registers: self.max_num_virtual_register,
+            need_zero_initialize_registers
+        }
     }
 }
 
@@ -240,7 +266,7 @@ fn test_simple1() {
     let mut compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
     compiler.compile(function.instructions());
 
-    println_vec(function.instructions(), &compiler.done());
+    println_vec(function.instructions(), &compiler.done().instructions);
 }
 
 #[test]
@@ -266,7 +292,7 @@ fn test_simple2() {
     let mut compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
     compiler.compile(function.instructions());
 
-    println_vec(function.instructions(), &compiler.done());
+    println_vec(function.instructions(), &compiler.done().instructions);
 }
 
 #[test]
@@ -296,7 +322,7 @@ fn test_simple3() {
     let mut compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
     compiler.compile(function.instructions());
 
-    println_vec(function.instructions(), &compiler.done());
+    println_vec(function.instructions(), &compiler.done().instructions);
 }
 
 #[test]
@@ -322,7 +348,7 @@ fn test_simple4() {
     let mut compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
     compiler.compile(function.instructions());
 
-    println_vec(function.instructions(), &compiler.done());
+    println_vec(function.instructions(), &compiler.done().instructions);
 }
 
 #[test]
@@ -352,7 +378,7 @@ fn test_simple5() {
     let mut compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
     compiler.compile(function.instructions());
 
-    println_vec(function.instructions(), &compiler.done());
+    println_vec(function.instructions(), &compiler.done().instructions);
 }
 
 fn println_vec(original: &Vec<Instruction>, irs: &Vec<InstructionMIR>) {

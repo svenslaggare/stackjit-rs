@@ -39,7 +39,7 @@ impl<'a> InstructionIRCompiler<'a> {
     fn compile_initialize_function(&mut self) {
         self.instructions.push(InstructionIR::InitializeFunction);
 
-        let stack_size = stack_layout::aligned_stack_size(self.function);
+        let stack_size = stack_layout::align_size(stack_layout::stack_size(self.function));
         if stack_size > 0 {
             self.instructions.push(InstructionIR::SubFromStackPointer(stack_size));
         }
