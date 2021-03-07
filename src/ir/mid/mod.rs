@@ -30,6 +30,7 @@ impl VirtualRegister {
 pub enum InstructionMIR {
     Marker(usize),
     LoadInt32(VirtualRegister, i32),
+    LoadFloat32(VirtualRegister, f32),
     Move(VirtualRegister, VirtualRegister),
     AddInt32(VirtualRegister, VirtualRegister, VirtualRegister),
     SubInt32(VirtualRegister, VirtualRegister, VirtualRegister),

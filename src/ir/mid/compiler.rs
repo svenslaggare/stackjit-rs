@@ -61,9 +61,8 @@ impl<'a> InstructionMIRCompiler<'a> {
                 self.instructions.push(InstructionMIR::LoadInt32(assign_reg, *value));
             }
             Instruction::LoadFloat32(value) => {
-                let assign_reg = self.assign_stack_register(Type::Int32);
-                let value: i32 = unsafe { std::mem::transmute(*value) };
-                self.instructions.push(InstructionMIR::LoadInt32(assign_reg, value));
+                let assign_reg = self.assign_stack_register(Type::Float32);
+                self.instructions.push(InstructionMIR::LoadFloat32(assign_reg, *value));
             }
             Instruction::LoadLocal(index) => {
                 let local_reg = self.local_virtual_registers[index].clone();

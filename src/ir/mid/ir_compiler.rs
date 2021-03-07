@@ -63,6 +63,10 @@ impl<'a> InstructionIRCompiler<'a> {
             InstructionMIR::LoadInt32(destination, value) => {
                 self.instructions.push(InstructionIR::MoveInt32ToMemory(self.get_stack_offset(destination), *value));
             }
+            InstructionMIR::LoadFloat32(destination, value) => {
+                let value: i32 = unsafe { std::mem::transmute(*value) };
+                self.instructions.push(InstructionIR::MoveInt32ToMemory(self.get_stack_offset(destination), value));
+            }
             InstructionMIR::Move(destination, source) => {
                 self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_stack_offset(source)));
                 self.instructions.push(InstructionIR::StoreMemory(self.get_stack_offset(destination), HardwareRegister::Int(0)));
