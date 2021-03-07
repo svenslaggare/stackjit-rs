@@ -24,7 +24,14 @@ impl CallingConventions {
                                    arguments: &Vec<Variable>,
                                    instructions: &mut Vec<InstructionIR>) {
         for argument_index in (0..function_to_call.parameters.len()).rev() {
-            self.call_function_argument(function, compilation_data, function_to_call, arguments, argument_index, instructions);
+            self.call_function_argument(
+                function,
+                compilation_data,
+                function_to_call,
+                arguments,
+                argument_index,
+                instructions
+            );
         }
     }
 
@@ -35,12 +42,25 @@ impl CallingConventions {
                                   arguments: &Vec<Variable>,
                                   argument_index: usize,
                                   instructions: &mut Vec<InstructionIR>) {
-        let argument_type = &function_to_call.parameters[argument_index];
         let argument_source = &arguments[argument_index];
 
-        match argument_type {
-            Type::Float32 => self.call_function_float_argument(function, compilation_data, function_to_call, argument_source, argument_index, instructions),
-            _ => self.call_function_non_float_argument(function, compilation_data, function_to_call, argument_source, argument_index, instructions)
+        match &function_to_call.parameters[argument_index] {
+            Type::Float32 => self.call_function_float_argument(
+                function,
+                compilation_data,
+                function_to_call,
+                argument_source,
+                argument_index,
+                instructions
+            ),
+            _ => self.call_function_non_float_argument(
+                function,
+                compilation_data,
+                function_to_call,
+                argument_source,
+                argument_index,
+                instructions
+            )
         }
     }
 
