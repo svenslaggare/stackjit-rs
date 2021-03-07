@@ -12,16 +12,14 @@ use crate::engine::binder::Binder;
 pub struct InstructionIRCompiler<'a> {
     binder: &'a Binder,
     function: &'a Function,
-    compilation_data: &'a mut FunctionCompilationData,
     instructions: Vec<InstructionIR>
 }
 
 impl<'a> InstructionIRCompiler<'a> {
-    pub fn new(binder: &'a Binder, function: &'a Function, compilation_data: &'a mut FunctionCompilationData) -> InstructionIRCompiler<'a> {
+    pub fn new(binder: &'a Binder, function: &'a Function) -> InstructionIRCompiler<'a> {
         InstructionIRCompiler {
             binder,
             function,
-            compilation_data,
             instructions: Vec::new()
         }
     }
@@ -44,9 +42,7 @@ impl<'a> InstructionIRCompiler<'a> {
 
         CallingConventions::new().move_arguments_to_stack(self.function, &mut self.instructions);
 
-        // Zero locals
-        let num_locals = self.function.locals().len();
-        if num_locals > 0 {
+        if !mir_result.need_zero_initialize_registers.is_empty() {
             self.instructions.push(InstructionIR::LoadZeroToRegister(HardwareRegister::Int(0)));
             for register in &mir_result.need_zero_initialize_registers {
                 self.instructions.push(InstructionIR::StoreMemory(
@@ -166,7 +162,12 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
                 self.instructions.push(InstructionIR::ArrayBoundsCheck(HardwareRegister::Int(0), HardwareRegister::Int(1)));
 
-                self.instructions.push(InstructionIR::StoreElement(element.clone(), HardwareRegister::Int(0), HardwareRegister::Int(1), HardwareRegister::Int(2)));
+                self.instructions.push(InstructionIR::StoreElement(
+                    element.clone(),
+                    HardwareRegister::Int(0),
+                    HardwareRegister::Int(1),
+                    HardwareRegister::Int(2)
+                ));
             }
             InstructionMIR::LoadArrayLength(destination, array_ref) => {
                 self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), self.get_register_stack_offset(array_ref)));
@@ -240,13 +241,11 @@ fn test_simple1() {
     let mut binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
-    let mut compilation_data = FunctionCompilationData::new();
-
-    let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
     mir_compiler.compile(function.instructions());
     let mir_result = mir_compiler.done();
 
-    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function);
     mir_to_ir_compiler.compile(&mir_result);
     let instructions_ir = mir_to_ir_compiler.done();
 
@@ -271,13 +270,11 @@ fn test_simple2() {
     let mut binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
-    let mut compilation_data = FunctionCompilationData::new();
-
-    let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
     mir_compiler.compile(function.instructions());
     let mir_result = mir_compiler.done();
 
-    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function);
     mir_to_ir_compiler.compile(&mir_result);
     let instructions_ir = mir_to_ir_compiler.done();
 
@@ -306,13 +303,11 @@ fn test_simple3() {
     let mut binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
-    let mut compilation_data = FunctionCompilationData::new();
-
-    let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
     mir_compiler.compile(function.instructions());
     let mir_result = mir_compiler.done();
 
-    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function);
     mir_to_ir_compiler.compile(&mir_result);
     let instructions_ir = mir_to_ir_compiler.done();
 
@@ -337,13 +332,11 @@ fn test_simple4() {
     let mut binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
-    let mut compilation_data = FunctionCompilationData::new();
-
-    let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
     mir_compiler.compile(function.instructions());
     let mir_result = mir_compiler.done();
 
-    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function);
     mir_to_ir_compiler.compile(&mir_result);
     let instructions_ir = mir_to_ir_compiler.done();
 
@@ -372,13 +365,11 @@ fn test_simple5() {
 
     Verifier::new(&binder, &mut function).verify().unwrap();
 
-    let mut compilation_data = FunctionCompilationData::new();
-
-    let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
     mir_compiler.compile(function.instructions());
     let mir_result = mir_compiler.done();
 
-    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function);
     mir_to_ir_compiler.compile(&mir_result);
     let instructions_ir = mir_to_ir_compiler.done();
 

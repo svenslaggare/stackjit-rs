@@ -34,8 +34,8 @@ impl JitCompiler {
         println!("{}", function.definition().signature());
         println!("{{");
 
+        let instructions_ir = self.compile_ir(binder, function);
         let mut compilation_data = FunctionCompilationData::new();
-        let instructions_ir = self.compile_ir(binder, function, &mut compilation_data);
         let function_code_bytes = self.generate_code(
             binder,
             type_storage,
@@ -52,10 +52,7 @@ impl JitCompiler {
             function_code_ptr.copy_from(function_code_bytes.as_ptr() as *const _, function_code_bytes.len());
         }
 
-        self.compiled_functions.insert(
-            function.definition().call_signature(),
-            compilation_data
-        );
+        self.compiled_functions.insert(function.definition().call_signature(), compilation_data);
 
         binder.set_address(&function.definition().call_signature(), function_code_ptr);
     }
@@ -132,19 +129,16 @@ impl JitCompiler {
         compiled_function.unresolved_native_branches.clear();
     }
 
-    fn compile_ir(&self,
-                  binder: &Binder,
-                  function: &Function,
-                  compilation_data: &mut FunctionCompilationData) -> Vec<InstructionIR> {
-        // let mut ir_compiler = InstructionIRCompiler::new(&binder, function, compilation_data);
+    fn compile_ir(&self, binder: &Binder, function: &Function) -> Vec<InstructionIR> {
+        // let mut ir_compiler = InstructionIRCompiler::new(&binder, function);
         // ir_compiler.compile(function.instructions());
         // ir_compiler.done()
 
-        let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function, compilation_data);
+        let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
         mir_compiler.compile(function.instructions());
         let mir_result = mir_compiler.done();
 
-        let mut ir_compiler = mid::ir_compiler::InstructionIRCompiler::new(&binder, &function, compilation_data);
+        let mut ir_compiler = mid::ir_compiler::InstructionIRCompiler::new(&binder, &function);
         ir_compiler.compile(&mir_result);
         ir_compiler.done()
     }

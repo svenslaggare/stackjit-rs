@@ -19,7 +19,6 @@ pub struct MIRCompilationResult {
 pub struct InstructionMIRCompiler<'a> {
     binder: &'a Binder,
     function: &'a Function,
-    compilation_data: &'a mut FunctionCompilationData,
     instructions: Vec<InstructionMIR>,
     branch_manager: BranchManager,
     local_virtual_registers: HashMap<u32, VirtualRegister>,
@@ -28,11 +27,10 @@ pub struct InstructionMIRCompiler<'a> {
 }
 
 impl<'a> InstructionMIRCompiler<'a> {
-    pub fn new(binder: &'a Binder, function: &'a Function, compilation_data: &'a mut FunctionCompilationData) -> InstructionMIRCompiler<'a> {
+    pub fn new(binder: &'a Binder, function: &'a Function) -> InstructionMIRCompiler<'a> {
         InstructionMIRCompiler {
             binder,
             function,
-            compilation_data,
             branch_manager: BranchManager::new(),
             instructions: Vec::new(),
             local_virtual_registers: HashMap::new(),
@@ -261,9 +259,7 @@ fn test_simple1() {
     let mut binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
-    let mut compilation_data = FunctionCompilationData::new();
-
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
 
     println_vec(function.instructions(), &compiler.done().instructions);
@@ -287,9 +283,7 @@ fn test_simple2() {
     let mut binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
-    let mut compilation_data = FunctionCompilationData::new();
-
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
 
     println_vec(function.instructions(), &compiler.done().instructions);
@@ -317,9 +311,7 @@ fn test_simple3() {
     let mut binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
-    let mut compilation_data = FunctionCompilationData::new();
-
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
 
     println_vec(function.instructions(), &compiler.done().instructions);
@@ -343,9 +335,7 @@ fn test_simple4() {
     let mut binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
-    let mut compilation_data = FunctionCompilationData::new();
-
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
 
     println_vec(function.instructions(), &compiler.done().instructions);
@@ -373,9 +363,7 @@ fn test_simple5() {
 
     Verifier::new(&binder, &mut function).verify().unwrap();
 
-    let mut compilation_data = FunctionCompilationData::new();
-
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function, &mut compilation_data);
+    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
 
     println_vec(function.instructions(), &compiler.done().instructions);

@@ -26,7 +26,7 @@ impl VirtualRegister {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum InstructionMIR {
     Marker(usize),
     LoadInt32(VirtualRegister, i32),
@@ -47,4 +47,13 @@ pub enum InstructionMIR {
     BranchLabel(BranchLabel),
     Branch(BranchLabel),
     BranchCondition(JumpCondition, Type, BranchLabel, VirtualRegister, VirtualRegister)
+}
+
+impl InstructionMIR {
+    pub fn is_marker(&self) -> bool {
+        match self {
+            InstructionMIR::Marker(_) => true,
+            _ => false
+        }
+    }
 }

@@ -30,7 +30,7 @@ pub struct HardwareRegisterExplicit(pub iced_x86::Register);
 
 pub type BranchLabel = u32;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum JumpCondition {
     Equal,
     NotEqual,

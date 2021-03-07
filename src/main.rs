@@ -3,6 +3,7 @@ extern crate lazy_static;
 
 mod model;
 mod ir;
+mod analysis;
 mod compiler;
 mod runtime;
 mod engine;

@@ -11,17 +11,15 @@ use crate::engine::binder::Binder;
 pub struct InstructionIRCompiler<'a> {
     binder: &'a Binder,
     function: &'a Function,
-    compilation_data: &'a mut FunctionCompilationData,
     instructions: Vec<InstructionIR>,
     branch_manager: BranchManager
 }
 
 impl<'a> InstructionIRCompiler<'a> {
-    pub fn new(binder: &'a Binder, function: &'a Function, compilation_data: &'a mut FunctionCompilationData) -> InstructionIRCompiler<'a> {
+    pub fn new(binder: &'a Binder, function: &'a Function) -> InstructionIRCompiler<'a> {
         InstructionIRCompiler {
             binder,
             function,
-            compilation_data,
             instructions: Vec::new(),
             branch_manager: BranchManager::new()
         }
