@@ -36,5 +36,10 @@ pub enum InstructionMIR {
     SubFloat32(VirtualRegister, VirtualRegister, VirtualRegister),
     Return(Option<VirtualRegister>),
     Call(FunctionSignature, Option<VirtualRegister>, Vec<VirtualRegister>),
-    LoadArgument(u32, VirtualRegister)
+    LoadArgument(u32, VirtualRegister),
+    LoadNull(VirtualRegister),
+    NewArray(Type, VirtualRegister, VirtualRegister),
+    LoadElement(Type, VirtualRegister, VirtualRegister, VirtualRegister),
+    StoreElement(Type, VirtualRegister, VirtualRegister, VirtualRegister),
+    LoadArrayLength(VirtualRegister, VirtualRegister),
 }

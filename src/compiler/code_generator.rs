@@ -349,11 +349,12 @@ impl<'a> CodeGenerator<'a> {
                     self.error_handling.array_bounds_check_handler as usize
                 );
             }
-            InstructionIR::NewArray(element) => {
+            InstructionIR::NewArray(element, size_register) => {
                 let array_type = Type::Array(Box::new(element.clone()));
                 let array_type_id = self.type_storage.add_or_get_type(array_type);
 
-                self.pop_register_operand_stack(function, compilation_data, register_call_arguments::ARG1);
+                let size_register = register_mapping::get(*size_register, true);
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_r64_rm64, register_call_arguments::ARG1, size_register));
 
                 // Check that the size is valid
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Xor_r64_rm64, Register::RAX, Register::RAX));
@@ -371,8 +372,6 @@ impl<'a> CodeGenerator<'a> {
                     |instruction| self.encode_x86_instruction(instruction),
                     runtime_interface::new_array as u64
                 );
-
-                self.push_register_operand_stack(function, compilation_data, Register::RAX);
             }
             InstructionIR::LoadElement(element, reference_register, index_register) => {
                 let reference_register = register_mapping::get(*reference_register, true);
@@ -388,7 +387,7 @@ impl<'a> CodeGenerator<'a> {
                     4 => {
                         self.encode_x86_instruction(X86Instruction::with_reg_mem(
                             Code::Mov_r32_rm32,
-                            Register::EAX,
+                            register_call_arguments::RETURN_VALUE_32,
                             MemoryOperand::with_base(reference_register),
                         ));
                     }
@@ -397,8 +396,6 @@ impl<'a> CodeGenerator<'a> {
                     }
                     _ => { panic!("unexpected."); }
                 }
-
-                self.push_register_operand_stack(function, compilation_data, Register::RAX);
             }
             InstructionIR::StoreElement(element, reference_register, index_register, value_register) => {
                 let value_register_32 = register_mapping::get(*value_register, false);
@@ -427,8 +424,11 @@ impl<'a> CodeGenerator<'a> {
             }
             InstructionIR::LoadArrayLength(reference_register) => {
                 let reference_register = register_mapping::get(*reference_register, true);
-                self.encode_x86_instruction(X86Instruction::with_reg_mem(Code::Mov_r32_rm32, Register::EAX, MemoryOperand::with_base(reference_register)));
-                self.push_register_operand_stack(function, compilation_data, Register::RAX);
+                self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                    Code::Mov_r32_rm32,
+                    register_call_arguments::RETURN_VALUE_32,
+                    MemoryOperand::with_base(reference_register)
+                ));
             },
             InstructionIR::BranchLabel(label) => {
                 compilation_data.branch_targets.insert(*label, self.encode_offset);

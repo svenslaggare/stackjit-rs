@@ -4,7 +4,7 @@ use crate::compiler::calling_conventions::{CallingConventions, float_register_ca
 use crate::compiler::FunctionCompilationData;
 use crate::compiler::stack_layout;
 use crate::engine::binder::Binder;
-use crate::ir::low::{BranchLabel, HardwareRegister, InstructionIR, JumpCondition, CallArgumentSource};
+use crate::ir::low::{BranchLabel, HardwareRegister, InstructionIR, JumpCondition, CallArgumentSource, HardwareRegisterExplicit};
 use crate::model::function::Function;
 use crate::model::instruction;
 use crate::model::instruction::Instruction;
@@ -161,7 +161,9 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::Return);
             }
             Instruction::NewArray(element) => {
-                self.instructions.push(InstructionIR::NewArray(element.clone()));
+                self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(0)));
+                self.instructions.push(InstructionIR::NewArray(element.clone(), HardwareRegister::Int(0)));
+                self.instructions.push(InstructionIR::PushOperandExplicit(HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)));
             }
             Instruction::LoadElement(element) => {
                 let is_non_null = &operand_types[0].non_null;
@@ -175,6 +177,7 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::ArrayBoundsCheck(HardwareRegister::Int(0), HardwareRegister::Int(1)));
 
                 self.instructions.push(InstructionIR::LoadElement(element.clone(), HardwareRegister::Int(0), HardwareRegister::Int(1)));
+                self.instructions.push(InstructionIR::PushOperandExplicit(HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)));
             }
             Instruction::StoreElement(element) => {
                 let is_non_null = &operand_types[0].non_null;
@@ -199,6 +202,7 @@ impl<'a> InstructionIRCompiler<'a> {
                 }
 
                 self.instructions.push(InstructionIR::LoadArrayLength(HardwareRegister::Int(0)));
+                self.instructions.push(InstructionIR::PushOperandExplicit(HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)));
             }
             Instruction::Branch(target) => {
                 self.instructions.push(InstructionIR::Branch(self.branch_labels[target]));

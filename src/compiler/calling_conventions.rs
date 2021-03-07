@@ -319,6 +319,7 @@ pub mod register_call_arguments {
     }
 
     pub const RETURN_VALUE: Register = Register::RAX;
+    pub const RETURN_VALUE_32: Register = Register::EAX;
 }
 
 pub mod float_register_call_arguments {

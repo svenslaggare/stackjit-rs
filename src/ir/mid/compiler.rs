@@ -127,6 +127,32 @@ impl<'a> InstructionMIRCompiler<'a> {
                 let assign_reg = self.assign_stack_register(self.function.definition().parameters()[*argument_index as usize].clone());
                 self.instructions.push(InstructionMIR::LoadArgument(*argument_index, assign_reg));
             }
+            Instruction::LoadNull => {
+                let assign_reg = self.assign_stack_register(Type::Null);
+                self.instructions.push(InstructionMIR::LoadNull(assign_reg));
+            }
+            Instruction::NewArray(element) => {
+                let size_reg = self.use_stack_register(Type::Int32);
+                let assign_reg = self.assign_stack_register(Type::Array(Box::new(element.clone())));
+                self.instructions.push(InstructionMIR::NewArray(element.clone(), assign_reg, size_reg));
+            }
+            Instruction::LoadElement(element) => {
+                let index_reg = self.use_stack_register(Type::Int32);
+                let array_ref_reg = self.use_stack_register(Type::Array(Box::new(element.clone())));
+                let assign_reg = self.assign_stack_register(element.clone());
+                self.instructions.push(InstructionMIR::LoadElement(element.clone(), assign_reg, array_ref_reg, index_reg))
+            }
+            Instruction::StoreElement(element) => {
+                let value_ref = self.use_stack_register(element.clone());
+                let index_reg = self.use_stack_register(Type::Int32);
+                let array_ref_reg = self.use_stack_register(Type::Array(Box::new(element.clone())));
+                self.instructions.push(InstructionMIR::StoreElement(element.clone(), array_ref_reg, index_reg, value_ref));
+            }
+            Instruction::LoadArrayLength => {
+                let array_ref_reg = self.use_stack_register(operand_types[0].value_type.clone());
+                let assign_reg = self.assign_stack_register(Type::Int32);
+                self.instructions.push(InstructionMIR::LoadArrayLength(assign_reg, array_ref_reg));
+            }
             _ => {
 
             }

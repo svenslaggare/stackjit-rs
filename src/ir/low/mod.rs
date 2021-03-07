@@ -74,7 +74,7 @@ pub enum InstructionIR {
     Return,
     NullReferenceCheck(HardwareRegister),
     ArrayBoundsCheck(HardwareRegister, HardwareRegister),
-    NewArray(Type),
+    NewArray(Type, HardwareRegister),
     LoadElement(Type, HardwareRegister, HardwareRegister),
     StoreElement(Type, HardwareRegister, HardwareRegister, HardwareRegister),
     LoadArrayLength(HardwareRegister),

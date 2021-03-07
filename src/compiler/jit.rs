@@ -136,17 +136,17 @@ impl JitCompiler {
                   binder: &Binder,
                   function: &Function,
                   compilation_data: &mut FunctionCompilationData) -> Vec<InstructionIR> {
-        let mut instruction_ir_compiler = InstructionIRCompiler::new(&binder, function, compilation_data);
-        instruction_ir_compiler.compile(function.instructions());
-        instruction_ir_compiler.done()
+        // let mut instruction_ir_compiler = InstructionIRCompiler::new(&binder, function, compilation_data);
+        // instruction_ir_compiler.compile(function.instructions());
+        // instruction_ir_compiler.done()
 
-        // let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function, compilation_data);
-        // mir_compiler.compile(function.instructions());
-        // let instructions_mir = mir_compiler.done();
-        //
-        // let mut mir_to_ir_compiler = InstructionMIRToIRCompiler::new(&binder, &function, compilation_data);
-        // mir_to_ir_compiler.compile(&instructions_mir);
-        // mir_to_ir_compiler.done()
+        let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function, compilation_data);
+        mir_compiler.compile(function.instructions());
+        let instructions_mir = mir_compiler.done();
+
+        let mut mir_to_ir_compiler = InstructionMIRToIRCompiler::new(&binder, &function, compilation_data);
+        mir_to_ir_compiler.compile(&instructions_mir);
+        mir_to_ir_compiler.done()
     }
 
     fn generate_code(&self,
