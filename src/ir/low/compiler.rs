@@ -4,7 +4,6 @@ use crate::model::typesystem::Type;
 use crate::ir::low::{HardwareRegister, InstructionIR, JumpCondition, Variable, HardwareRegisterExplicit};
 use crate::ir::branches::BranchManager;
 use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments};
-use crate::compiler::FunctionCompilationData;
 use crate::compiler::stack_layout;
 use crate::engine::binder::Binder;
 

@@ -4,7 +4,6 @@ pub mod compiler;
 
 use crate::model::function::{FunctionSignature, Function};
 use crate::model::typesystem::Type;
-use crate::compiler::FunctionCompilationData;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum HardwareRegister {

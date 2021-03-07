@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
-use crate::compiler::FunctionCompilationData;
-use crate::ir::mid::{VirtualRegister, InstructionMIR};
-use crate::engine::binder::Binder;
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
+use crate::ir::mid::{VirtualRegister, InstructionMIR};
 use crate::ir::branches::BranchManager;
 use crate::ir::low::JumpCondition;
+use crate::engine::binder::Binder;
 
 pub struct MIRCompilationResult {
     pub instructions: Vec<InstructionMIR>,
