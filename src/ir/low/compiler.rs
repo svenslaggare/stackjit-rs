@@ -125,7 +125,12 @@ impl<'a> InstructionIRCompiler<'a> {
                 let func_to_call = self.binder.get(signature).unwrap();
                 let arguments = func_to_call.parameters().iter().map(|_| Variable::OperandStack).collect();
                 self.instructions.push(InstructionIR::Call(signature.clone(), arguments));
-                CallingConventions::new().handle_return_value(self.function, &mut self.instructions, func_to_call);
+                CallingConventions::new().handle_return_value(
+                    self.function,
+                    &Variable::OperandStack,
+                    func_to_call,
+                    &mut self.instructions
+                );
             }
             Instruction::LoadArgument(argument_index) => {
                 let argument_offset = stack_layout::argument_stack_offset(self.function, *argument_index);
@@ -133,7 +138,11 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::PushOperand(HardwareRegister::Int(0)));
             }
             Instruction::Return => {
-                CallingConventions::new().make_return_value(self.function, &mut self.instructions);
+                CallingConventions::new().make_return_value(
+                    self.function,
+                    &Variable::OperandStack,
+                    &mut self.instructions
+                );
                 self.instructions.push(InstructionIR::Return);
             }
             Instruction::NewArray(element) => {

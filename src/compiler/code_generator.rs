@@ -233,6 +233,13 @@ impl<'a> CodeGenerator<'a> {
                     register_mapping::get(*source, true)
                 ));
             }
+            InstructionIR::MoveExplicitToImplicit(destination, source) => {
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(
+                    Code::Mov_rm64_r64,
+                    register_mapping::get(*destination, true),
+                    source.0,
+                ));
+            }
             InstructionIR::AddInt32(destination, source) => {
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(
                     Code::Add_r32_rm32,
@@ -273,8 +280,6 @@ impl<'a> CodeGenerator<'a> {
 
                 let mut call_argument_instructions = Vec::new();
                 calling_conventions.call_function_arguments(
-                    function,
-                    compilation_data,
                     signature,
                     &arguments,
                     &mut call_argument_instructions

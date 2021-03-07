@@ -18,15 +18,11 @@ impl CallingConventions {
     }
 
     pub fn call_function_arguments(&self,
-                                   function: &Function,
-                                   compilation_data: &mut FunctionCompilationData,
                                    function_to_call: &FunctionSignature,
                                    arguments: &Vec<Variable>,
                                    instructions: &mut Vec<InstructionIR>) {
         for argument_index in (0..function_to_call.parameters.len()).rev() {
             self.call_function_argument(
-                function,
-                compilation_data,
                 function_to_call,
                 arguments,
                 argument_index,
@@ -36,8 +32,6 @@ impl CallingConventions {
     }
 
     pub fn call_function_argument(&self,
-                                  function: &Function,
-                                  compilation_data: &mut FunctionCompilationData,
                                   function_to_call: &FunctionSignature,
                                   arguments: &Vec<Variable>,
                                   argument_index: usize,
@@ -46,16 +40,12 @@ impl CallingConventions {
 
         match &function_to_call.parameters[argument_index] {
             Type::Float32 => self.call_function_float_argument(
-                function,
-                compilation_data,
                 function_to_call,
                 argument_source,
                 argument_index,
                 instructions
             ),
             _ => self.call_function_non_float_argument(
-                function,
-                compilation_data,
                 function_to_call,
                 argument_source,
                 argument_index,
@@ -65,8 +55,6 @@ impl CallingConventions {
     }
 
     fn call_function_non_float_argument(&self,
-                                        function: &Function,
-                                        compilation_data: &mut FunctionCompilationData,
                                         function_to_call: &FunctionSignature,
                                         argument_source: &Variable,
                                         argument_index: usize,
@@ -74,15 +62,9 @@ impl CallingConventions {
         let relative_index = register_call_arguments::get_relative_index(&function_to_call.parameters, argument_index);
         if relative_index >= register_call_arguments::NUM_ARGUMENTS {
             //Move to the normal stack
-            argument_source.move_to_stack(
-                function,
-                compilation_data,
-                instructions
-            );
+            argument_source.move_to_stack(instructions);
         } else {
             argument_source.move_to_explicit(
-                function,
-                compilation_data,
                 HardwareRegisterExplicit(register_call_arguments::get_argument(relative_index)),
                 instructions
             );
@@ -90,8 +72,6 @@ impl CallingConventions {
     }
 
     fn call_function_float_argument(&self,
-                                    function: &Function,
-                                    compilation_data: &mut FunctionCompilationData,
                                     function_to_call: &FunctionSignature,
                                     argument_source: &Variable,
                                     argument_index: usize,
@@ -99,15 +79,9 @@ impl CallingConventions {
         let relative_index = float_register_call_arguments::get_relative_index(&function_to_call.parameters, argument_index);
         if relative_index >= float_register_call_arguments::NUM_ARGUMENTS {
             //Move to the normal stack
-            argument_source.move_to_stack(
-                function,
-                compilation_data,
-                instructions
-            );
+            argument_source.move_to_stack(instructions);
         } else {
             argument_source.move_to_explicit(
-                function,
-                compilation_data,
                 HardwareRegisterExplicit(float_register_call_arguments::get_argument(relative_index)),
                 instructions
             );
@@ -137,26 +111,45 @@ impl CallingConventions {
         }
     }
 
-    pub fn handle_return_value(&self, _function: &Function, instructions: &mut Vec<InstructionIR>, func_to_call: &FunctionDefinition) {
+    pub fn handle_return_value(&self,
+                               _function: &Function,
+                               variable: &Variable,
+                               func_to_call: &FunctionDefinition,
+                               instructions: &mut Vec<InstructionIR>) {
         match func_to_call.return_type() {
             Type::Void => {}
             Type::Float32 => {
-                instructions.push(InstructionIR::PushOperandExplicit(HardwareRegisterExplicit(float_register_call_arguments::RETURN_VALUE)));
+                variable.move_from_explicit(
+                    HardwareRegisterExplicit(float_register_call_arguments::RETURN_VALUE),
+                    instructions
+                );
             }
             _ => {
-                instructions.push(InstructionIR::PushOperandExplicit(HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)));
+                variable.move_from_explicit(
+                    HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE),
+                    instructions
+                );
             }
         }
     }
 
-    pub fn make_return_value(&self, function: &Function, instructions: &mut Vec<InstructionIR>) {
+    pub fn make_return_value(&self,
+                             function: &Function,
+                             variable: &Variable,
+                             instructions: &mut Vec<InstructionIR>) {
         match function.definition().return_type() {
             Type::Void => {}
             Type::Float32 => {
-                instructions.push(InstructionIR::PopOperandExplicit(HardwareRegisterExplicit(float_register_call_arguments::RETURN_VALUE)));
+                variable.move_to_explicit(
+                    HardwareRegisterExplicit(float_register_call_arguments::RETURN_VALUE),
+                    instructions
+                );
             }
             _ => {
-                instructions.push(InstructionIR::PopOperandExplicit(HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)));
+                variable.move_to_explicit(
+                    HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE),
+                    instructions
+                );
             }
         }
     }

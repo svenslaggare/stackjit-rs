@@ -61,6 +61,7 @@ pub enum InstructionIR {
     LoadMemoryExplicit(HardwareRegisterExplicit, i32),
     StoreMemoryExplicit(i32, HardwareRegisterExplicit),
     MoveImplicitToExplicit(HardwareRegisterExplicit, HardwareRegister),
+    MoveExplicitToImplicit(HardwareRegister, HardwareRegisterExplicit),
     AddInt32(HardwareRegister, HardwareRegister),
     SubInt32(HardwareRegister, HardwareRegister),
     AddFloat32(HardwareRegister, HardwareRegister),
@@ -87,17 +88,13 @@ pub enum Variable {
 }
 
 impl Variable {
-    pub fn move_to_explicit(&self,
-                            function: &Function,
-                            compilation_data: &mut FunctionCompilationData,
-                            destination: HardwareRegisterExplicit,
-                            instructions: &mut Vec<InstructionIR>) {
+    pub fn move_to_explicit(&self, destination: HardwareRegisterExplicit, instructions: &mut Vec<InstructionIR>) {
         match self {
             Variable::Register(source) => {
                 instructions.push(InstructionIR::MoveImplicitToExplicit(destination, *source));
             }
             Variable::OperandStack => {
-                instructions.push(compilation_data.operand_stack.pop_register(function, destination));
+                instructions.push(InstructionIR::PopOperandExplicit(destination));
             }
             Variable::Memory(offset) => {
                 instructions.push(InstructionIR::LoadMemoryExplicit(destination, *offset));
@@ -105,21 +102,32 @@ impl Variable {
         }
     }
 
-    pub fn move_to_stack(&self,
-                         function: &Function,
-                         compilation_data: &mut FunctionCompilationData,
-                         instructions: &mut Vec<InstructionIR>) {
+    pub fn move_to_stack(&self, instructions: &mut Vec<InstructionIR>) {
         match self {
             Variable::Register(source) => {
                 instructions.push(InstructionIR::PushNormal(*source));
             }
             Variable::OperandStack => {
-                instructions.push(compilation_data.operand_stack.pop_register(function, HardwareRegisterExplicit(Register::RAX)));
+                instructions.push(InstructionIR::PopOperandExplicit(HardwareRegisterExplicit(Register::RAX)));
                 instructions.push(InstructionIR::PushNormalExplicit(HardwareRegisterExplicit(Register::RAX)));
             }
             Variable::Memory(offset) => {
                 instructions.push(InstructionIR::LoadMemoryExplicit(HardwareRegisterExplicit(Register::RAX), *offset));
                 instructions.push(InstructionIR::PushNormalExplicit(HardwareRegisterExplicit(Register::RAX)));
+            }
+        }
+    }
+
+    pub fn move_from_explicit(&self, source: HardwareRegisterExplicit, instructions: &mut Vec<InstructionIR>) {
+        match self {
+            Variable::Register(destination) => {
+                instructions.push(InstructionIR::MoveExplicitToImplicit(*destination, source));
+            }
+            Variable::OperandStack => {
+                instructions.push(InstructionIR::PushOperandExplicit(source));
+            }
+            Variable::Memory(offset) => {
+                instructions.push(InstructionIR::StoreMemoryExplicit(*offset, source));
             }
         }
     }

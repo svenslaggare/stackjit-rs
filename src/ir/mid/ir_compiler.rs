@@ -93,25 +93,18 @@ impl<'a> InstructionMIRToIRCompiler<'a> {
             }
             InstructionMIR::Return(source) => {
                 if let Some(source) = source {
-                    match source.value_type {
-                        Type::Float32 => {
-                            self.instructions.push(InstructionIR::LoadMemoryExplicit(
-                                HardwareRegisterExplicit(float_register_call_arguments::RETURN_VALUE),
-                                self.get_stack_offset(source)
-                            ));
-                        }
-                        _ => {
-                            self.instructions.push(InstructionIR::LoadMemoryExplicit(
-                                HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE),
-                                self.get_stack_offset(source)
-                            ));
-                        }
-                    }
+                    CallingConventions::new().make_return_value(
+                        self.function,
+                        &Variable::Memory(self.get_stack_offset(source)),
+                        &mut self.instructions
+                    );
                 }
 
                 self.instructions.push(InstructionIR::Return);
             }
             InstructionMIR::Call(signature, return_value, arguments) => {
+                let func_to_call = self.binder.get(signature).unwrap();
+
                 let arguments_source = arguments
                     .iter()
                     .map(|argument| Variable::Memory(self.get_stack_offset(argument)))
@@ -120,20 +113,12 @@ impl<'a> InstructionMIRToIRCompiler<'a> {
                 self.instructions.push(InstructionIR::Call(signature.clone(), arguments_source));
 
                 if let Some(return_value) = return_value {
-                    match return_value.value_type {
-                        Type::Float32 => {
-                            self.instructions.push(InstructionIR::StoreMemoryExplicit(
-                                self.get_stack_offset(return_value),
-                                HardwareRegisterExplicit(float_register_call_arguments::RETURN_VALUE),
-                            ));
-                        }
-                        _ => {
-                            self.instructions.push(InstructionIR::StoreMemoryExplicit(
-                                self.get_stack_offset(return_value),
-                                HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE),
-                            ));
-                        }
-                    }
+                    CallingConventions::new().handle_return_value(
+                        self.function,
+                        &Variable::Memory(self.get_stack_offset(return_value)),
+                        func_to_call,
+                        &mut self.instructions
+                    );
                 }
             }
             InstructionMIR::LoadArgument(argument_index, destination) => {
