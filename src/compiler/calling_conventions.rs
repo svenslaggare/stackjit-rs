@@ -2,7 +2,7 @@ use iced_x86::Register;
 
 use crate::compiler::{FunctionCompilationData, stack_layout};
 use crate::compiler::stack_layout::{STACK_ENTRY_SIZE, STACK_OFFSET};
-use crate::ir::low::{HardwareRegisterExplicit, InstructionIR};
+use crate::ir::low::{HardwareRegisterExplicit, InstructionIR, CallArgumentSource};
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::typesystem::Type;
 
@@ -21,9 +21,10 @@ impl CallingConventions {
                                    function: &Function,
                                    compilation_data: &mut FunctionCompilationData,
                                    function_to_call: &FunctionSignature,
+                                   arguments: &Vec<CallArgumentSource>,
                                    instructions: &mut Vec<InstructionIR>) {
         for argument_index in (0..function_to_call.parameters.len()).rev() {
-            self.call_function_argument(function, compilation_data, function_to_call, argument_index, instructions);
+            self.call_function_argument(function, compilation_data, function_to_call, arguments, argument_index, instructions);
         }
     }
 
@@ -31,42 +32,93 @@ impl CallingConventions {
                                   function: &Function,
                                   compilation_data: &mut FunctionCompilationData,
                                   function_to_call: &FunctionSignature,
+                                  arguments: &Vec<CallArgumentSource>,
                                   argument_index: usize,
                                   instructions: &mut Vec<InstructionIR>) {
         let argument_type = &function_to_call.parameters[argument_index];
-        match argument_type {
-            Type::Float32 => {
-                let relative_index = float_register_call_arguments::get_relative_index(&function_to_call.parameters, argument_index);
-                if relative_index >= float_register_call_arguments::NUM_ARGUMENTS {
-                    //Move from the operand stack to the normal stack
-                    instructions.push(compilation_data.operand_stack.pop_register(
-                        function,
-                        HardwareRegisterExplicit(Register::RAX)
-                    ));
+        let argument_source = &arguments[argument_index];
 
+        match argument_type {
+            Type::Float32 => self.call_function_float_argument(function, compilation_data, function_to_call, argument_source, argument_index, instructions),
+            _ => self.call_function_non_float_argument(function, compilation_data, function_to_call, argument_source, argument_index, instructions)
+        }
+    }
+
+    fn call_function_non_float_argument(&self,
+                                        function: &Function,
+                                        compilation_data: &mut FunctionCompilationData,
+                                        function_to_call: &FunctionSignature,
+                                        argument_source: &CallArgumentSource,
+                                        argument_index: usize,
+                                        instructions: &mut Vec<InstructionIR>) {
+        let relative_index = register_call_arguments::get_relative_index(&function_to_call.parameters, argument_index);
+        if relative_index >= register_call_arguments::NUM_ARGUMENTS {
+            //Move to the normal stack
+            match argument_source {
+                CallArgumentSource::Register(source) => {
+                    instructions.push(InstructionIR::PushNormal(*source));
+                }
+                CallArgumentSource::OperandStack => {
+                    instructions.push(compilation_data.operand_stack.pop_register(function, HardwareRegisterExplicit(Register::RAX)));
                     instructions.push(InstructionIR::PushNormalExplicit(HardwareRegisterExplicit(Register::RAX)));
-                } else {
-                    instructions.push(compilation_data.operand_stack.pop_register(
-                        function,
-                        HardwareRegisterExplicit(float_register_call_arguments::get_argument(relative_index)))
-                    );
+                }
+                CallArgumentSource::Memory(offset) => {
+                    instructions.push(InstructionIR::LoadMemoryExplicit(HardwareRegisterExplicit(Register::RAX), *offset));
+                    instructions.push(InstructionIR::PushNormalExplicit(HardwareRegisterExplicit(Register::RAX)));
                 }
             }
-            _ => {
-                let relative_index = register_call_arguments::get_relative_index(&function_to_call.parameters, argument_index);
-                if relative_index >= register_call_arguments::NUM_ARGUMENTS {
-                    //Move from the operand stack to the normal stack
-                    instructions.push(compilation_data.operand_stack.pop_register(
-                        function,
-                        HardwareRegisterExplicit(Register::RAX)
-                    ));
+        } else {
+            let destination = HardwareRegisterExplicit(register_call_arguments::get_argument(relative_index));
 
+            match argument_source {
+                CallArgumentSource::Register(source) => {
+                    instructions.push(InstructionIR::MoveImplicitToExplicit(destination, *source));
+                }
+                CallArgumentSource::OperandStack => {
+                    instructions.push(compilation_data.operand_stack.pop_register(function, destination));
+                }
+                CallArgumentSource::Memory(offset) => {
+                    instructions.push(InstructionIR::LoadMemoryExplicit(destination, *offset));
+                }
+            }
+        }
+    }
+
+    fn call_function_float_argument(&self,
+                                    function: &Function,
+                                    compilation_data: &mut FunctionCompilationData,
+                                    function_to_call: &FunctionSignature,
+                                    argument_source: &CallArgumentSource,
+                                    argument_index: usize,
+                                    instructions: &mut Vec<InstructionIR>) {
+        let relative_index = float_register_call_arguments::get_relative_index(&function_to_call.parameters, argument_index);
+        if relative_index >= float_register_call_arguments::NUM_ARGUMENTS {
+            //Move to the normal stack
+            match argument_source {
+                CallArgumentSource::Register(source) => {
+                    instructions.push(InstructionIR::PushNormal(*source));
+                }
+                CallArgumentSource::OperandStack => {
+                    instructions.push(compilation_data.operand_stack.pop_register(function, HardwareRegisterExplicit(Register::RAX)));
                     instructions.push(InstructionIR::PushNormalExplicit(HardwareRegisterExplicit(Register::RAX)));
-                } else {
-                    instructions.push(compilation_data.operand_stack.pop_register(
-                        function,
-                        HardwareRegisterExplicit(register_call_arguments::get_argument(relative_index)))
-                    );
+                }
+                CallArgumentSource::Memory(offset) => {
+                    instructions.push(InstructionIR::LoadMemoryExplicit(HardwareRegisterExplicit(Register::RAX), *offset));
+                    instructions.push(InstructionIR::PushNormalExplicit(HardwareRegisterExplicit(Register::RAX)));
+                }
+            }
+        } else {
+            let destination = HardwareRegisterExplicit(float_register_call_arguments::get_argument(relative_index));
+
+            match argument_source {
+                CallArgumentSource::Register(source) => {
+                    instructions.push(InstructionIR::MoveImplicitToExplicit(destination, *source));
+                }
+                CallArgumentSource::OperandStack => {
+                    instructions.push(compilation_data.operand_stack.pop_register(function, destination));
+                }
+                CallArgumentSource::Memory(offset) => {
+                    instructions.push(InstructionIR::LoadMemoryExplicit(destination, *offset));
                 }
             }
         }

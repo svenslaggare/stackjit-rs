@@ -1,10 +1,10 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::compiler::calling_conventions::CallingConventions;
+use crate::compiler::calling_conventions::{CallingConventions, float_register_call_arguments, register_call_arguments};
 use crate::compiler::FunctionCompilationData;
 use crate::compiler::stack_layout;
 use crate::engine::binder::Binder;
-use crate::ir::low::{BranchLabel, HardwareRegister, InstructionIR, JumpCondition};
+use crate::ir::low::{BranchLabel, HardwareRegister, InstructionIR, JumpCondition, CallArgumentSource};
 use crate::model::function::Function;
 use crate::model::instruction;
 use crate::model::instruction::Instruction;
@@ -147,7 +147,8 @@ impl<'a> InstructionIRCompiler<'a> {
             }
             Instruction::Call(signature) => {
                 let func_to_call = self.binder.get(signature).unwrap();
-                self.instructions.push(InstructionIR::Call(signature.clone()));
+                let arguments = func_to_call.parameters().iter().map(|_| CallArgumentSource::OperandStack).collect();
+                self.instructions.push(InstructionIR::Call(signature.clone(), arguments));
                 CallingConventions::new().handle_return_value(self.function, &mut self.instructions, func_to_call);
             }
             Instruction::LoadArgument(argument_index) => {

@@ -5,7 +5,7 @@ use crate::compiler::{FunctionCallType, FunctionCompilationData, stack_layout, U
 use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments};
 use crate::compiler::error_handling::ErrorHandling;
 use crate::engine::binder::Binder;
-use crate::ir::low::{HardwareRegisterExplicit, InstructionIR, JumpCondition};
+use crate::ir::low::{HardwareRegisterExplicit, InstructionIR, JumpCondition, HardwareRegister};
 use crate::model::function::{Function, FunctionType};
 use crate::model::typesystem::{Type, TypeStorage};
 use crate::runtime::{array, runtime_interface};
@@ -124,6 +124,18 @@ impl<'a> CodeGenerator<'a> {
             InstructionIR::PopOperand(register) => {
                 self.pop_register_operand_stack(function, compilation_data, register_mapping::get(*register, true));
             }
+            InstructionIR::PushNormal(register) => {
+                push_r64(
+                    |instruction| self.encode_x86_instruction(instruction),
+                    register_mapping::get(*register, true)
+                );
+            }
+            InstructionIR::PopNormal(register) => {
+                pop_r64(
+                    |instruction| self.encode_x86_instruction(instruction),
+                    register_mapping::get(*register, true)
+                );
+            }
             InstructionIR::PushOperandExplicit(register) => {
                 self.push_register_operand_stack(function, compilation_data, register.0);
             }
@@ -143,18 +155,38 @@ impl<'a> CodeGenerator<'a> {
                 );
             }
             InstructionIR::LoadMemory(destination, offset) => {
-                self.encode_x86_instruction(X86Instruction::with_reg_mem(
-                    Code::Mov_r64_rm64,
-                    register_mapping::get(*destination, true),
-                    MemoryOperand::with_base_displ(Register::RBP, *offset)
-                ));
+                let destination = register_mapping::get(*destination, true);
+
+                if destination.is_xmm() {
+                    self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                        Code::Movss_xmm_xmmm32,
+                        destination,
+                        MemoryOperand::with_base_displ(Register::RBP, *offset)
+                    ));
+                } else {
+                    self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                        Code::Mov_r64_rm64,
+                        destination,
+                        MemoryOperand::with_base_displ(Register::RBP, *offset)
+                    ));
+                }
             }
             InstructionIR::StoreMemory(offset, source) => {
-                self.encode_x86_instruction(X86Instruction::with_mem_reg(
-                    Code::Mov_rm64_r64,
-                    MemoryOperand::with_base_displ(Register::RBP, *offset),
-                    register_mapping::get(*source, true)
-                ));
+                let source = register_mapping::get(*source, true);
+
+                if source.is_xmm() {
+                    self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                        Code::Movss_xmmm32_xmm,
+                        MemoryOperand::with_base_displ(Register::RBP, *offset),
+                        source
+                    ));
+                } else {
+                    self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                        Code::Mov_rm64_r64,
+                        MemoryOperand::with_base_displ(Register::RBP, *offset),
+                        source
+                    ));
+                }
             }
             InstructionIR::StoreMemoryExplicit(offset, register) => {
                 if register.0.is_xmm() {
@@ -193,6 +225,13 @@ impl<'a> CodeGenerator<'a> {
                     *value
                 ).unwrap());
             }
+            InstructionIR::MoveImplicitToExplicit(destination, source) => {
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(
+                    Code::Mov_r64_rm64,
+                    destination.0,
+                    register_mapping::get(*source, true)
+                ));
+            }
             InstructionIR::AddInt32(destination, source) => {
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(
                     Code::Add_r32_rm32,
@@ -221,7 +260,7 @@ impl<'a> CodeGenerator<'a> {
                     register_mapping::get(*source, false)
                 ));
             }
-            InstructionIR::Call(signature) => {
+            InstructionIR::Call(signature, arguments) => {
                 let func_to_call = self.binder.get(signature).unwrap();
                 let calling_conventions = CallingConventions::new();
 
@@ -236,6 +275,7 @@ impl<'a> CodeGenerator<'a> {
                     function,
                     compilation_data,
                     signature,
+                    &arguments,
                     &mut call_argument_instructions
                 );
                 self.generate_instructions(function, compilation_data, &call_argument_instructions);

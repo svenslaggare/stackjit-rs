@@ -38,6 +38,13 @@ pub enum JumpCondition {
 }
 
 #[derive(Debug)]
+pub enum CallArgumentSource {
+    Register(HardwareRegister),
+    OperandStack,
+    Memory(i32)
+}
+
+#[derive(Debug)]
 pub enum InstructionIR {
     Marker(usize),
     InitializeFunction,
@@ -47,6 +54,8 @@ pub enum InstructionIR {
     SubFromStackPointer(i32),
     PushOperand(HardwareRegister),
     PopOperand(HardwareRegister),
+    PushNormal(HardwareRegister),
+    PopNormal(HardwareRegister),
     PushOperandExplicit(HardwareRegisterExplicit),
     PopOperandExplicit(HardwareRegisterExplicit),
     PushNormalExplicit(HardwareRegisterExplicit),
@@ -55,12 +64,13 @@ pub enum InstructionIR {
     StoreMemory(i32, HardwareRegister),
     LoadMemoryExplicit(HardwareRegisterExplicit, i32),
     StoreMemoryExplicit(i32, HardwareRegisterExplicit),
+    MoveImplicitToExplicit(HardwareRegisterExplicit, HardwareRegister),
     AddInt32(HardwareRegister, HardwareRegister),
     SubInt32(HardwareRegister, HardwareRegister),
     AddFloat32(HardwareRegister, HardwareRegister),
     SubFloat32(HardwareRegister, HardwareRegister),
     MoveInt32ToMemory(i32, i32),
-    Call(FunctionSignature),
+    Call(FunctionSignature, Vec<CallArgumentSource>),
     Return,
     NullReferenceCheck(HardwareRegister),
     ArrayBoundsCheck(HardwareRegister, HardwareRegister),

@@ -1,5 +1,5 @@
 use crate::ir::mid::{InstructionMIR, VirtualRegister};
-use crate::ir::low::{InstructionIR, HardwareRegister, HardwareRegisterExplicit};
+use crate::ir::low::{InstructionIR, HardwareRegister, HardwareRegisterExplicit, CallArgumentSource};
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::verifier::Verifier;
@@ -115,11 +115,12 @@ impl<'a> InstructionMIRToIRCompiler<'a> {
                 self.instructions.push(InstructionIR::Return);
             }
             InstructionMIR::Call(signature, return_value, arguments) => {
-                for (argument_index, argument) in arguments.iter().enumerate() {
+                let arguments_source = arguments
+                    .iter()
+                    .map(|argument| CallArgumentSource::Memory(self.get_stack_offset(argument)))
+                    .collect::<Vec<_>>();
 
-                }
-
-                self.instructions.push(InstructionIR::Call(signature.clone()));
+                self.instructions.push(InstructionIR::Call(signature.clone(), arguments_source));
 
                 if let Some(return_value) = return_value {
                     match return_value.value_type {
@@ -137,6 +138,13 @@ impl<'a> InstructionMIRToIRCompiler<'a> {
                         }
                     }
                 }
+            }
+            InstructionMIR::LoadArgument(argument_index, destination) => {
+                let argument_offset = stack_layout::argument_stack_offset(self.function, *argument_index);
+                let register_offset = self.get_stack_offset(destination);
+
+                self.instructions.push(InstructionIR::LoadMemory(HardwareRegister::Int(0), argument_offset));
+                self.instructions.push(InstructionIR::StoreMemory(register_offset, HardwareRegister::Int(0)));
             }
         }
     }

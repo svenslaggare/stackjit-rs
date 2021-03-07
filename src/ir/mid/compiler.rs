@@ -62,8 +62,8 @@ impl<'a> InstructionMIRCompiler<'a> {
             }
             Instruction::StoreLocal(index) => {
                 let local_reg = self.local_virtual_registers[index].clone();
-                let op_reg = self.use_stack_register(local_reg.value_type.clone());
-                self.instructions.push(InstructionMIR::Move(local_reg, op_reg));
+                let value_reg = self.use_stack_register(local_reg.value_type.clone());
+                self.instructions.push(InstructionMIR::Move(local_reg, value_reg));
             }
             Instruction::Add => {
                 let value_type = &operand_types[0].value_type;
@@ -122,6 +122,10 @@ impl<'a> InstructionMIRCompiler<'a> {
                 };
 
                 self.instructions.push(InstructionMIR::Call(func_to_call.call_signature(), return_value_reg, arguments_regs));
+            }
+            Instruction::LoadArgument(argument_index) => {
+                let assign_reg = self.assign_stack_register(self.function.definition().parameters()[*argument_index as usize].clone());
+                self.instructions.push(InstructionMIR::LoadArgument(*argument_index, assign_reg));
             }
             _ => {
 
