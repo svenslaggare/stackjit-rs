@@ -1,23 +1,22 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::compiler::calling_conventions::{CallingConventions, float_register_call_arguments, register_call_arguments};
-use crate::compiler::FunctionCompilationData;
-use crate::compiler::stack_layout;
-use crate::engine::binder::Binder;
-use crate::ir::low::{BranchLabel, HardwareRegister, InstructionIR, JumpCondition, CallArgumentSource, HardwareRegisterExplicit};
 use crate::model::function::Function;
 use crate::model::instruction;
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
+use crate::ir::low::{BranchLabel, HardwareRegister, InstructionIR, JumpCondition, CallArgumentSource, HardwareRegisterExplicit};
+use crate::ir::branches::BranchManager;
+use crate::compiler::calling_conventions::{CallingConventions, float_register_call_arguments, register_call_arguments};
+use crate::compiler::FunctionCompilationData;
+use crate::compiler::stack_layout;
+use crate::engine::binder::Binder;
 
 pub struct InstructionIRCompiler<'a> {
     binder: &'a Binder,
     function: &'a Function,
     compilation_data: &'a mut FunctionCompilationData,
     instructions: Vec<InstructionIR>,
-    branch_targets: HashSet<instruction::BranchTarget>,
-    branch_labels: HashMap<instruction::BranchTarget, BranchLabel>,
-    next_branch_label: BranchLabel
+    branch_manager: BranchManager
 }
 
 impl<'a> InstructionIRCompiler<'a> {
@@ -27,42 +26,23 @@ impl<'a> InstructionIRCompiler<'a> {
             function,
             compilation_data,
             instructions: Vec::new(),
-            branch_targets: HashSet::new(),
-            branch_labels: HashMap::new(),
-            next_branch_label: 0
+            branch_manager: BranchManager::new()
         }
     }
 
     pub fn compile(&mut self, instructions: &Vec<Instruction>) {
         self.compile_initialize_function();
-        self.define_branch_labels(instructions);
+        self.branch_manager.define_branch_labels(instructions);
 
         for (instruction_index, instruction) in instructions.iter().enumerate() {
             self.compile_instruction(instruction_index, instruction);
         }
     }
 
-    fn define_branch_labels(&mut self, instructions: &Vec<Instruction>) {
-        for instruction in instructions {
-            if let Some(target) = instruction.branch_target() {
-                self.branch_targets.insert(target);
-
-                if !self.branch_labels.contains_key(&target) {
-                    let label = self.next_branch_label;
-                    self.next_branch_label += 1;
-                    self.branch_labels.insert(target, label);
-                }
-            }
-        }
-    }
-
     fn compile_initialize_function(&mut self) {
         self.instructions.push(InstructionIR::InitializeFunction);
 
-        //Calculate the size of the stack aligned to 16 bytes
-        let needed_stack_size = stack_layout::stack_size(self.function);
-        let stack_size = ((needed_stack_size + 15) / 16) * 16;
-
+        let stack_size = stack_layout::aligned_stack_size(self.function);
         if stack_size > 0 {
             self.instructions.push(InstructionIR::SubFromStackPointer(stack_size));
         }
@@ -83,9 +63,8 @@ impl<'a> InstructionIRCompiler<'a> {
     fn compile_instruction(&mut self, instruction_index: usize, instruction: &Instruction) {
         self.instructions.push(InstructionIR::Marker(instruction_index));
 
-        let branch_target = instruction_index as instruction::BranchTarget;
-        if self.branch_targets.contains(&branch_target) {
-            self.instructions.push(InstructionIR::BranchLabel(self.branch_labels[&branch_target]));
+        if let Some(branch_label) = self.branch_manager.is_branch(instruction_index) {
+            self.instructions.push(InstructionIR::BranchLabel(branch_label));
         }
 
         let operand_types = self.function.instruction_operand_types(instruction_index);
@@ -205,7 +184,7 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::PushOperandExplicit(HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)));
             }
             Instruction::Branch(target) => {
-                self.instructions.push(InstructionIR::Branch(self.branch_labels[target]));
+                self.instructions.push(InstructionIR::Branch(self.branch_manager.get_label(*target).unwrap()));
             }
             Instruction::BranchEqual(target)
             | Instruction::BranchNotEqual(target)
@@ -223,6 +202,7 @@ impl<'a> InstructionIRCompiler<'a> {
                     _ => { panic!("unexpected."); }
                 };
 
+                let branch_label = self.branch_manager.get_label(*target).unwrap();
                 match &operand_types[0].value_type {
                     Type::Int32 => {
                         self.instructions.push(InstructionIR::PopOperand(HardwareRegister::Int(1)));
@@ -230,7 +210,7 @@ impl<'a> InstructionIRCompiler<'a> {
                         self.instructions.push(InstructionIR::BranchCondition(
                             condition,
                             Type::Int32,
-                            self.branch_labels[target],
+                            branch_label,
                             HardwareRegister::Int(0),
                             HardwareRegister::Int(1)
                         ));
@@ -241,7 +221,7 @@ impl<'a> InstructionIRCompiler<'a> {
                         self.instructions.push(InstructionIR::BranchCondition(
                             condition,
                             Type::Float32,
-                            self.branch_labels[target],
+                            branch_label,
                             HardwareRegister::Float(0),
                             HardwareRegister::Float(1)
                         ));

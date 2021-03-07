@@ -37,10 +37,7 @@ impl<'a> InstructionMIRToIRCompiler<'a> {
     fn compile_initialize_function(&mut self) {
         self.instructions.push(InstructionIR::InitializeFunction);
 
-        //Calculate the size of the stack aligned to 16 bytes
-        let needed_stack_size = stack_layout::stack_size(self.function);
-        let stack_size = ((needed_stack_size + 15) / 16) * 16;
-
+        let stack_size = stack_layout::aligned_stack_size(self.function);
         if stack_size > 0 {
             self.instructions.push(InstructionIR::SubFromStackPointer(stack_size));
         }

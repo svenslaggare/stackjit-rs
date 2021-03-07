@@ -7,6 +7,12 @@ pub fn stack_size(function: &Function) -> i32 {
     (function.definition().parameters().len() + function.locals().len() + function.operand_stack_size()) as i32 * STACK_ENTRY_SIZE
 }
 
+pub fn aligned_stack_size(function: &Function) -> i32 {
+    //Calculate the size of the stack aligned to 16 bytes
+    let needed_stack_size = stack_size(function);
+    ((needed_stack_size + 15) / 16) * 16
+}
+
 pub fn argument_stack_offset(_function: &Function, index: u32) -> i32 {
     (STACK_OFFSET + index) as i32 * -STACK_ENTRY_SIZE
 }
