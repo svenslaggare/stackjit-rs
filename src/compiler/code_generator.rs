@@ -13,7 +13,7 @@ use crate::runtime::{array, runtime_interface};
 
 pub struct CodeGenerator<'a> {
     encoder: Encoder,
-    encode_offset: usize,
+    encoder_offset: usize,
     binder: &'a Binder,
     error_handling: &'a ErrorHandling,
     type_storage: &'a mut TypeStorage
@@ -25,7 +25,7 @@ impl<'a> CodeGenerator<'a> {
                type_storage: &'a mut TypeStorage) -> CodeGenerator<'a> {
         CodeGenerator {
             encoder: Encoder::new(64),
-            encode_offset: 0,
+            encoder_offset: 0,
             binder,
             error_handling,
             type_storage
@@ -296,7 +296,7 @@ impl<'a> CodeGenerator<'a> {
                     FunctionType::Managed => {
                         compilation_data.unresolved_function_calls.push(UnresolvedFunctionCall {
                             call_type: FunctionCallType::Relative,
-                            call_offset: self.encode_offset,
+                            call_offset: self.encoder_offset,
                             signature: signature.clone()
                         });
 
@@ -337,7 +337,7 @@ impl<'a> CodeGenerator<'a> {
 
                 let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Je_rel32_64, 0).unwrap());
                 compilation_data.unresolved_native_branches.insert(
-                    self.encode_offset - instruction_size,
+                    self.encoder_offset - instruction_size,
                     self.error_handling.null_check_handler as usize
                 );
             }
@@ -351,7 +351,7 @@ impl<'a> CodeGenerator<'a> {
                 // By using an unsigned comparison, we only need one check.
                 let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Jae_rel32_64, 0).unwrap());
                 compilation_data.unresolved_native_branches.insert(
-                    self.encode_offset - instruction_size,
+                    self.encoder_offset - instruction_size,
                     self.error_handling.array_bounds_check_handler as usize
                 );
             }
@@ -368,7 +368,7 @@ impl<'a> CodeGenerator<'a> {
 
                 let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Jg_rel32_64, 0).unwrap());
                 compilation_data.unresolved_native_branches.insert(
-                    self.encode_offset - instruction_size,
+                    self.encoder_offset - instruction_size,
                     self.error_handling.array_create_check_handler as usize
                 );
 
@@ -437,12 +437,12 @@ impl<'a> CodeGenerator<'a> {
                 ));
             },
             InstructionIR::BranchLabel(label) => {
-                compilation_data.branch_targets.insert(*label, self.encode_offset);
+                compilation_data.branch_targets.insert(*label, self.encoder_offset);
             }
             InstructionIR::Branch(target) => {
-                //As the exact target in native instructions isn't known, defer to later.
+                //As the exact target in native instructions is not known, defer to later.
                 let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Jmp_rel32_64, 0).unwrap());
-                compilation_data.unresolved_branches.insert(self.encode_offset - instruction_size, (*target, instruction_size));
+                compilation_data.unresolved_branches.insert(self.encoder_offset - instruction_size, (*target, instruction_size));
             }
             InstructionIR::BranchCondition(condition, op_type, target, op1, op2) => {
                 let op1 = register_mapping::get(*op1, false);
@@ -480,7 +480,7 @@ impl<'a> CodeGenerator<'a> {
                 };
 
                 let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(compare_code, 0).unwrap());
-                compilation_data.unresolved_branches.insert(self.encode_offset - instruction_size, (*target, instruction_size));
+                compilation_data.unresolved_branches.insert(self.encoder_offset - instruction_size, (*target, instruction_size));
             }
         }
     }
@@ -530,7 +530,7 @@ impl<'a> CodeGenerator<'a> {
     }
 
     fn set_jump_target(&mut self, branch_offset: usize, branch_instruction_size: usize) {
-        let jump_amount = (self.encode_offset - branch_offset) as i32 - branch_instruction_size as i32;
+        let jump_amount = (self.encoder_offset - branch_offset) as i32 - branch_instruction_size as i32;
         let mut buffer = self.encoder.take_buffer();
 
         let source_offset = branch_offset as i32 + branch_instruction_size as i32 - std::mem::size_of::<i32>() as i32;
@@ -548,7 +548,7 @@ impl<'a> CodeGenerator<'a> {
     fn encode_x86_instruction_with_size(&mut self, instruction: X86Instruction) -> usize {
         println!("\t\t{}", instruction);
         let size = self.encoder.encode(&instruction, 0).unwrap();
-        self.encode_offset += size;
+        self.encoder_offset += size;
         size
     }
 }

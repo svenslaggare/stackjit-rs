@@ -39,50 +39,28 @@ impl CallingConventions {
         let argument_source = &arguments[argument_index];
 
         match &function_to_call.parameters[argument_index] {
-            Type::Float32 => self.call_function_float_argument(
-                function_to_call,
-                argument_source,
-                argument_index,
-                instructions
-            ),
-            _ => self.call_function_non_float_argument(
-                function_to_call,
-                argument_source,
-                argument_index,
-                instructions
-            )
-        }
-    }
-
-    fn call_function_non_float_argument(&self,
-                                        function_to_call: &FunctionSignature,
-                                        argument_source: &Variable,
-                                        argument_index: usize,
-                                        instructions: &mut Vec<InstructionIR>) {
-        let relative_index = register_call_arguments::get_relative_index(&function_to_call.parameters, argument_index);
-        if relative_index >= register_call_arguments::NUM_ARGUMENTS {
-            argument_source.move_to_stack(instructions);
-        } else {
-            argument_source.move_to_explicit(
-                HardwareRegisterExplicit(register_call_arguments::get_argument(relative_index)),
-                instructions
-            );
-        }
-    }
-
-    fn call_function_float_argument(&self,
-                                    function_to_call: &FunctionSignature,
-                                    argument_source: &Variable,
-                                    argument_index: usize,
-                                    instructions: &mut Vec<InstructionIR>) {
-        let relative_index = float_register_call_arguments::get_relative_index(&function_to_call.parameters, argument_index);
-        if relative_index >= float_register_call_arguments::NUM_ARGUMENTS {
-            argument_source.move_to_stack(instructions);
-        } else {
-            argument_source.move_to_explicit(
-                HardwareRegisterExplicit(float_register_call_arguments::get_argument(relative_index)),
-                instructions
-            );
+            Type::Float32 => {
+                let relative_index = float_register_call_arguments::get_relative_index(&function_to_call.parameters, argument_index);
+                if relative_index >= float_register_call_arguments::NUM_ARGUMENTS {
+                    argument_source.move_to_stack(instructions);
+                } else {
+                    argument_source.move_to_explicit(
+                        HardwareRegisterExplicit(float_register_call_arguments::get_argument(relative_index)),
+                        instructions
+                    );
+                }
+            }
+            _ => {
+                let relative_index = register_call_arguments::get_relative_index(&function_to_call.parameters, argument_index);
+                if relative_index >= register_call_arguments::NUM_ARGUMENTS {
+                    argument_source.move_to_stack(instructions);
+                } else {
+                    argument_source.move_to_explicit(
+                        HardwareRegisterExplicit(register_call_arguments::get_argument(relative_index)),
+                        instructions
+                    );
+                }
+            }
         }
     }
 
