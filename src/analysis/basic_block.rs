@@ -65,9 +65,9 @@ impl BasicBlock {
     }
 
     fn find_leaders(instructions: &Vec<InstructionMIR>) -> Vec<usize> {
-        // A leader is the start of a basic block
         let branch_label_mapping = branches::create_label_mapping(instructions);
 
+        // A leader is the start of a basic block
         let mut leaders = BTreeSet::new();
         let mut prev_is_branch = false;
         for (instruction_index, instruction) in instructions.iter().enumerate() {
@@ -109,7 +109,7 @@ impl BasicBlock {
     }
 }
 
-fn remove_markers(instructions: &mut Vec<InstructionMIR>) {
+pub fn remove_markers(instructions: &mut Vec<InstructionMIR>) {
     instructions.retain(|instruction| {
         match instruction {
             InstructionMIR::Marker(_) => false,
@@ -118,7 +118,7 @@ fn remove_markers(instructions: &mut Vec<InstructionMIR>) {
     })
 }
 
-fn remove_markers_clone(instructions: &Vec<InstructionMIR>) -> Vec<InstructionMIR> {
+pub fn remove_markers_clone(instructions: &Vec<InstructionMIR>) -> Vec<InstructionMIR> {
     let mut instructions = instructions.clone();
     remove_markers(&mut instructions);
     instructions
