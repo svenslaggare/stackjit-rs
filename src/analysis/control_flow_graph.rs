@@ -1,7 +1,8 @@
 use std::collections::{HashMap, HashSet};
+use std::iter::FromIterator;
 
-use crate::analysis::basic_block::{BasicBlock, remove_markers};
-use crate::ir::mid::InstructionMIR;
+use crate::analysis::basic_block::{BasicBlock};
+use crate::ir::mid::InstructionMIRData;
 use crate::ir::low::BranchLabel;
 use crate::model::verifier::Verifier;
 use crate::model::function::{Function, FunctionDefinition};
@@ -11,7 +12,7 @@ use crate::engine::binder::Binder;
 use crate::ir::mid::compiler::InstructionMIRCompiler;
 use crate::ir::branches;
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ControlFlowEdge {
     pub from: usize,
     pub to: usize
@@ -38,17 +39,17 @@ impl ControlFlowGraph {
         };
 
         for (block_index, block) in blocks.iter().enumerate() {
-            match block.last() {
-                InstructionMIR::Branch(label) => {
+            match &block.last().data {
+                InstructionMIRData::Branch(label) => {
                     let target_block_index = start_offset_mapping[&branch_label_mapping[label]];
                     add_edge(block_index, target_block_index);
                 }
-                InstructionMIR::BranchCondition(_ ,_, label, _, _) => {
+                InstructionMIRData::BranchCondition(_, _, label, _, _) => {
                     let target_block_index = start_offset_mapping[&branch_label_mapping[label]];
                     add_edge(block_index, target_block_index);
                     add_edge(block_index, start_offset_mapping[&(block.start_offset + block.instructions.len())]);
                 }
-                InstructionMIR::Return(_) => {}
+                InstructionMIRData::Return(_) => {}
                 _ => {
                     add_edge(block_index, start_offset_mapping[&(block.start_offset + block.instructions.len())]);
                 }
@@ -97,11 +98,14 @@ fn test_branches1() {
             Instruction::LoadInt32(1),
             Instruction::LoadInt32(2),
             Instruction::BranchNotEqual(6),
+
             Instruction::LoadInt32(1337),
             Instruction::StoreLocal(0),
             Instruction::Branch(8),
+
             Instruction::LoadInt32(4711),
             Instruction::StoreLocal(0),
+
             Instruction::LoadLocal(0),
             Instruction::Return,
         ]
@@ -114,11 +118,39 @@ fn test_branches1() {
     compiler.compile(function.instructions());
     let mut instructions = compiler.done().instructions;
 
-    // remove_markers(&mut instructions);
-
     let blocks = BasicBlock::create_blocks(&instructions);
     let branch_label_mapping = branches::create_label_mapping(&instructions);
 
     let control_flow_graph = ControlFlowGraph::new(&blocks, &branch_label_mapping);
     control_flow_graph.print_graph(&blocks);
+
+    assert_eq!(
+        vec![ControlFlowEdge { from: 0, to: 1 }, ControlFlowEdge { from: 0, to: 2 }],
+        extract_edges(&control_flow_graph, 0)
+    );
+
+    assert_eq!(
+        vec![ControlFlowEdge { from: 1, to: 3 }],
+        extract_edges(&control_flow_graph, 1)
+    );
+
+    assert_eq!(
+        vec![ControlFlowEdge { from: 2, to: 3 }],
+        extract_edges(&control_flow_graph, 2)
+    );
+
+    assert_eq!(
+        Vec::<ControlFlowEdge>::new(),
+        extract_edges(&control_flow_graph, 3)
+    );
+}
+
+fn extract_edges(graph: &ControlFlowGraph, index: usize) -> Vec<ControlFlowEdge> {
+    if let Some(edges) = graph.edges.get(&index) {
+        let mut edges = Vec::from_iter(edges.iter().cloned());
+        edges.sort_by_key(|edge| edge.to);
+        edges
+    } else {
+        Vec::new()
+    }
 }

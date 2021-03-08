@@ -4,7 +4,7 @@ use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
-use crate::ir::mid::{VirtualRegister, InstructionMIR};
+use crate::ir::mid::{VirtualRegister, InstructionMIRData, InstructionMIR};
 use crate::ir::branches::BranchManager;
 use crate::ir::low::JumpCondition;
 use crate::engine::binder::Binder;
@@ -60,30 +60,28 @@ impl<'a> InstructionMIRCompiler<'a> {
     fn compile_instruction(&mut self, instruction_index: usize, instruction: &Instruction) {
         let operand_types = self.function.instruction_operand_types(instruction_index);
 
-        self.instructions.push(InstructionMIR::Marker(instruction_index));
-
         if let Some(branch_label) = self.branch_manager.is_branch(instruction_index) {
-            self.instructions.push(InstructionMIR::BranchLabel(branch_label));
+            self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::BranchLabel(branch_label)));
         }
 
         match instruction {
             Instruction::LoadInt32(value) => {
                 let assign_reg = self.assign_stack_register(Type::Int32);
-                self.instructions.push(InstructionMIR::LoadInt32(assign_reg, *value));
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadInt32(assign_reg, *value)));
             }
             Instruction::LoadFloat32(value) => {
                 let assign_reg = self.assign_stack_register(Type::Float32);
-                self.instructions.push(InstructionMIR::LoadFloat32(assign_reg, *value));
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadFloat32(assign_reg, *value)));
             }
             Instruction::LoadLocal(index) => {
                 let local_reg = self.local_virtual_registers[index].clone();
                 let assign_reg = self.assign_stack_register(local_reg.value_type.clone());
-                self.instructions.push(InstructionMIR::Move(assign_reg, local_reg));
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::Move(assign_reg, local_reg)));
             }
             Instruction::StoreLocal(index) => {
                 let local_reg = self.local_virtual_registers[index].clone();
                 let value_reg = self.use_stack_register(local_reg.value_type.clone());
-                self.instructions.push(InstructionMIR::Move(local_reg, value_reg));
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::Move(local_reg, value_reg)));
             }
             Instruction::Add => {
                 let value_type = &operand_types[0].value_type;
@@ -93,10 +91,10 @@ impl<'a> InstructionMIRCompiler<'a> {
 
                 match value_type {
                     Type::Int32 => {
-                        self.instructions.push(InstructionMIR::AddInt32(assign_reg, op1_reg, op2_reg));
+                        self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::AddInt32(assign_reg, op1_reg, op2_reg)));
                     }
                     Type::Float32 => {
-                        self.instructions.push(InstructionMIR::AddFloat32(assign_reg, op1_reg, op2_reg));
+                        self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::AddFloat32(assign_reg, op1_reg, op2_reg)));
                     }
                     _ => { panic!("unexpected."); }
                 }
@@ -109,10 +107,10 @@ impl<'a> InstructionMIRCompiler<'a> {
 
                 match value_type {
                     Type::Int32 => {
-                        self.instructions.push(InstructionMIR::SubInt32(assign_reg, op1_reg, op2_reg));
+                        self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::SubInt32(assign_reg, op1_reg, op2_reg)));
                     }
                     Type::Float32 => {
-                        self.instructions.push(InstructionMIR::SubFloat32(assign_reg, op1_reg, op2_reg));
+                        self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::SubFloat32(assign_reg, op1_reg, op2_reg)));
                     }
                     _ => { panic!("unexpected."); }
                 }
@@ -124,7 +122,7 @@ impl<'a> InstructionMIRCompiler<'a> {
                     None
                 };
 
-                self.instructions.push(InstructionMIR::Return(return_value));
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::Return(return_value)));
             }
             Instruction::Call(signature) => {
                 let func_to_call = self.binder.get(signature).unwrap();
@@ -141,40 +139,40 @@ impl<'a> InstructionMIRCompiler<'a> {
                     None
                 };
 
-                self.instructions.push(InstructionMIR::Call(func_to_call.call_signature(), return_value_reg, arguments_regs));
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::Call(func_to_call.call_signature(), return_value_reg, arguments_regs)));
             }
             Instruction::LoadArgument(argument_index) => {
                 let assign_reg = self.assign_stack_register(self.function.definition().parameters()[*argument_index as usize].clone());
-                self.instructions.push(InstructionMIR::LoadArgument(*argument_index, assign_reg));
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadArgument(*argument_index, assign_reg)));
             }
             Instruction::LoadNull => {
                 let assign_reg = self.assign_stack_register(Type::Null);
-                self.instructions.push(InstructionMIR::LoadNull(assign_reg));
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadNull(assign_reg)));
             }
             Instruction::NewArray(element) => {
                 let size_reg = self.use_stack_register(Type::Int32);
                 let assign_reg = self.assign_stack_register(Type::Array(Box::new(element.clone())));
-                self.instructions.push(InstructionMIR::NewArray(element.clone(), assign_reg, size_reg));
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::NewArray(element.clone(), assign_reg, size_reg)));
             }
             Instruction::LoadElement(element) => {
                 let index_reg = self.use_stack_register(Type::Int32);
                 let array_ref_reg = self.use_stack_register(Type::Array(Box::new(element.clone())));
                 let assign_reg = self.assign_stack_register(element.clone());
-                self.instructions.push(InstructionMIR::LoadElement(element.clone(), assign_reg, array_ref_reg, index_reg))
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadElement(element.clone(), assign_reg, array_ref_reg, index_reg)));
             }
             Instruction::StoreElement(element) => {
                 let value_ref = self.use_stack_register(element.clone());
                 let index_reg = self.use_stack_register(Type::Int32);
                 let array_ref_reg = self.use_stack_register(Type::Array(Box::new(element.clone())));
-                self.instructions.push(InstructionMIR::StoreElement(element.clone(), array_ref_reg, index_reg, value_ref));
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::StoreElement(element.clone(), array_ref_reg, index_reg, value_ref)));
             }
             Instruction::LoadArrayLength => {
                 let array_ref_reg = self.use_stack_register(operand_types[0].value_type.clone());
                 let assign_reg = self.assign_stack_register(Type::Int32);
-                self.instructions.push(InstructionMIR::LoadArrayLength(assign_reg, array_ref_reg));
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadArrayLength(assign_reg, array_ref_reg)));
             }
             Instruction::Branch(target) => {
-                self.instructions.push(InstructionMIR::Branch(self.branch_manager.get_label(*target).unwrap()));
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::Branch(self.branch_manager.get_label(*target).unwrap())));
             }
             Instruction::BranchEqual(target)
             | Instruction::BranchNotEqual(target)
@@ -196,13 +194,13 @@ impl<'a> InstructionMIRCompiler<'a> {
                 let label = self.branch_manager.get_label(*target).unwrap();
                 let op2_reg = self.use_stack_register(compare_type.clone());
                 let op1_reg = self.use_stack_register(compare_type.clone());
-                self.instructions.push(InstructionMIR::BranchCondition(
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::BranchCondition(
                     condition,
                     compare_type,
                     label,
                     op1_reg,
                     op2_reg
-                ));
+                )));
             }
         }
     }
@@ -370,13 +368,7 @@ fn test_simple5() {
 
 fn println_vec(original: &Vec<Instruction>, irs: &Vec<InstructionMIR>) {
     for ir in irs {
-        match ir {
-            InstructionMIR::Marker(index) => {
-                println!("{:?}", original[*index]);
-            }
-            instruction => {
-                println!("\t{:?}", instruction);
-            }
-        }
+        println!("{:?}", original[ir.index]);
+        println!("\t{:?}", ir.data);
     }
 }

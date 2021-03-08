@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
 
-use crate::ir::mid::{InstructionMIR, VirtualRegister};
+use crate::ir::mid::{InstructionMIRData, VirtualRegister, InstructionMIR};
 use crate::ir::branches;
 use crate::model::typesystem::Type;
 use crate::model::function::{Function, FunctionDefinition};
@@ -47,20 +47,6 @@ impl BasicBlock {
             });
         }
 
-        // Correct markers
-        for block_index in 0..blocks.len() {
-            if !blocks[block_index].first().is_marker() && block_index > 0 {
-                if blocks[block_index - 1].last().is_marker() {
-                    let marker = blocks[block_index - 1].instructions.pop().unwrap();
-                    blocks[block_index].instructions.insert(0, marker);
-                    blocks[block_index].start_offset -= 1;
-                }
-            }
-        }
-
-        // Remove empty blocks
-        blocks.retain(|block| !block.instructions.is_empty());
-
         blocks
     }
 
@@ -76,13 +62,13 @@ impl BasicBlock {
                 continue;
             }
 
-            match instruction {
-                InstructionMIR::Branch(label) | InstructionMIR::BranchCondition(_, _, label, _, _) => {
+            match &instruction.data {
+                InstructionMIRData::Branch(label) | InstructionMIRData::BranchCondition(_, _, label, _, _) => {
                     leaders.insert(branch_label_mapping[label]);
                     prev_is_branch = true;
                     continue;
                 }
-                InstructionMIR::Return(_) => {
+                InstructionMIRData::Return(_) => {
                     prev_is_branch = true;
                     continue;
                 }
@@ -107,21 +93,6 @@ impl BasicBlock {
 
         instructions
     }
-}
-
-pub fn remove_markers(instructions: &mut Vec<InstructionMIR>) {
-    instructions.retain(|instruction| {
-        match instruction {
-            InstructionMIR::Marker(_) => false,
-            _ => true
-        }
-    })
-}
-
-pub fn remove_markers_clone(instructions: &Vec<InstructionMIR>) -> Vec<InstructionMIR> {
-    let mut instructions = instructions.clone();
-    remove_markers(&mut instructions);
-    instructions
 }
 
 #[test]
@@ -196,14 +167,4 @@ fn test_branches1() {
     linearized_instructions.extend(blocks.last().unwrap().instructions.iter().cloned());
 
     assert_eq!(instructions, linearized_instructions);
-
-    let mut instructions_without_markers = instructions.clone();
-    remove_markers(&mut instructions_without_markers);
-    let blocks_without_markers = BasicBlock::create_blocks(&instructions_without_markers);
-
-    assert_eq!(blocks_without_markers.len(), blocks.len());
-
-    for i in 0..blocks_without_markers.len() {
-        assert_eq!(blocks_without_markers[i].instructions, remove_markers_clone(&blocks[i].instructions));
-    }
 }
