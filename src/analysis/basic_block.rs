@@ -12,16 +12,16 @@ use crate::model::verifier::Verifier;
 
 pub struct BasicBlock {
     pub start_offset: usize,
-    pub instructions: Vec<InstructionMIR>
+    pub instructions: Vec<usize>
 }
 
 impl BasicBlock {
-    pub fn first(&self) -> &InstructionMIR {
-        self.instructions.first().unwrap()
+    pub fn first(&self) -> usize {
+        *self.instructions.first().unwrap()
     }
 
-    pub fn last(&self) -> &InstructionMIR {
-        self.instructions.last().unwrap()
+    pub fn last(&self) -> usize {
+        *self.instructions.last().unwrap()
     }
 
     pub fn create_blocks(instructions: &Vec<InstructionMIR>) -> Vec<BasicBlock> {
@@ -33,11 +33,11 @@ impl BasicBlock {
 
             if leader_index + 1 < leaders.len() {
                 for instruction_index in leader..leaders[leader_index + 1] {
-                    block_instructions.push(instructions[instruction_index].clone());
+                    block_instructions.push(instruction_index);
                 }
             } else {
                 for instruction_index in leader..instructions.len() {
-                    block_instructions.push(instructions[instruction_index].clone());
+                    block_instructions.push(instruction_index);
                 }
             }
 
@@ -84,7 +84,7 @@ impl BasicBlock {
         Vec::from_iter(leaders.into_iter())
     }
 
-    pub fn linearize(blocks: &Vec<BasicBlock>) -> Vec<InstructionMIR> {
+    pub fn linearize(blocks: &Vec<BasicBlock>) -> Vec<usize> {
         let mut instructions = Vec::new();
 
         for block in blocks {
@@ -93,6 +93,10 @@ impl BasicBlock {
 
         instructions
     }
+}
+
+fn get_instructions(instructions: &Vec<InstructionMIR>, indices: &Vec<usize>) -> Vec<InstructionMIR> {
+    indices.iter().map(|index| instructions[*index].clone()).collect()
 }
 
 #[test]
@@ -123,7 +127,6 @@ fn test_no_branches1() {
     assert_eq!(instructions.len(), blocks[0].instructions.len());
 }
 
-
 #[test]
 fn test_branches1() {
     let mut function = Function::new(
@@ -153,18 +156,18 @@ fn test_branches1() {
     let blocks = BasicBlock::create_blocks(&instructions);
 
     assert_eq!(4, blocks.len());
-    assert_eq!(instructions, BasicBlock::linearize(&blocks));
+    assert_eq!(instructions, get_instructions(&instructions, &BasicBlock::linearize(&blocks)));
 
     let mut linearized_instructions = Vec::new();
     for (block_index, block) in blocks.iter().enumerate() {
         if block_index + 1 < blocks.len() {
             let expected_block_instructions = &instructions[block.start_offset..blocks[block_index + 1].start_offset];
-            assert_eq!(&block.instructions[..], expected_block_instructions);
+            assert_eq!(&get_instructions(&instructions, &block.instructions)[..], expected_block_instructions);
             linearized_instructions.extend(expected_block_instructions.iter().cloned())
         }
     }
 
-    linearized_instructions.extend(blocks.last().unwrap().instructions.iter().cloned());
+    linearized_instructions.extend(get_instructions(&instructions, &blocks.last().unwrap().instructions));
 
     assert_eq!(instructions, linearized_instructions);
 }

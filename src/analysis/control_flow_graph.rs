@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
 use crate::analysis::basic_block::{BasicBlock};
-use crate::ir::mid::InstructionMIRData;
+use crate::ir::mid::{InstructionMIRData, InstructionMIR};
 use crate::ir::low::BranchLabel;
 use crate::model::verifier::Verifier;
 use crate::model::function::{Function, FunctionDefinition};
@@ -25,7 +25,9 @@ pub struct ControlFlowGraph {
 }
 
 impl ControlFlowGraph {
-    pub fn new(blocks: &Vec<BasicBlock>, branch_label_mapping: &HashMap<BranchLabel, usize>) -> ControlFlowGraph {
+    pub fn new(instructions: &Vec<InstructionMIR>,
+               blocks: &Vec<BasicBlock>,
+               branch_label_mapping: &HashMap<BranchLabel, usize>) -> ControlFlowGraph {
         let vertices = (0..blocks.len()).collect::<Vec<_>>();
         let mut edges = HashMap::new();
         let mut back_edges = HashMap::new();
@@ -41,7 +43,7 @@ impl ControlFlowGraph {
         };
 
         for (block_index, block) in blocks.iter().enumerate() {
-            match &block.last().data {
+            match &instructions[block.last()].data {
                 InstructionMIRData::Branch(label) => {
                     let target_block_index = start_offset_mapping[&branch_label_mapping[label]];
                     add_edge(block_index, target_block_index);
@@ -65,14 +67,14 @@ impl ControlFlowGraph {
         }
     }
 
-    pub fn print_graph(&self, blocks: &Vec<BasicBlock>) {
+    pub fn print_graph(&self, instructions: &Vec<InstructionMIR>, blocks: &Vec<BasicBlock>) {
         for vertex_index in &self.vertices {
             let block = &blocks[*vertex_index];
             println!(
                 "{} {}..{} {}",
-                block.first().name(),
+                instructions[block.first()].name(),
                 block.start_offset,
-                block.last().name(),
+                instructions[block.last()].name(),
                 block.start_offset + block.instructions.len() - 1
             );
 
@@ -81,9 +83,9 @@ impl ControlFlowGraph {
                     let edge_block = &blocks[edge.to];
                     println!(
                         "\t{} {}..{} {}",
-                        edge_block.first().name(),
+                        instructions[edge_block.first()].name(),
                         edge_block.start_offset,
-                        edge_block.last().name(),
+                        instructions[edge_block.last()].name(),
                         edge_block.start_offset + edge_block.instructions.len() - 1
                     );
                 }
@@ -124,8 +126,8 @@ fn test_branches1() {
     let blocks = BasicBlock::create_blocks(&instructions);
     let branch_label_mapping = branches::create_label_mapping(&instructions);
 
-    let control_flow_graph = ControlFlowGraph::new(&blocks, &branch_label_mapping);
-    control_flow_graph.print_graph(&blocks);
+    let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks, &branch_label_mapping);
+    control_flow_graph.print_graph(&instructions, &blocks);
 
     assert_eq!(
         vec![ControlFlowEdge { from: 0, to: 1 }, ControlFlowEdge { from: 0, to: 2 }],

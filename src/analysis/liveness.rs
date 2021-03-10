@@ -3,7 +3,7 @@ use std::iter::FromIterator;
 
 use crate::analysis::control_flow_graph::ControlFlowGraph;
 use crate::analysis::basic_block::BasicBlock;
-use crate::ir::mid::VirtualRegister;
+use crate::ir::mid::{VirtualRegister, InstructionMIR};
 use crate::model::function::{Function, FunctionDefinition};
 use crate::model::typesystem::Type;
 use crate::model::instruction::Instruction;
@@ -19,15 +19,18 @@ pub struct LiveInterval {
     pub register: VirtualRegister
 }
 
-pub fn compute_liveness(basic_blocks: &Vec<BasicBlock>, control_flow_graph: &ControlFlowGraph) -> Vec<LiveInterval> {
+pub fn compute_liveness(instructions: &Vec<InstructionMIR>,
+                        basic_blocks: &Vec<BasicBlock>,
+                        control_flow_graph: &ControlFlowGraph) -> Vec<LiveInterval> {
     let mut live_intervals = Vec::new();
-    let virtual_registers = get_virtual_registers(basic_blocks, control_flow_graph);
-    let (use_sites, assign_sites) = get_register_usage(basic_blocks, control_flow_graph);
+    let virtual_registers = get_virtual_registers(instructions, basic_blocks, control_flow_graph);
+    let (use_sites, assign_sites) = get_register_usage(instructions, basic_blocks, control_flow_graph);
 
     for register in virtual_registers {
         if let Some(register_use_sites) = use_sites.get(&register) {
             let mut alive_at = HashSet::new();
             compute_liveness_for_register(
+                instructions,
                 basic_blocks,
                 control_flow_graph,
                 &register,
@@ -66,11 +69,14 @@ fn get_live_interval(register: &VirtualRegister, alive_at: &HashSet<usize>) -> L
     }
 }
 
-fn get_virtual_registers(basic_blocks: &Vec<BasicBlock>, control_flow_graph: &ControlFlowGraph) -> Vec<VirtualRegister> {
+fn get_virtual_registers(instructions: &Vec<InstructionMIR>,
+                         basic_blocks: &Vec<BasicBlock>,
+                         control_flow_graph: &ControlFlowGraph) -> Vec<VirtualRegister> {
     let mut registers = HashSet::new();
 
     for &block_index in &control_flow_graph.vertices {
-        for instruction in &basic_blocks[block_index].instructions {
+        for &block_offset in &basic_blocks[block_index].instructions {
+            let instruction = &instructions[block_offset];
             if let Some(assign_register) = instruction.data.assign_register() {
                 registers.insert(assign_register);
             }
@@ -86,13 +92,15 @@ fn get_virtual_registers(basic_blocks: &Vec<BasicBlock>, control_flow_graph: &Co
     registers
 }
 
-fn compute_liveness_for_register(basic_blocks: &Vec<BasicBlock>,
+fn compute_liveness_for_register(instructions: &Vec<InstructionMIR>,
+                                 basic_blocks: &Vec<BasicBlock>,
                                  control_flow_graph: &ControlFlowGraph,
                                  register: &VirtualRegister,
                                  use_sites: &Vec<UsageSite>,
                                  alive_at: &mut HashSet<usize>) {
     for use_site in use_sites {
         compute_liveness_for_register_in_block(
+            instructions,
             basic_blocks,
             control_flow_graph,
             use_site.block_index,
@@ -104,7 +112,8 @@ fn compute_liveness_for_register(basic_blocks: &Vec<BasicBlock>,
     }
 }
 
-fn compute_liveness_for_register_in_block(basic_blocks: &Vec<BasicBlock>,
+fn compute_liveness_for_register_in_block(instructions: &Vec<InstructionMIR>,
+                                          basic_blocks: &Vec<BasicBlock>,
                                           control_flow_graph: &ControlFlowGraph,
                                           block_index: usize,
                                           start_offset: usize,
@@ -118,7 +127,7 @@ fn compute_liveness_for_register_in_block(basic_blocks: &Vec<BasicBlock>,
     visited.insert(block_index);
     let mut terminated = false;
     for i in (0..(start_offset + 1)).rev() {
-        let instruction = &basic_blocks[block_index].instructions[i];
+        let instruction = &instructions[basic_blocks[block_index].instructions[i]];
 
         if let Some(assign_register) = instruction.data.assign_register() {
             if &assign_register == register && !instruction.data.use_registers().contains(&register) {
@@ -136,6 +145,7 @@ fn compute_liveness_for_register_in_block(basic_blocks: &Vec<BasicBlock>,
         if let Some(edges) = control_flow_graph.back_edges.get(&block_index) {
             for edge in edges {
                 compute_liveness_for_register_in_block(
+                    instructions,
                     basic_blocks,
                     control_flow_graph,
                     edge.to,
@@ -157,23 +167,27 @@ struct UsageSite {
 type UseSites = HashMap<VirtualRegister, Vec<UsageSite>>;
 type AssignSites = HashMap<VirtualRegister, Vec<UsageSite>>;
 
-fn get_register_usage(basic_blocks: &Vec<BasicBlock>, control_flow_graph: &ControlFlowGraph) -> (UseSites, AssignSites) {
+fn get_register_usage(instructions: &Vec<InstructionMIR>,
+                      basic_blocks: &Vec<BasicBlock>,
+                      control_flow_graph: &ControlFlowGraph) -> (UseSites, AssignSites) {
     let mut use_sites = HashMap::new();
     let mut assign_sites = HashMap::new();
 
     for &block_index in &control_flow_graph.vertices {
-        for (instruction_index, instruction) in basic_blocks[block_index].instructions.iter().enumerate() {
+        for (block_offset, &instruction_index) in basic_blocks[block_index].instructions.iter().enumerate() {
+            let instruction = &instructions[instruction_index];
+
             if let Some(assign_register) = instruction.data.assign_register() {
                 assign_sites.entry(assign_register).or_insert_with(|| Vec::new()).push(UsageSite {
                     block_index,
-                    offset: instruction_index
+                    offset: block_offset
                 });
             }
 
             for use_register in instruction.data.use_registers() {
                 use_sites.entry(use_register).or_insert_with(|| Vec::new()).push(UsageSite {
                     block_index,
-                    offset: instruction_index
+                    offset: block_offset
                 });
             }
         }
@@ -216,9 +230,9 @@ fn test_liveness1() {
     let blocks = BasicBlock::create_blocks(&instructions);
     let branch_label_mapping = branches::create_label_mapping(&instructions);
 
-    let control_flow_graph = ControlFlowGraph::new(&blocks, &branch_label_mapping);
+    let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks, &branch_label_mapping);
 
-    let live_intervals = compute_liveness(&blocks, &control_flow_graph);
+    let live_intervals = compute_liveness(&instructions, &blocks, &control_flow_graph);
 
     assert_eq!(2, live_intervals.len());
 
@@ -268,9 +282,9 @@ fn test_liveness2() {
     let blocks = BasicBlock::create_blocks(&instructions);
     let branch_label_mapping = branches::create_label_mapping(&instructions);
 
-    let control_flow_graph = ControlFlowGraph::new(&blocks, &branch_label_mapping);
+    let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks, &branch_label_mapping);
 
-    let live_intervals = compute_liveness(&blocks, &control_flow_graph);
+    let live_intervals = compute_liveness(&instructions, &blocks, &control_flow_graph);
 
     assert_eq!(3, live_intervals.len());
 
@@ -329,9 +343,9 @@ fn test_liveness3() {
     let blocks = BasicBlock::create_blocks(&instructions);
     let branch_label_mapping = branches::create_label_mapping(&instructions);
 
-    let control_flow_graph = ControlFlowGraph::new(&blocks, &branch_label_mapping);
+    let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks, &branch_label_mapping);
 
-    let live_intervals = compute_liveness(&blocks, &control_flow_graph);
+    let live_intervals = compute_liveness(&instructions, &blocks, &control_flow_graph);
 
     assert_eq!(3, live_intervals.len());
 
