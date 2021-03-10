@@ -6,7 +6,7 @@ use std::iter::FromIterator;
 pub mod compiler;
 pub mod ir_compiler;
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct VirtualRegister {
     pub number: u32,
     pub value_type: Type

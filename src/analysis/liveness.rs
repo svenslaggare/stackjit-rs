@@ -12,7 +12,7 @@ use crate::engine::binder::Binder;
 use crate::ir::mid::compiler::InstructionMIRCompiler;
 use crate::ir::branches;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct LiveInterval {
     pub start: usize,
     pub end: usize,

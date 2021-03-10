@@ -5,6 +5,7 @@ mod model;
 mod ir;
 mod analysis;
 mod compiler;
+mod optimization;
 mod runtime;
 mod engine;
 mod vm;

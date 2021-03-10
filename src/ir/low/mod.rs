@@ -11,6 +11,15 @@ pub enum HardwareRegister {
     Float(u32)
 }
 
+impl HardwareRegister {
+    pub fn number(&self) -> u32 {
+        match self {
+            HardwareRegister::Int(number) => *number,
+            HardwareRegister::Float(number) => *number
+        }
+    }
+}
+
 impl std::fmt::Debug for HardwareRegister {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
