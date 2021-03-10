@@ -19,14 +19,16 @@ pub struct ControlFlowEdge {
 }
 
 pub struct ControlFlowGraph {
-    vertices: Vec<usize>,
-    edges: HashMap<usize, HashSet<ControlFlowEdge>>
+    pub vertices: Vec<usize>,
+    pub edges: HashMap<usize, HashSet<ControlFlowEdge>>,
+    pub back_edges: HashMap<usize, HashSet<ControlFlowEdge>>
 }
 
 impl ControlFlowGraph {
     pub fn new(blocks: &Vec<BasicBlock>, branch_label_mapping: &HashMap<BranchLabel, usize>) -> ControlFlowGraph {
         let vertices = (0..blocks.len()).collect::<Vec<_>>();
         let mut edges = HashMap::new();
+        let mut back_edges = HashMap::new();
 
         let mut start_offset_mapping = HashMap::new();
         for (block_index, block) in blocks.iter().enumerate() {
@@ -34,8 +36,8 @@ impl ControlFlowGraph {
         }
 
         let mut add_edge = |from, to| {
-            let mut from_edges = edges.entry(from).or_insert_with(|| HashSet::new());
-            from_edges.insert(ControlFlowEdge { from, to });
+            edges.entry(from).or_insert_with(|| HashSet::new()).insert(ControlFlowEdge { from, to });
+            back_edges.entry(to).or_insert_with(|| HashSet::new()).insert(ControlFlowEdge { from: to, to: from });
         };
 
         for (block_index, block) in blocks.iter().enumerate() {
@@ -58,7 +60,8 @@ impl ControlFlowGraph {
 
         ControlFlowGraph {
             vertices,
-            edges
+            edges,
+            back_edges
         }
     }
 

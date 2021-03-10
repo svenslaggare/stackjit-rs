@@ -1,11 +1,12 @@
 use crate::model::typesystem::Type;
 use crate::model::function::FunctionSignature;
 use crate::ir::low::{BranchLabel, JumpCondition};
+use std::iter::FromIterator;
 
 pub mod compiler;
 pub mod ir_compiler;
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct VirtualRegister {
     pub number: u32,
     pub value_type: Type
@@ -88,6 +89,52 @@ impl InstructionMIRData {
             InstructionMIRData::BranchLabel(_) => "BranchLabel".to_owned(),
             InstructionMIRData::Branch(_) => "Branch".to_owned(),
             InstructionMIRData::BranchCondition(_, _, _, _, _) => "BranchCondition".to_owned()
+        }
+    }
+
+    pub fn assign_register(&self) -> Option<VirtualRegister> {
+        match self {
+            InstructionMIRData::LoadInt32(register, _) => Some(register.clone()),
+            InstructionMIRData::LoadFloat32(register, _) => Some(register.clone()),
+            InstructionMIRData::Move(register, _) => Some(register.clone()),
+            InstructionMIRData::AddInt32(register, _, _) => Some(register.clone()),
+            InstructionMIRData::SubInt32(register, _, _) => Some(register.clone()),
+            InstructionMIRData::AddFloat32(register, _, _) => Some(register.clone()),
+            InstructionMIRData::SubFloat32(register, _, _) => Some(register.clone()),
+            InstructionMIRData::Return(_) => None,
+            InstructionMIRData::Call(_, register, _) => register.clone(),
+            InstructionMIRData::LoadArgument(_, register) => Some(register.clone()),
+            InstructionMIRData::LoadNull(register) => Some(register.clone()),
+            InstructionMIRData::NewArray(_, register, _) => Some(register.clone()),
+            InstructionMIRData::LoadElement(_, register, _, _) => Some(register.clone()),
+            InstructionMIRData::StoreElement(_, _, _, _) => None,
+            InstructionMIRData::LoadArrayLength(_, register) => Some(register.clone()),
+            InstructionMIRData::BranchLabel(_) => None,
+            InstructionMIRData::Branch(_) => None,
+            InstructionMIRData::BranchCondition(_, _, _, _, _) => None
+        }
+    }
+
+    pub fn use_registers(&self) -> Vec<VirtualRegister> {
+        match self {
+            InstructionMIRData::LoadInt32(_, _) => Vec::new(),
+            InstructionMIRData::LoadFloat32(_, _) => Vec::new(),
+            InstructionMIRData::Move(_, op) => vec![op.clone()],
+            InstructionMIRData::AddInt32(_, op1, op2) => vec![op1.clone(), op2.clone()],
+            InstructionMIRData::SubInt32(_, op1, op2) => vec![op1.clone(), op2.clone()],
+            InstructionMIRData::AddFloat32(_, op1, op2) => vec![op1.clone(), op2.clone()],
+            InstructionMIRData::SubFloat32(_, op1, op2) => vec![op1.clone(), op2.clone()],
+            InstructionMIRData::Return(register) => Vec::from_iter(register.iter().cloned()),
+            InstructionMIRData::Call(_, _, arguments) => arguments.clone(),
+            InstructionMIRData::LoadArgument(_, _) => Vec::new(),
+            InstructionMIRData::LoadNull(_) => Vec::new(),
+            InstructionMIRData::NewArray(_, _, op) => vec![op.clone()],
+            InstructionMIRData::LoadElement(_, _, op1, op2) => vec![op1.clone(), op2.clone()],
+            InstructionMIRData::StoreElement(_, op1, op2, op3) => vec![op1.clone(), op2.clone(), op3.clone()],
+            InstructionMIRData::LoadArrayLength(_, _) => Vec::new(),
+            InstructionMIRData::BranchLabel(_) => Vec::new(),
+            InstructionMIRData::Branch(_) => Vec::new(),
+            InstructionMIRData::BranchCondition(_, _, _, op1, op2) => vec![op1.clone(), op2.clone()]
         }
     }
 }

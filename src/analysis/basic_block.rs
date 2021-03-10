@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
 
-use crate::ir::mid::{InstructionMIRData, VirtualRegister, InstructionMIR};
+use crate::ir::mid::{InstructionMIRData, InstructionMIR};
 use crate::ir::branches;
 use crate::model::typesystem::Type;
 use crate::model::function::{Function, FunctionDefinition};

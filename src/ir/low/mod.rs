@@ -2,7 +2,7 @@ use iced_x86::Register;
 
 pub mod compiler;
 
-use crate::model::function::{FunctionSignature, Function};
+use crate::model::function::{FunctionSignature};
 use crate::model::typesystem::Type;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
