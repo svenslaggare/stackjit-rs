@@ -1,16 +1,16 @@
 use std::collections::HashMap;
 
-use crate::model::typesystem::{TypeStorage};
-use crate::model::function::{Function, FunctionSignature, FunctionDefinition};
-use crate::ir::low::compiler::InstructionIRCompiler;
-use crate::ir::low::InstructionIR;
-use crate::ir::mid::compiler::InstructionMIRCompiler;
+use crate::compiler::{FunctionCallType, FunctionCompilationData};
 use crate::compiler::allocator::ExecutableMemoryAllocator;
-use crate::compiler::code_generator::{CodeGenerator};
+use crate::compiler::code_generator::CodeGenerator;
 use crate::compiler::error_handling::ErrorHandling;
-use crate::compiler::{FunctionCompilationData, FunctionCallType};
 use crate::engine::binder::Binder;
+use crate::ir;
+use crate::ir::compiler::InstructionMIRCompiler;
+use crate::ir::InstructionIR;
 use crate::ir::mid;
+use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
+use crate::model::typesystem::TypeStorage;
 
 pub struct JitCompiler {
     memory_allocator: ExecutableMemoryAllocator,
@@ -130,15 +130,11 @@ impl JitCompiler {
     }
 
     fn compile_ir(&self, binder: &Binder, function: &Function) -> Vec<InstructionIR> {
-        // let mut ir_compiler = InstructionIRCompiler::new(&binder, function);
-        // ir_compiler.compile(function.instructions());
-        // ir_compiler.done()
-
         let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
         mir_compiler.compile(function.instructions());
         let mir_result = mir_compiler.done();
 
-        let mut ir_compiler = mid::ir_compiler::InstructionIRCompiler::new(&binder, &function);
+        let mut ir_compiler = ir::ir_compiler::InstructionIRCompiler::new(&binder, &function);
         ir_compiler.compile(&mir_result);
         ir_compiler.done()
     }

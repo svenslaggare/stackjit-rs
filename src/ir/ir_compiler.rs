@@ -1,13 +1,14 @@
-use crate::ir::low::{InstructionIR, HardwareRegister, HardwareRegisterExplicit, Variable};
-use crate::ir::mid::{InstructionMIRData, VirtualRegister, InstructionMIR};
-use crate::ir::mid::compiler::{InstructionMIRCompiler, MIRCompilationResult};
+use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments};
+use crate::compiler::stack_layout;
+use crate::engine::binder::Binder;
+use crate::ir::{HardwareRegister, HardwareRegisterExplicit, InstructionIR, Variable};
+use crate::ir::mid::{InstructionMIR, VirtualRegister};
+use crate::ir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
+use crate::ir::mid::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
-use crate::model::verifier::Verifier;
 use crate::model::typesystem::Type;
-use crate::compiler::{stack_layout};
-use crate::compiler::calling_conventions::{register_call_arguments, CallingConventions};
-use crate::engine::binder::Binder;
+use crate::model::verifier::Verifier;
 
 pub struct InstructionIRCompiler<'a> {
     binder: &'a Binder,

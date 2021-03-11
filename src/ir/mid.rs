@@ -1,10 +1,8 @@
-use crate::model::typesystem::Type;
-use crate::model::function::FunctionSignature;
-use crate::ir::low::{BranchLabel, JumpCondition};
 use std::iter::FromIterator;
 
-pub mod compiler;
-pub mod ir_compiler;
+use crate::ir::{BranchLabel, JumpCondition};
+use crate::model::function::FunctionSignature;
+use crate::model::typesystem::Type;
 
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct VirtualRegister {
@@ -44,28 +42,6 @@ impl InstructionMIR {
     pub fn name(&self) -> String {
         self.data.name()
     }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum InstructionMIRData {
-    LoadInt32(VirtualRegister, i32),
-    LoadFloat32(VirtualRegister, f32),
-    Move(VirtualRegister, VirtualRegister),
-    AddInt32(VirtualRegister, VirtualRegister, VirtualRegister),
-    SubInt32(VirtualRegister, VirtualRegister, VirtualRegister),
-    AddFloat32(VirtualRegister, VirtualRegister, VirtualRegister),
-    SubFloat32(VirtualRegister, VirtualRegister, VirtualRegister),
-    Return(Option<VirtualRegister>),
-    Call(FunctionSignature, Option<VirtualRegister>, Vec<VirtualRegister>),
-    LoadArgument(u32, VirtualRegister),
-    LoadNull(VirtualRegister),
-    NewArray(Type, VirtualRegister, VirtualRegister),
-    LoadElement(Type, VirtualRegister, VirtualRegister, VirtualRegister),
-    StoreElement(Type, VirtualRegister, VirtualRegister, VirtualRegister),
-    LoadArrayLength(VirtualRegister, VirtualRegister),
-    BranchLabel(BranchLabel),
-    Branch(BranchLabel),
-    BranchCondition(JumpCondition, Type, BranchLabel, VirtualRegister, VirtualRegister)
 }
 
 impl InstructionMIRData {
@@ -137,4 +113,26 @@ impl InstructionMIRData {
             InstructionMIRData::BranchCondition(_, _, _, op1, op2) => vec![op1.clone(), op2.clone()]
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum InstructionMIRData {
+    LoadInt32(VirtualRegister, i32),
+    LoadFloat32(VirtualRegister, f32),
+    Move(VirtualRegister, VirtualRegister),
+    AddInt32(VirtualRegister, VirtualRegister, VirtualRegister),
+    SubInt32(VirtualRegister, VirtualRegister, VirtualRegister),
+    AddFloat32(VirtualRegister, VirtualRegister, VirtualRegister),
+    SubFloat32(VirtualRegister, VirtualRegister, VirtualRegister),
+    Return(Option<VirtualRegister>),
+    Call(FunctionSignature, Option<VirtualRegister>, Vec<VirtualRegister>),
+    LoadArgument(u32, VirtualRegister),
+    LoadNull(VirtualRegister),
+    NewArray(Type, VirtualRegister, VirtualRegister),
+    LoadElement(Type, VirtualRegister, VirtualRegister, VirtualRegister),
+    StoreElement(Type, VirtualRegister, VirtualRegister, VirtualRegister),
+    LoadArrayLength(VirtualRegister, VirtualRegister),
+    BranchLabel(BranchLabel),
+    Branch(BranchLabel),
+    BranchCondition(JumpCondition, Type, BranchLabel, VirtualRegister, VirtualRegister)
 }

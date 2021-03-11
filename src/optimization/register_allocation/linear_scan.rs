@@ -1,19 +1,19 @@
-use std::collections::{HashMap, BTreeSet};
-use std::iter::FromIterator;
 use std::cmp::Ordering;
+use std::collections::{BTreeSet, HashMap};
+use std::iter::FromIterator;
 
-use crate::optimization::register_allocation::{RegisterAllocation, AllocatedRegister};
-use crate::analysis::liveness::{LiveInterval, compute_liveness};
-use crate::ir::mid::{VirtualRegister, InstructionMIR};
-use crate::model::typesystem::Type;
+use crate::analysis::basic_block::BasicBlock;
+use crate::analysis::control_flow_graph::ControlFlowGraph;
+use crate::analysis::liveness::{compute_liveness, LiveInterval};
+use crate::engine::binder::Binder;
+use crate::ir::branches;
+use crate::ir::mid::{InstructionMIR, VirtualRegister};
+use crate::ir::compiler::InstructionMIRCompiler;
 use crate::model::function::{Function, FunctionDefinition};
 use crate::model::instruction::Instruction;
-use crate::engine::binder::Binder;
+use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
-use crate::ir::mid::compiler::InstructionMIRCompiler;
-use crate::analysis::control_flow_graph::ControlFlowGraph;
-use crate::analysis::basic_block::BasicBlock;
-use crate::ir::branches;
+use crate::optimization::register_allocation::{AllocatedRegister, RegisterAllocation};
 
 pub struct Settings {
     pub num_int_registers: usize,

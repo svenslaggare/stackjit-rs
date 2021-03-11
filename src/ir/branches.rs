@@ -1,7 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::ir::low::BranchLabel;
-use crate::ir::mid::{InstructionMIRData, InstructionMIR};
+use crate::ir::BranchLabel;
+use crate::ir::mid::InstructionMIR;
+use crate::ir::mid::InstructionMIRData;
 use crate::model::instruction;
 use crate::model::instruction::Instruction;
 

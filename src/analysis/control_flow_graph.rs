@@ -1,16 +1,17 @@
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
-use crate::analysis::basic_block::{BasicBlock};
-use crate::ir::mid::{InstructionMIRData, InstructionMIR};
-use crate::ir::low::BranchLabel;
-use crate::model::verifier::Verifier;
-use crate::model::function::{Function, FunctionDefinition};
-use crate::model::typesystem::Type;
-use crate::model::instruction::Instruction;
+use crate::analysis::basic_block::BasicBlock;
 use crate::engine::binder::Binder;
-use crate::ir::mid::compiler::InstructionMIRCompiler;
 use crate::ir::branches;
+use crate::ir::BranchLabel;
+use crate::ir::mid::InstructionMIR;
+use crate::ir::compiler::InstructionMIRCompiler;
+use crate::ir::mid::InstructionMIRData;
+use crate::model::function::{Function, FunctionDefinition};
+use crate::model::instruction::Instruction;
+use crate::model::typesystem::Type;
+use crate::model::verifier::Verifier;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ControlFlowEdge {

@@ -1,16 +1,16 @@
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
-use crate::analysis::control_flow_graph::ControlFlowGraph;
 use crate::analysis::basic_block::BasicBlock;
-use crate::ir::mid::{VirtualRegister, InstructionMIR};
-use crate::model::function::{Function, FunctionDefinition};
-use crate::model::typesystem::Type;
-use crate::model::instruction::Instruction;
-use crate::model::verifier::Verifier;
+use crate::analysis::control_flow_graph::ControlFlowGraph;
 use crate::engine::binder::Binder;
-use crate::ir::mid::compiler::InstructionMIRCompiler;
 use crate::ir::branches;
+use crate::ir::mid::{InstructionMIR, VirtualRegister};
+use crate::ir::compiler::InstructionMIRCompiler;
+use crate::model::function::{Function, FunctionDefinition};
+use crate::model::instruction::Instruction;
+use crate::model::typesystem::Type;
+use crate::model::verifier::Verifier;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct LiveInterval {

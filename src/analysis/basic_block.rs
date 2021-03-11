@@ -1,13 +1,14 @@
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
 
-use crate::ir::mid::{InstructionMIRData, InstructionMIR};
+use crate::engine::binder::Binder;
 use crate::ir::branches;
-use crate::model::typesystem::Type;
+use crate::ir::mid::InstructionMIR;
+use crate::ir::compiler::InstructionMIRCompiler;
+use crate::ir::mid::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition};
 use crate::model::instruction::Instruction;
-use crate::engine::binder::Binder;
-use crate::ir::mid::compiler::InstructionMIRCompiler;
+use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
 
 pub struct BasicBlock {

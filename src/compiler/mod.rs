@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ir::low::{BranchLabel, HardwareRegisterExplicit, InstructionIR};
+use crate::ir::{BranchLabel, HardwareRegisterExplicit, InstructionIR};
 use crate::model::function::{Function, FunctionSignature};
 
 pub mod code_generator;

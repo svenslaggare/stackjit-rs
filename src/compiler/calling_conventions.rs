@@ -1,8 +1,8 @@
 use iced_x86::Register;
 
-use crate::compiler::{stack_layout};
+use crate::compiler::stack_layout;
 use crate::compiler::stack_layout::{STACK_ENTRY_SIZE, STACK_OFFSET};
-use crate::ir::low::{HardwareRegisterExplicit, InstructionIR, Variable};
+use crate::ir::{HardwareRegisterExplicit, InstructionIR, Variable};
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::typesystem::Type;
 

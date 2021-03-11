@@ -2,7 +2,7 @@ pub mod linear_scan;
 
 use std::collections::HashMap;
 
-use crate::ir::low::HardwareRegister;
+use crate::ir::HardwareRegister;
 use crate::analysis::liveness::LiveInterval;
 use crate::ir::mid::VirtualRegister;
 use crate::model::typesystem::Type;
