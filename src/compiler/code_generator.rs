@@ -5,7 +5,7 @@ use crate::compiler::{FunctionCallType, FunctionCompilationData, stack_layout, U
 use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments};
 use crate::compiler::error_handling::ErrorHandling;
 use crate::engine::binder::Binder;
-use crate::ir::{HardwareRegisterExplicit, InstructionIR, JumpCondition};
+use crate::ir::{HardwareRegisterExplicit, InstructionIR, Condition};
 use crate::model::function::{Function, FunctionType};
 use crate::model::typesystem::{Type, TypeStorage};
 use crate::runtime::{array, runtime_interface};
@@ -92,14 +92,6 @@ impl<'a> CodeGenerator<'a> {
                     );
                 }
             },
-            InstructionIR::LoadInt32(value) => {
-                let push_instruction = compilation_data.operand_stack.push_i32(function, *value);
-                self.generate_instruction(
-                    function,
-                    compilation_data,
-                    &push_instruction
-                );
-            }
             InstructionIR::LoadZeroToRegister(register) => {
                 let register = register_mapping::get(*register, true);
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Xor_r64_rm64, register, register));
@@ -118,43 +110,31 @@ impl<'a> CodeGenerator<'a> {
                     *value
                 ).unwrap());
             }
-            InstructionIR::PushOperand(register) => {
-                self.push_register_operand_stack(function, compilation_data, register_mapping::get(*register, true));
-            }
-            InstructionIR::PopOperand(register) => {
-                self.pop_register_operand_stack(function, compilation_data, register_mapping::get(*register, true));
-            }
-            InstructionIR::PushNormal(register) => {
+            InstructionIR::Push(register) => {
                 push_r64(
                     |instruction| self.encode_x86_instruction(instruction),
                     register_mapping::get(*register, true)
                 );
             }
-            InstructionIR::PopNormal(register) => {
+            InstructionIR::Pop(register) => {
                 pop_r64(
                     |instruction| self.encode_x86_instruction(instruction),
                     register_mapping::get(*register, true)
                 );
             }
-            InstructionIR::PushOperandExplicit(register) => {
-                self.push_register_operand_stack(function, compilation_data, register.0);
-            }
-            InstructionIR::PopOperandExplicit(register) => {
-                self.pop_register_operand_stack(function, compilation_data, register.0);
-            }
-            InstructionIR::PushNormalExplicit(register) => {
+            InstructionIR::PushExplicit(register) => {
                 push_r64(
                     |instruction| self.encode_x86_instruction(instruction),
                     register.0
                 );
             }
-            InstructionIR::PopNormalExplicit(register) => {
+            InstructionIR::PopExplicit(register) => {
                 pop_r64(
                     |instruction| self.encode_x86_instruction(instruction),
                     register.0
                 );
             }
-            InstructionIR::LoadMemory(destination, offset) => {
+            InstructionIR::LoadFrameMemory(destination, offset) => {
                 let destination = register_mapping::get(*destination, true);
 
                 if destination.is_xmm() {
@@ -171,7 +151,7 @@ impl<'a> CodeGenerator<'a> {
                     ));
                 }
             }
-            InstructionIR::StoreMemory(offset, source) => {
+            InstructionIR::StoreFrameMemory(offset, source) => {
                 let source = register_mapping::get(*source, true);
 
                 if source.is_xmm() {
@@ -188,7 +168,7 @@ impl<'a> CodeGenerator<'a> {
                     ));
                 }
             }
-            InstructionIR::StoreMemoryExplicit(offset, register) => {
+            InstructionIR::StoreFrameMemoryExplicit(offset, register) => {
                 if register.0.is_xmm() {
                     self.encode_x86_instruction(X86Instruction::with_mem_reg(
                         Code::Movss_xmmm32_xmm,
@@ -203,7 +183,7 @@ impl<'a> CodeGenerator<'a> {
                     ));
                 }
             }
-            InstructionIR::LoadMemoryExplicit(register, offset) => {
+            InstructionIR::LoadFrameMemoryExplicit(register, offset) => {
                 if register.0.is_xmm() {
                     self.encode_x86_instruction(X86Instruction::with_reg_mem(
                         Code::Movss_xmm_xmmm32,
@@ -218,12 +198,92 @@ impl<'a> CodeGenerator<'a> {
                     ));
                 }
             }
-            InstructionIR::MoveInt32ToMemory(offset, value) => {
+            InstructionIR::LoadStackMemory(destination, offset) => {
+                let destination = register_mapping::get(*destination, true);
+
+                if destination.is_xmm() {
+                    self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                        Code::Movss_xmm_xmmm32,
+                        destination,
+                        MemoryOperand::with_base_displ(Register::RSP, *offset)
+                    ));
+                } else {
+                    self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                        Code::Mov_r64_rm64,
+                        destination,
+                        MemoryOperand::with_base_displ(Register::RSP, *offset)
+                    ));
+                }
+            }
+            InstructionIR::StoreStackMemory(offset, source) => {
+                let source = register_mapping::get(*source, true);
+
+                if source.is_xmm() {
+                    self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                        Code::Movss_xmmm32_xmm,
+                        MemoryOperand::with_base_displ(Register::RSP, *offset),
+                        source
+                    ));
+                } else {
+                    self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                        Code::Mov_rm64_r64,
+                        MemoryOperand::with_base_displ(Register::RSP, *offset),
+                        source
+                    ));
+                }
+            }
+            InstructionIR::StoreStackMemoryExplicit(offset, register) => {
+                if register.0.is_xmm() {
+                    self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                        Code::Movss_xmmm32_xmm,
+                        MemoryOperand::with_base_displ(Register::RSP, *offset),
+                        register.0
+                    ));
+                } else {
+                    self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                        Code::Mov_rm64_r64,
+                        MemoryOperand::with_base_displ(Register::RSP, *offset),
+                        register.0
+                    ));
+                }
+            }
+            InstructionIR::LoadStackMemoryExplicit(register, offset) => {
+                if register.0.is_xmm() {
+                    self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                        Code::Movss_xmm_xmmm32,
+                        register.0,
+                        MemoryOperand::with_base_displ(Register::RSP, *offset)
+                    ));
+                } else {
+                    self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                        Code::Mov_r64_rm64,
+                        register.0,
+                        MemoryOperand::with_base_displ(Register::RSP, *offset)
+                    ));
+                }
+            }
+            InstructionIR::MoveInt32ToFrameMemory(offset, value) => {
                 self.encode_x86_instruction(X86Instruction::try_with_mem_i32(
                     Code::Mov_rm64_imm32,
                     MemoryOperand::with_base_displ(Register::RBP, *offset),
                     *value
                 ).unwrap());
+            }
+            InstructionIR::MoveInt32ToRegister(destination, value) => {
+                let destination = register_mapping::get(*destination, false);
+
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(
+                    Code::Mov_r32_imm32,
+                    destination,
+                    *value
+                ).unwrap());
+            }
+            InstructionIR::Move(destination, source) => {
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(
+                    Code::Mov_r64_rm64,
+                    register_mapping::get(*destination, true),
+                    register_mapping::get(*source, true)
+                ));
             }
             InstructionIR::MoveImplicitToExplicit(destination, source) => {
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(
@@ -246,10 +306,38 @@ impl<'a> CodeGenerator<'a> {
                     register_mapping::get(*source, false)
                 ));
             }
+            InstructionIR::AddInt32FromFrameMemory(destination, source_offset) => {
+                self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                    Code::Add_r32_rm32,
+                    register_mapping::get(*destination, false),
+                    MemoryOperand::with_base_displ(Register::RBP, *source_offset)
+                ));
+            }
+            InstructionIR::AddInt32ToFrameMemory(destination_offset, source) => {
+                self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                    Code::Add_rm32_r32,
+                    MemoryOperand::with_base_displ(Register::RBP, *destination_offset),
+                    register_mapping::get(*source, false)
+                ));
+            }
             InstructionIR::SubInt32(destination, source) => {
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(
                     Code::Sub_r32_rm32,
                     register_mapping::get(*destination, false),
+                    register_mapping::get(*source, false)
+                ));
+            }
+            InstructionIR::SubInt32FromFrameMemory(destination, source_offset) => {
+                self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                    Code::Sub_r32_rm32,
+                    register_mapping::get(*destination, false),
+                    MemoryOperand::with_base_displ(Register::RBP, *source_offset)
+                ));
+            }
+            InstructionIR::SubInt32ToFrameMemory(destination_offset, source) => {
+                self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                    Code::Sub_rm32_r32,
+                    MemoryOperand::with_base_displ(Register::RBP, *destination_offset),
                     register_mapping::get(*source, false)
                 ));
             }
@@ -443,38 +531,77 @@ impl<'a> CodeGenerator<'a> {
                 let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Jmp_rel32_64, 0).unwrap());
                 compilation_data.unresolved_branches.insert(self.encoder_offset - instruction_size, (*target, instruction_size));
             }
-            InstructionIR::BranchCondition(condition, op_type, target, op1, op2) => {
+            InstructionIR::Compare(op_type, op1, op2) => {
                 let op1 = register_mapping::get(*op1, false);
                 let op2 = register_mapping::get(*op2, false);
 
-                let unsigned = match op_type {
+                match op_type {
                     Type::Float32 => {
                         self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Ucomiss_xmm_xmmm32, op1, op2));
-                        true
                     }
                     _ => {
                         self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Cmp_r32_rm32, op1, op2));
-                        false
                     }
-                };
+                }
+            }
+            InstructionIR::CompareFromFrameMemory(op_type, op1, op2_offset) => {
+                let op1 = register_mapping::get(*op1, false);
 
-                let compare_code = if unsigned {
+                match op_type {
+                    Type::Float32 => {
+                        self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                            Code::Ucomiss_xmm_xmmm32,
+                            op1,
+                            MemoryOperand::with_base_displ(Register::RBP, *op2_offset)
+                        ));
+                    }
+                    _ => {
+                        self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                            Code::Cmp_r32_rm32,
+                            op1,
+                            MemoryOperand::with_base_displ(Register::RBP, *op2_offset)
+                        ));
+                    }
+                }
+            }
+            InstructionIR::CompareToFrameMemory(op_type, op1_offset, op2) => {
+                let op2 = register_mapping::get(*op2, false);
+
+                match op_type {
+                    Type::Float32 => {
+                        self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                            Code::Ucomiss_xmm_xmmm32,
+                            MemoryOperand::with_base_displ(Register::RBP, *op1_offset),
+                            op2
+                        ));
+                    }
+                    _ => {
+                        self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                            Code::Cmp_rm32_r32,
+                            MemoryOperand::with_base_displ(Register::RBP, *op1_offset),
+                            op2
+                        ));
+                    }
+                }
+            }
+            InstructionIR::BranchCondition(condition, signed, target) => {
+                let compare_code = if !signed {
                     match condition {
-                        JumpCondition::Equal => Code::Je_rel32_64,
-                        JumpCondition::NotEqual => Code::Jne_rel32_64,
-                        JumpCondition::LessThan => Code::Jb_rel32_64,
-                        JumpCondition::LessThanOrEqual => Code::Jbe_rel32_64,
-                        JumpCondition::GreaterThan => Code::Ja_rel32_64,
-                        JumpCondition::GreaterThanOrEqual => Code::Jae_rel32_64
+                        Condition::Equal => Code::Je_rel32_64,
+                        Condition::NotEqual => Code::Jne_rel32_64,
+                        Condition::LessThan => Code::Jb_rel32_64,
+                        Condition::LessThanOrEqual => Code::Jbe_rel32_64,
+                        Condition::GreaterThan => Code::Ja_rel32_64,
+                        Condition::GreaterThanOrEqual => Code::Jae_rel32_64
                     }
                 } else {
                     match condition {
-                        JumpCondition::Equal => Code::Je_rel32_64,
-                        JumpCondition::NotEqual => Code::Jne_rel32_64,
-                        JumpCondition::LessThan => Code::Jl_rel32_64,
-                        JumpCondition::LessThanOrEqual => Code::Jle_rel32_64,
-                        JumpCondition::GreaterThan => Code::Jg_rel32_64,
-                        JumpCondition::GreaterThanOrEqual => Code::Jge_rel32_64
+                        Condition::Equal => Code::Je_rel32_64,
+                        Condition::NotEqual => Code::Jne_rel32_64,
+                        Condition::LessThan => Code::Jl_rel32_64,
+                        Condition::LessThanOrEqual => Code::Jle_rel32_64,
+                        Condition::GreaterThan => Code::Jg_rel32_64,
+                        Condition::GreaterThanOrEqual => Code::Jge_rel32_64
                     }
                 };
 
@@ -491,30 +618,6 @@ impl<'a> CodeGenerator<'a> {
         for instruction in instructions {
             self.generate_instruction(function, compilation_data, instruction);
         }
-    }
-
-    fn push_register_operand_stack(&mut self,
-                                   function: &Function,
-                                   compilation_data: &mut FunctionCompilationData,
-                                   register: Register) {
-        let instruction = compilation_data.operand_stack.push_register(function, HardwareRegisterExplicit(register));
-        self.generate_instruction(
-            function,
-            compilation_data,
-            &instruction
-        );
-    }
-
-    fn pop_register_operand_stack(&mut self,
-                                  function: &Function,
-                                  compilation_data: &mut FunctionCompilationData,
-                                  register: Register) {
-        let instruction = compilation_data.operand_stack.pop_register(function, HardwareRegisterExplicit(register));
-        self.generate_instruction(
-            function,
-            compilation_data,
-            &instruction
-        );
     }
 
     fn compute_array_element_address(&mut self, element: &Type, reference_register: Register, index_register: Register) {
@@ -556,10 +659,14 @@ mod register_mapping {
     use iced_x86::Register;
 
     use crate::ir::HardwareRegister;
+    use crate::compiler::FunctionCallType::Relative;
 
     lazy_static! {
        static ref mapping_i64: Vec<Register> = {
            vec![
+                // Register::RSI,
+                Register::RCX,
+                Register::RDX,
                 Register::R8,
                 Register::R9,
                 Register::R10,
@@ -569,6 +676,8 @@ mod register_mapping {
 
         static ref mapping_i32: Vec<Register> = {
             vec![
+                Register::ECX,
+                Register::EDX,
                 Register::R8D,
                 Register::R9D,
                 Register::R10D,
@@ -596,8 +705,18 @@ mod register_mapping {
                     mapping_i32[index as usize]
                 }
             }
+            HardwareRegister::IntSpill => {
+                if is_64 {
+                    Register::RAX
+                } else {
+                    Register::EAX
+                }
+            }
             HardwareRegister::Float(index) => {
                 mapping_f32[index as usize]
+            }
+            HardwareRegister::FloatSpill => {
+                Register::XMM0
             }
         }
     }

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::engine::binder::Binder;
 use crate::ir::branches::BranchManager;
-use crate::ir::JumpCondition;
+use crate::ir::Condition;
 use crate::ir::mid::{InstructionMIR, VirtualRegister};
 use crate::ir::mid::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
@@ -182,12 +182,12 @@ impl<'a> InstructionMIRCompiler<'a> {
             | Instruction::BranchLessThan(target)
             | Instruction::BranchLessThanOrEqual(target) => {
                 let condition = match instruction {
-                    Instruction::BranchEqual(_) => JumpCondition::Equal,
-                    Instruction::BranchNotEqual(_) => JumpCondition::NotEqual,
-                    Instruction::BranchGreaterThan(_) => JumpCondition::GreaterThan,
-                    Instruction::BranchGreaterThanOrEqual(_) => JumpCondition::GreaterThanOrEqual,
-                    Instruction::BranchLessThan(_) => JumpCondition::LessThan,
-                    Instruction::BranchLessThanOrEqual(_) => JumpCondition::LessThanOrEqual,
+                    Instruction::BranchEqual(_) => Condition::Equal,
+                    Instruction::BranchNotEqual(_) => Condition::NotEqual,
+                    Instruction::BranchGreaterThan(_) => Condition::GreaterThan,
+                    Instruction::BranchGreaterThanOrEqual(_) => Condition::GreaterThanOrEqual,
+                    Instruction::BranchLessThan(_) => Condition::LessThan,
+                    Instruction::BranchLessThanOrEqual(_) => Condition::LessThanOrEqual,
                     _ => { panic!("unexpected."); }
                 };
 

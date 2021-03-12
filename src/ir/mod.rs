@@ -1,26 +1,20 @@
 use iced_x86::Register;
 
-use crate::model::function::FunctionSignature;
-use crate::model::typesystem::Type;
-
 pub mod mid;
 pub mod compiler;
 pub mod ir_compiler;
+pub mod optimized_ir_compiler;
 pub mod branches;
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+use crate::model::function::FunctionSignature;
+use crate::model::typesystem::Type;
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum HardwareRegister {
     Int(u32),
-    Float(u32)
-}
-
-impl HardwareRegister {
-    pub fn number(&self) -> u32 {
-        match self {
-            HardwareRegister::Int(number) => *number,
-            HardwareRegister::Float(number) => *number
-        }
-    }
+    IntSpill,
+    Float(u32),
+    FloatSpill
 }
 
 impl std::fmt::Debug for HardwareRegister {
@@ -29,8 +23,14 @@ impl std::fmt::Debug for HardwareRegister {
             HardwareRegister::Int(value) => {
                 write!(f, "HardwareRegister::Int({})", value)
             }
+            HardwareRegister::IntSpill => {
+                write!(f, "HardwareRegister::IntSpill")
+            }
             HardwareRegister::Float(value) => {
                 write!(f, "HardwareRegister::Float({})", value)
+            }
+            HardwareRegister::FloatSpill => {
+                write!(f, "HardwareRegister::FloatSpill")
             }
         }
     }
@@ -42,7 +42,7 @@ pub struct HardwareRegisterExplicit(pub iced_x86::Register);
 pub type BranchLabel = u32;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum JumpCondition {
+pub enum Condition {
     Equal,
     NotEqual,
     LessThan,
@@ -55,47 +55,65 @@ pub enum JumpCondition {
 pub enum InstructionIR {
     Marker(usize),
     InitializeFunction,
-    LoadInt32(i32),
     LoadZeroToRegister(HardwareRegister),
     AddToStackPointer(i32),
     SubFromStackPointer(i32),
-    PushOperand(HardwareRegister),
-    PopOperand(HardwareRegister),
-    PushNormal(HardwareRegister),
-    PopNormal(HardwareRegister),
-    PushOperandExplicit(HardwareRegisterExplicit),
-    PopOperandExplicit(HardwareRegisterExplicit),
-    PushNormalExplicit(HardwareRegisterExplicit),
-    PopNormalExplicit(HardwareRegisterExplicit),
-    LoadMemory(HardwareRegister, i32),
-    StoreMemory(i32, HardwareRegister),
-    LoadMemoryExplicit(HardwareRegisterExplicit, i32),
-    StoreMemoryExplicit(i32, HardwareRegisterExplicit),
+    Push(HardwareRegister),
+    Pop(HardwareRegister),
+    PushExplicit(HardwareRegisterExplicit),
+    PopExplicit(HardwareRegisterExplicit),
+
+    LoadFrameMemory(HardwareRegister, i32),
+    StoreFrameMemory(i32, HardwareRegister),
+    LoadFrameMemoryExplicit(HardwareRegisterExplicit, i32),
+    StoreFrameMemoryExplicit(i32, HardwareRegisterExplicit),
+    LoadStackMemory(HardwareRegister, i32),
+    StoreStackMemory(i32, HardwareRegister),
+    LoadStackMemoryExplicit(HardwareRegisterExplicit, i32),
+    StoreStackMemoryExplicit(i32, HardwareRegisterExplicit),
+
+    Move(HardwareRegister, HardwareRegister),
     MoveImplicitToExplicit(HardwareRegisterExplicit, HardwareRegister),
     MoveExplicitToImplicit(HardwareRegister, HardwareRegisterExplicit),
+
+    MoveInt32ToFrameMemory(i32, i32),
+    MoveInt32ToRegister(HardwareRegister, i32),
+
     AddInt32(HardwareRegister, HardwareRegister),
+    AddInt32FromFrameMemory(HardwareRegister, i32),
+    AddInt32ToFrameMemory(i32, HardwareRegister),
     SubInt32(HardwareRegister, HardwareRegister),
+    SubInt32FromFrameMemory(HardwareRegister, i32),
+    SubInt32ToFrameMemory(i32, HardwareRegister),
+
     AddFloat32(HardwareRegister, HardwareRegister),
     SubFloat32(HardwareRegister, HardwareRegister),
-    MoveInt32ToMemory(i32, i32),
+
     Call(FunctionSignature, Vec<Variable>),
     Return,
+
     NullReferenceCheck(HardwareRegister),
     ArrayBoundsCheck(HardwareRegister, HardwareRegister),
+
     NewArray(Type, HardwareRegister),
     LoadElement(Type, HardwareRegister, HardwareRegister),
     StoreElement(Type, HardwareRegister, HardwareRegister, HardwareRegister),
     LoadArrayLength(HardwareRegister),
+
+    Compare(Type, HardwareRegister, HardwareRegister),
+    CompareFromFrameMemory(Type, HardwareRegister, i32),
+    CompareToFrameMemory(Type, i32, HardwareRegister),
+
     BranchLabel(BranchLabel),
     Branch(BranchLabel),
-    BranchCondition(JumpCondition, Type, BranchLabel, HardwareRegister, HardwareRegister)
+    BranchCondition(Condition, bool, BranchLabel)
 }
 
 #[derive(Debug)]
 pub enum Variable {
     Register(HardwareRegister),
-    OperandStack,
-    Memory(i32)
+    FrameMemory(i32),
+    StackMemory(i32)
 }
 
 impl Variable {
@@ -104,11 +122,11 @@ impl Variable {
             Variable::Register(source) => {
                 instructions.push(InstructionIR::MoveImplicitToExplicit(destination, *source));
             }
-            Variable::OperandStack => {
-                instructions.push(InstructionIR::PopOperandExplicit(destination));
+            Variable::FrameMemory(offset) => {
+                instructions.push(InstructionIR::LoadFrameMemoryExplicit(destination, *offset));
             }
-            Variable::Memory(offset) => {
-                instructions.push(InstructionIR::LoadMemoryExplicit(destination, *offset));
+            Variable::StackMemory(offset) => {
+                instructions.push(InstructionIR::LoadStackMemoryExplicit(destination, *offset));
             }
         }
     }
@@ -116,15 +134,15 @@ impl Variable {
     pub fn move_to_stack(&self, instructions: &mut Vec<InstructionIR>) {
         match self {
             Variable::Register(source) => {
-                instructions.push(InstructionIR::PushNormal(*source));
+                instructions.push(InstructionIR::Push(*source));
             }
-            Variable::OperandStack => {
-                instructions.push(InstructionIR::PopOperandExplicit(HardwareRegisterExplicit(Register::RAX)));
-                instructions.push(InstructionIR::PushNormalExplicit(HardwareRegisterExplicit(Register::RAX)));
+            Variable::FrameMemory(offset) => {
+                instructions.push(InstructionIR::LoadFrameMemoryExplicit(HardwareRegisterExplicit(Register::RAX), *offset));
+                instructions.push(InstructionIR::PushExplicit(HardwareRegisterExplicit(Register::RAX)));
             }
-            Variable::Memory(offset) => {
-                instructions.push(InstructionIR::LoadMemoryExplicit(HardwareRegisterExplicit(Register::RAX), *offset));
-                instructions.push(InstructionIR::PushNormalExplicit(HardwareRegisterExplicit(Register::RAX)));
+            Variable::StackMemory(offset) => {
+                instructions.push(InstructionIR::LoadStackMemoryExplicit(HardwareRegisterExplicit(Register::RAX), *offset));
+                instructions.push(InstructionIR::PushExplicit(HardwareRegisterExplicit(Register::RAX)));
             }
         }
     }
@@ -134,11 +152,11 @@ impl Variable {
             Variable::Register(destination) => {
                 instructions.push(InstructionIR::MoveExplicitToImplicit(*destination, source));
             }
-            Variable::OperandStack => {
-                instructions.push(InstructionIR::PushOperandExplicit(source));
+            Variable::FrameMemory(offset) => {
+                instructions.push(InstructionIR::StoreFrameMemoryExplicit(*offset, source));
             }
-            Variable::Memory(offset) => {
-                instructions.push(InstructionIR::StoreMemoryExplicit(*offset, source));
+            Variable::StackMemory(offset) => {
+                instructions.push(InstructionIR::StoreStackMemoryExplicit(*offset, source));
             }
         }
     }

@@ -1,6 +1,6 @@
 use std::iter::FromIterator;
 
-use crate::ir::{BranchLabel, JumpCondition};
+use crate::ir::{BranchLabel, Condition};
 use crate::model::function::FunctionSignature;
 use crate::model::typesystem::Type;
 
@@ -134,5 +134,5 @@ pub enum InstructionMIRData {
     LoadArrayLength(VirtualRegister, VirtualRegister),
     BranchLabel(BranchLabel),
     Branch(BranchLabel),
-    BranchCondition(JumpCondition, Type, BranchLabel, VirtualRegister, VirtualRegister)
+    BranchCondition(Condition, Type, BranchLabel, VirtualRegister, VirtualRegister)
 }

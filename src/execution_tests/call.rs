@@ -100,6 +100,36 @@ fn test_external3() {
 }
 
 #[test]
+fn test_external4() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.binder_mut().define(
+        FunctionDefinition::new_external(
+            "sum".to_owned(), (0..2).map(|_| Type::Int32).collect(), Type::Int32,
+            sum as *mut std::ffi::c_void
+        )
+    );
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![Type::Int32],
+        vec![
+            Instruction::LoadInt32(1000),
+            Instruction::StoreLocal(0),
+            Instruction::LoadInt32(1),
+            Instruction::LoadInt32(2),
+            Instruction::Call(FunctionSignature::new("sum".to_owned(), (0..2).map(|_| Type::Int32).collect())),
+            Instruction::LoadLocal(0),
+            Instruction::Add,
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(1003, execution_result);
+}
+
+#[test]
 fn test_managed1() {
     let mut vm = VirtualMachine::new();
 

@@ -61,7 +61,7 @@ impl std::fmt::Display for Instruction {
                 write!(f, "LoadLocal {}", index)
             }
             Instruction::StoreLocal(index) => {
-                write!(f, "LoadLocal {}", index)
+                write!(f, "StoreLocal {}", index)
             }
             Instruction::Add => {
                 write!(f, "Add")

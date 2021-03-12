@@ -138,17 +138,17 @@ impl CallingConventions {
         let argument_stack_offset = stack_layout::argument_stack_offset(function, argument_index as u32);
         if relative_argument_index >= register_call_arguments::NUM_ARGUMENTS {
             let stack_argument_index = self.get_stack_argument_index(function, argument_index);
-            instructions.push(InstructionIR::LoadMemoryExplicit(
+            instructions.push(InstructionIR::LoadFrameMemoryExplicit(
                 HardwareRegisterExplicit(Register::RAX),
                 STACK_ENTRY_SIZE * (STACK_OFFSET as usize + stack_argument_index + 1) as i32
             ));
 
-            instructions.push(InstructionIR::StoreMemoryExplicit(
+            instructions.push(InstructionIR::StoreFrameMemoryExplicit(
                 argument_stack_offset,
                 HardwareRegisterExplicit(Register::RAX)
             ));
         } else {
-            instructions.push(InstructionIR::StoreMemoryExplicit(
+            instructions.push(InstructionIR::StoreFrameMemoryExplicit(
                 argument_stack_offset,
                 HardwareRegisterExplicit(register_call_arguments::get_argument(relative_argument_index))
             ));
@@ -163,17 +163,17 @@ impl CallingConventions {
         let argument_stack_offset = stack_layout::argument_stack_offset(function, argument_index as u32);
         if relative_argument_index >= float_register_call_arguments::NUM_ARGUMENTS {
             let stack_argument_index = self.get_stack_argument_index(function, argument_index);
-            instructions.push(InstructionIR::LoadMemoryExplicit(
+            instructions.push(InstructionIR::LoadFrameMemoryExplicit(
                 HardwareRegisterExplicit(Register::RAX),
                 STACK_ENTRY_SIZE * (STACK_OFFSET as usize + stack_argument_index + 1) as i32
             ));
 
-            instructions.push(InstructionIR::StoreMemoryExplicit(
+            instructions.push(InstructionIR::StoreFrameMemoryExplicit(
                 argument_stack_offset,
                 HardwareRegisterExplicit(Register::RAX)
             ));
         } else {
-            instructions.push(InstructionIR::StoreMemoryExplicit(
+            instructions.push(InstructionIR::StoreFrameMemoryExplicit(
                 argument_stack_offset,
                 HardwareRegisterExplicit(float_register_call_arguments::get_argument(relative_argument_index))
             ));
