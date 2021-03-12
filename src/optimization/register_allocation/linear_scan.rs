@@ -242,12 +242,12 @@ fn test_allocate1() {
         ]
     );
 
-    let mut binder = Binder::new();
+    let binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
-    let mut instructions = compiler.done().instructions;
+    let instructions = compiler.done().instructions;
 
     let (_, _, live_intervals) = analyze(&instructions);
 
@@ -281,12 +281,12 @@ fn test_allocate2() {
         ]
     );
 
-    let mut binder = Binder::new();
+    let binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
-    let mut instructions = compiler.done().instructions;
+    let instructions = compiler.done().instructions;
 
     let (_, _, live_intervals) = analyze(&instructions);
 

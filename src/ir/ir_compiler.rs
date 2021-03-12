@@ -236,7 +236,7 @@ fn test_simple1() {
         ]
     );
 
-    let mut binder = Binder::new();
+    let binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
     let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
@@ -265,7 +265,7 @@ fn test_simple2() {
         ]
     );
 
-    let mut binder = Binder::new();
+    let binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
     let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
@@ -298,7 +298,7 @@ fn test_simple3() {
         ]
     );
 
-    let mut binder = Binder::new();
+    let binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
     let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
@@ -327,7 +327,7 @@ fn test_simple4() {
         ]
     );
 
-    let mut binder = Binder::new();
+    let binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
     let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);

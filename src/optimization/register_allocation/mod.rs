@@ -11,7 +11,7 @@ use iced_x86::OpCodeOperandKind::al;
 #[derive(Debug, Clone)]
 pub enum AllocatedRegister {
     Hardware { register: HardwareRegister, live_interval: LiveInterval },
-    Stack { stack_index: usize, live_interval: LiveInterval }
+    Stack { live_interval: LiveInterval }
 }
 
 impl AllocatedRegister {
@@ -46,10 +46,8 @@ impl RegisterAllocation {
             registers.insert(live_interval.register.clone(), AllocatedRegister::Hardware { register, live_interval });
         }
 
-        let mut stack_index = 0;
         for live_interval in spilled {
-            registers.insert(live_interval.register.clone(), AllocatedRegister::Stack { live_interval, stack_index });
-            stack_index += 1;
+            registers.insert(live_interval.register.clone(), AllocatedRegister::Stack { live_interval });
         }
 
         RegisterAllocation {

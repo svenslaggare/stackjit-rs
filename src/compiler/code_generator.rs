@@ -134,6 +134,9 @@ impl<'a> CodeGenerator<'a> {
                     register.0
                 );
             }
+            InstructionIR::PopEmpty => {
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Add_rm64_imm32, Register::RSP, Register::RAX.size() as i32).unwrap());
+            }
             InstructionIR::LoadFrameMemory(destination, offset) => {
                 let destination = register_mapping::get(*destination, true);
 
@@ -195,70 +198,6 @@ impl<'a> CodeGenerator<'a> {
                         Code::Mov_r64_rm64,
                         register.0,
                         MemoryOperand::with_base_displ(Register::RBP, *offset)
-                    ));
-                }
-            }
-            InstructionIR::LoadStackMemory(destination, offset) => {
-                let destination = register_mapping::get(*destination, true);
-
-                if destination.is_xmm() {
-                    self.encode_x86_instruction(X86Instruction::with_reg_mem(
-                        Code::Movss_xmm_xmmm32,
-                        destination,
-                        MemoryOperand::with_base_displ(Register::RSP, *offset)
-                    ));
-                } else {
-                    self.encode_x86_instruction(X86Instruction::with_reg_mem(
-                        Code::Mov_r64_rm64,
-                        destination,
-                        MemoryOperand::with_base_displ(Register::RSP, *offset)
-                    ));
-                }
-            }
-            InstructionIR::StoreStackMemory(offset, source) => {
-                let source = register_mapping::get(*source, true);
-
-                if source.is_xmm() {
-                    self.encode_x86_instruction(X86Instruction::with_mem_reg(
-                        Code::Movss_xmmm32_xmm,
-                        MemoryOperand::with_base_displ(Register::RSP, *offset),
-                        source
-                    ));
-                } else {
-                    self.encode_x86_instruction(X86Instruction::with_mem_reg(
-                        Code::Mov_rm64_r64,
-                        MemoryOperand::with_base_displ(Register::RSP, *offset),
-                        source
-                    ));
-                }
-            }
-            InstructionIR::StoreStackMemoryExplicit(offset, register) => {
-                if register.0.is_xmm() {
-                    self.encode_x86_instruction(X86Instruction::with_mem_reg(
-                        Code::Movss_xmmm32_xmm,
-                        MemoryOperand::with_base_displ(Register::RSP, *offset),
-                        register.0
-                    ));
-                } else {
-                    self.encode_x86_instruction(X86Instruction::with_mem_reg(
-                        Code::Mov_rm64_r64,
-                        MemoryOperand::with_base_displ(Register::RSP, *offset),
-                        register.0
-                    ));
-                }
-            }
-            InstructionIR::LoadStackMemoryExplicit(register, offset) => {
-                if register.0.is_xmm() {
-                    self.encode_x86_instruction(X86Instruction::with_reg_mem(
-                        Code::Movss_xmm_xmmm32,
-                        register.0,
-                        MemoryOperand::with_base_displ(Register::RSP, *offset)
-                    ));
-                } else {
-                    self.encode_x86_instruction(X86Instruction::with_reg_mem(
-                        Code::Mov_r64_rm64,
-                        register.0,
-                        MemoryOperand::with_base_displ(Register::RSP, *offset)
                     ));
                 }
             }
@@ -655,18 +594,18 @@ impl<'a> CodeGenerator<'a> {
     }
 }
 
-mod register_mapping {
+pub mod register_mapping {
     use iced_x86::Register;
 
     use crate::ir::HardwareRegister;
     use crate::compiler::FunctionCallType::Relative;
+    use crate::compiler::calling_conventions::{register_call_arguments, float_register_call_arguments};
 
     lazy_static! {
        static ref mapping_i64: Vec<Register> = {
            vec![
-                // Register::RSI,
-                Register::RCX,
                 Register::RDX,
+                Register::RCX,
                 Register::R8,
                 Register::R9,
                 Register::R10,
@@ -676,8 +615,8 @@ mod register_mapping {
 
         static ref mapping_i32: Vec<Register> = {
             vec![
-                Register::ECX,
                 Register::EDX,
+                Register::ECX,
                 Register::R8D,
                 Register::R9D,
                 Register::R10D,
@@ -705,6 +644,9 @@ mod register_mapping {
                     mapping_i32[index as usize]
                 }
             }
+            HardwareRegister::IntArgument(index) => {
+                register_call_arguments::get_argument(index as usize)
+            }
             HardwareRegister::IntSpill => {
                 if is_64 {
                     Register::RAX
@@ -714,6 +656,9 @@ mod register_mapping {
             }
             HardwareRegister::Float(index) => {
                 mapping_f32[index as usize]
+            }
+            HardwareRegister::FloatArgument(index) => {
+                float_register_call_arguments::get_argument(index as usize)
             }
             HardwareRegister::FloatSpill => {
                 Register::XMM0

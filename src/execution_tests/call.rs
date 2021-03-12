@@ -11,6 +11,10 @@ extern "C" fn sum8(x0: i32, x1: i32, x2: i32, x3: i32, x4: i32, x5: i32, x6: i32
     return x0 + x1 + x2 + x3 + x4 + x5 + x6 + x7;
 }
 
+extern "C" fn sum8_sub(x0: i32, x1: i32, x2: i32, x3: i32, x4: i32, x5: i32, x6: i32, x7: i32) -> i32 {
+    return x0 + x1 + x2 + x3 + x4 + x5 + x6 - x7;
+}
+
 extern "C" fn sub(x: i32, y: i32) -> i32 {
     return x - y;
 }
@@ -38,7 +42,7 @@ fn test_external1() {
     )).unwrap();
 
     let execution_result = vm.execute().unwrap();
-    assert_eq!(1337 + 4711, execution_result);
+    assert_eq!(4711 + 1337, execution_result);
 }
 
 #[test]
@@ -127,6 +131,38 @@ fn test_external4() {
 
     let execution_result = vm.execute().unwrap();
     assert_eq!(1003, execution_result);
+}
+
+#[test]
+fn test_external5() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.binder_mut().define(
+        FunctionDefinition::new_external(
+            "sum8_sub".to_owned(), (0..8).map(|_| Type::Int32).collect(), Type::Int32,
+            sum8_sub as *mut std::ffi::c_void
+        )
+    );
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        Vec::new(),
+        vec![
+            Instruction::LoadInt32(1),
+            Instruction::LoadInt32(2),
+            Instruction::LoadInt32(3),
+            Instruction::LoadInt32(4),
+            Instruction::LoadInt32(5),
+            Instruction::LoadInt32(6),
+            Instruction::LoadInt32(7),
+            Instruction::LoadInt32(8),
+            Instruction::Call(FunctionSignature::new("sum8_sub".to_owned(), (0..8).map(|_| Type::Int32).collect())),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(1 + 2 + 3 + 4 + 5 + 6 + 7 - 8, execution_result);
 }
 
 #[test]

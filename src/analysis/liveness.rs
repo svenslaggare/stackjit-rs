@@ -220,12 +220,12 @@ fn test_liveness1() {
         ]
     );
 
-    let mut binder = Binder::new();
+    let binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
-    let mut instructions = compiler.done().instructions;
+    let instructions = compiler.done().instructions;
 
     let blocks = BasicBlock::create_blocks(&instructions);
     let branch_label_mapping = branches::create_label_mapping(&instructions);
@@ -272,12 +272,12 @@ fn test_liveness2() {
         ]
     );
 
-    let mut binder = Binder::new();
+    let binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
-    let mut instructions = compiler.done().instructions;
+    let instructions = compiler.done().instructions;
 
     let blocks = BasicBlock::create_blocks(&instructions);
     let branch_label_mapping = branches::create_label_mapping(&instructions);
@@ -333,12 +333,12 @@ fn test_liveness3() {
         ]
     );
 
-    let mut binder = Binder::new();
+    let binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
-    let mut instructions = compiler.done().instructions;
+    let instructions = compiler.done().instructions;
 
     let blocks = BasicBlock::create_blocks(&instructions);
     let branch_label_mapping = branches::create_label_mapping(&instructions);

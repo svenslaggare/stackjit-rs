@@ -13,8 +13,10 @@ use crate::model::typesystem::Type;
 pub enum HardwareRegister {
     Int(u32),
     IntSpill,
+    IntArgument(u32),
     Float(u32),
-    FloatSpill
+    FloatSpill,
+    FloatArgument(u32)
 }
 
 impl std::fmt::Debug for HardwareRegister {
@@ -26,11 +28,17 @@ impl std::fmt::Debug for HardwareRegister {
             HardwareRegister::IntSpill => {
                 write!(f, "HardwareRegister::IntSpill")
             }
+            HardwareRegister::IntArgument(value) => {
+                write!(f, "HardwareRegister::IntArgument({})", value)
+            }
             HardwareRegister::Float(value) => {
                 write!(f, "HardwareRegister::Float({})", value)
             }
             HardwareRegister::FloatSpill => {
                 write!(f, "HardwareRegister::FloatSpill")
+            }
+            HardwareRegister::FloatArgument(value) => {
+                write!(f, "HardwareRegister::IntArgument({})", value)
             }
         }
     }
@@ -58,19 +66,17 @@ pub enum InstructionIR {
     LoadZeroToRegister(HardwareRegister),
     AddToStackPointer(i32),
     SubFromStackPointer(i32),
+
     Push(HardwareRegister),
     Pop(HardwareRegister),
     PushExplicit(HardwareRegisterExplicit),
     PopExplicit(HardwareRegisterExplicit),
+    PopEmpty,
 
     LoadFrameMemory(HardwareRegister, i32),
     StoreFrameMemory(i32, HardwareRegister),
     LoadFrameMemoryExplicit(HardwareRegisterExplicit, i32),
     StoreFrameMemoryExplicit(i32, HardwareRegisterExplicit),
-    LoadStackMemory(HardwareRegister, i32),
-    StoreStackMemory(i32, HardwareRegister),
-    LoadStackMemoryExplicit(HardwareRegisterExplicit, i32),
-    StoreStackMemoryExplicit(i32, HardwareRegisterExplicit),
 
     Move(HardwareRegister, HardwareRegister),
     MoveImplicitToExplicit(HardwareRegisterExplicit, HardwareRegister),
@@ -112,8 +118,7 @@ pub enum InstructionIR {
 #[derive(Debug)]
 pub enum Variable {
     Register(HardwareRegister),
-    FrameMemory(i32),
-    StackMemory(i32)
+    FrameMemory(i32)
 }
 
 impl Variable {
@@ -124,9 +129,6 @@ impl Variable {
             }
             Variable::FrameMemory(offset) => {
                 instructions.push(InstructionIR::LoadFrameMemoryExplicit(destination, *offset));
-            }
-            Variable::StackMemory(offset) => {
-                instructions.push(InstructionIR::LoadStackMemoryExplicit(destination, *offset));
             }
         }
     }
@@ -140,10 +142,6 @@ impl Variable {
                 instructions.push(InstructionIR::LoadFrameMemoryExplicit(HardwareRegisterExplicit(Register::RAX), *offset));
                 instructions.push(InstructionIR::PushExplicit(HardwareRegisterExplicit(Register::RAX)));
             }
-            Variable::StackMemory(offset) => {
-                instructions.push(InstructionIR::LoadStackMemoryExplicit(HardwareRegisterExplicit(Register::RAX), *offset));
-                instructions.push(InstructionIR::PushExplicit(HardwareRegisterExplicit(Register::RAX)));
-            }
         }
     }
 
@@ -154,9 +152,6 @@ impl Variable {
             }
             Variable::FrameMemory(offset) => {
                 instructions.push(InstructionIR::StoreFrameMemoryExplicit(*offset, source));
-            }
-            Variable::StackMemory(offset) => {
-                instructions.push(InstructionIR::StoreStackMemoryExplicit(*offset, source));
             }
         }
     }

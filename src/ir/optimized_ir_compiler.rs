@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
 use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments};
@@ -18,6 +18,8 @@ use crate::analysis::control_flow_graph::ControlFlowGraph;
 use crate::analysis::liveness;
 use crate::optimization::register_allocation;
 use crate::optimization::register_allocation::linear_scan::Settings;
+use iced_x86::Register;
+use crate::compiler::code_generator::register_mapping;
 
 
 pub struct OptimizedInstructionIRCompiler<'a> {
@@ -41,6 +43,10 @@ impl<'a> OptimizedInstructionIRCompiler<'a> {
         }
     }
 
+    pub fn done(self) -> Vec<InstructionIR> {
+        self.instructions
+    }
+
     pub fn compile(&mut self) {
         self.compile_initialize_function();
 
@@ -57,7 +63,7 @@ impl<'a> OptimizedInstructionIRCompiler<'a> {
         let live_intervals = liveness::compute_liveness(instructions, &basic_blocks, &control_flow_graph);
         register_allocation::linear_scan::allocate(
             &live_intervals,
-            &Settings { num_int_registers: 1, num_float_registers: 1 }
+            &Settings { num_int_registers: 2, num_float_registers: 1 }
         )
     }
 
@@ -186,24 +192,15 @@ impl<'a> OptimizedInstructionIRCompiler<'a> {
                     self.instructions.push(InstructionIR::Push(register.clone()));
                 }
 
-                let arguments_source = arguments
-                    .iter()
-                    .map(|argument| {
-                        match self.register_allocation.get_register(argument) {
-                            AllocatedRegister::Hardware { register, .. } => {
-                                let argument_stack_index = alive_registers_mapping[register] as u32;
-                                let stack_offset = stack_layout::stack_value_offset(self.function, self.compilation_result, argument_stack_index);
-
-                                Variable::FrameMemory(stack_offset)
-                            },
-                            AllocatedRegister::Stack { .. } => Variable::FrameMemory(self.get_register_stack_offset(argument))
-                        }
-                    })
-                    .collect::<Vec<_>>();
+                let arguments_source = self.get_call_argument_sources(
+                    &alive_registers_mapping,
+                    func_to_call,
+                    arguments
+                );
 
                 self.instructions.push(InstructionIR::Call(signature.clone(), arguments_source));
 
-                if let Some(return_value) = return_value {
+                let return_register = if let Some(return_value) = return_value {
                     CallingConventions::new().handle_return_value(
                         self.function,
                         &match self.register_allocation.get_register(return_value) {
@@ -213,10 +210,23 @@ impl<'a> OptimizedInstructionIRCompiler<'a> {
                         func_to_call,
                         &mut self.instructions
                     );
-                }
+
+                    self.register_allocation.get_register(return_value).hardware_register()
+                } else {
+                    None
+                };
 
                 for register in alive_registers.iter().rev() {
-                    self.instructions.push(InstructionIR::Pop(register.clone()));
+                    if let Some(return_register) = return_register.as_ref() {
+                        if return_register != register {
+                            self.instructions.push(InstructionIR::Pop(register.clone()));
+                        } else {
+                            // The assign register will have the return value as value, so don't pop to a register.
+                            self.instructions.push(InstructionIR::PopEmpty);
+                        }
+                    } else {
+                        self.instructions.push(InstructionIR::Pop(register.clone()));
+                    }
                 }
             }
             InstructionMIRData::LoadArgument(argument_index, destination) => {
@@ -286,12 +296,57 @@ impl<'a> OptimizedInstructionIRCompiler<'a> {
         }
     }
 
-    fn get_register_stack_offset(&self, register: &VirtualRegister) -> i32 {
-        stack_layout::virtual_register_stack_offset(self.function, register.number)
-    }
+    fn get_call_argument_sources(&self,
+                                 alive_registers_mapping: &HashMap<HardwareRegister, usize>,
+                                 func_to_call: &FunctionDefinition,
+                                 arguments: &Vec<VirtualRegister>) -> Vec<Variable> {
+        // arguments
+        //     .iter()
+        //     .map(|argument| {
+        //         match self.register_allocation.get_register(argument) {
+        //             AllocatedRegister::Hardware { register, .. } => {
+        //                 let argument_stack_index = alive_registers_mapping[register] as u32;
+        //                 let stack_offset = stack_layout::stack_value_offset(self.function, self.compilation_result, argument_stack_index);
+        //                 Variable::FrameMemory(stack_offset)
+        //             },
+        //             AllocatedRegister::Stack { .. } => {
+        //                 Variable::FrameMemory(self.get_register_stack_offset(argument))
+        //             }
+        //         }
+        //     })
+        //     .collect::<Vec<_>>()
 
-    pub fn done(self) -> Vec<InstructionIR> {
-        self.instructions
+        let mut variables = Vec::new();
+
+        let mut overwritten = HashSet::new();
+        for (index, argument) in arguments.iter().enumerate().rev() {
+            match self.register_allocation.get_register(argument) {
+                AllocatedRegister::Hardware { register, .. } => {
+                    if !overwritten.contains(&register_mapping::get(register.clone(), true)) {
+                        variables.push(Variable::Register(register.clone()));
+                    } else {
+                        variables.push(Variable::FrameMemory(
+                            stack_layout::stack_value_offset(
+                                self.function,
+                                self.compilation_result,
+                                alive_registers_mapping[register] as u32
+                            )
+                        ));
+                    }
+                }
+                AllocatedRegister::Stack { .. } => {
+                    variables.push(Variable::FrameMemory(self.get_register_stack_offset(argument)));
+                }
+            }
+
+            let relative_index = register_call_arguments::get_relative_index(func_to_call.parameters(), index);
+            if relative_index < register_call_arguments::NUM_ARGUMENTS {
+                overwritten.insert(register_call_arguments::get_argument(relative_index));
+            }
+        }
+
+        variables.reverse();
+        variables
     }
 
     fn move_register(&mut self,
@@ -350,6 +405,10 @@ impl<'a> OptimizedInstructionIRCompiler<'a> {
                 mem_reg(&mut self.instructions, operand1_offset, HardwareRegister::IntSpill);
             }
         }
+    }
+
+    fn get_register_stack_offset(&self, register: &VirtualRegister) -> i32 {
+        stack_layout::virtual_register_stack_offset(self.function, register.number)
     }
 }
 
