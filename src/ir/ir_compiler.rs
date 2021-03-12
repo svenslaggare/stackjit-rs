@@ -374,7 +374,6 @@ fn test_simple5() {
     println_vec(function.instructions(), &instructions_ir);
 }
 
-
 fn println_vec(original: &Vec<Instruction>, irs: &Vec<InstructionIR>) {
     for ir in irs {
         match ir {

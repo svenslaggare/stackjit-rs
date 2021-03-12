@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
-use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments};
+use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments, float_register_call_arguments};
 use crate::compiler::stack_layout;
 use crate::engine::binder::Binder;
 use crate::ir::{HardwareRegister, HardwareRegisterExplicit, InstructionIR, Variable, branches};
@@ -158,21 +158,14 @@ impl<'a> OptimizedInstructionIRCompiler<'a> {
             }
             InstructionMIRData::Return(source) => {
                 if let Some(source) = source {
-                    let source_allocation = self.register_allocation.get_register(source).clone();
-                    match source_allocation {
-                        AllocatedRegister::Hardware { register, .. } => {
-                            self.instructions.push(InstructionIR::MoveImplicitToExplicit(
-                                HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE),
-                                register.clone()
-                            ));
-                        }
-                        AllocatedRegister::Stack { .. } => {
-                            self.instructions.push(InstructionIR::LoadFrameMemoryExplicit(
-                                HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE),
-                                self.get_register_stack_offset(source)
-                            ));
-                        }
-                    }
+                    CallingConventions::new().make_return_value(
+                        self.function,
+                        &match self.register_allocation.get_register(source) {
+                            AllocatedRegister::Hardware { register, .. } => Variable::Register(register.clone()),
+                            AllocatedRegister::Stack { .. } => Variable::FrameMemory(self.get_register_stack_offset(source))
+                        },
+                        &mut self.instructions
+                    );
                 }
 
                 self.instructions.push(InstructionIR::Return);
@@ -339,9 +332,19 @@ impl<'a> OptimizedInstructionIRCompiler<'a> {
                 }
             }
 
-            let relative_index = register_call_arguments::get_relative_index(func_to_call.parameters(), index);
-            if relative_index < register_call_arguments::NUM_ARGUMENTS {
-                overwritten.insert(register_call_arguments::get_argument(relative_index));
+            match argument.value_type {
+                Type::Float32 => {
+                    let relative_index = float_register_call_arguments::get_relative_index(func_to_call.parameters(), index);
+                    if relative_index < float_register_call_arguments::NUM_ARGUMENTS {
+                        overwritten.insert(float_register_call_arguments::get_argument(relative_index));
+                    }
+                }
+                _ => {
+                    let relative_index = register_call_arguments::get_relative_index(func_to_call.parameters(), index);
+                    if relative_index < register_call_arguments::NUM_ARGUMENTS {
+                        overwritten.insert(register_call_arguments::get_argument(relative_index));
+                    }
+                }
             }
         }
 
