@@ -12,7 +12,7 @@ use crate::ir::mid;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::typesystem::TypeStorage;
 use crate::ir::ir_compiler::InstructionIRCompiler;
-use crate::ir::optimized_ir_compiler::OptimizedInstructionIRCompiler;
+use crate::ir::allocated_ir_compiler::AllocatedInstructionIRCompiler;
 
 pub struct JitCompiler {
     memory_allocator: ExecutableMemoryAllocator,
@@ -137,7 +137,7 @@ impl JitCompiler {
         let compilation_result = mir_compiler.done();
 
         // let mut ir_compiler = InstructionIRCompiler::new(&binder, &function, &compilation_result);
-        let mut ir_compiler = OptimizedInstructionIRCompiler::new(&binder, &function, &compilation_result);
+        let mut ir_compiler = AllocatedInstructionIRCompiler::new(&binder, &function, &compilation_result);
         ir_compiler.compile();
         ir_compiler.done()
     }

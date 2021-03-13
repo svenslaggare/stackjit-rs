@@ -1,6 +1,8 @@
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
+use iced_x86::Register;
+
 use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments, float_register_call_arguments};
 use crate::compiler::stack_layout;
 use crate::engine::binder::Binder;
@@ -12,17 +14,15 @@ use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
-use crate::optimization::register_allocation::{RegisterAllocation, AllocatedRegister};
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
 use crate::analysis::liveness;
 use crate::optimization::register_allocation;
 use crate::optimization::register_allocation::linear_scan::Settings;
-use iced_x86::Register;
+use crate::optimization::register_allocation::{RegisterAllocation, AllocatedRegister};
 use crate::compiler::code_generator::register_mapping;
 
-
-pub struct OptimizedInstructionIRCompiler<'a> {
+pub struct AllocatedInstructionIRCompiler<'a> {
     binder: &'a Binder,
     function: &'a Function,
     compilation_result: &'a MIRCompilationResult,
@@ -30,16 +30,16 @@ pub struct OptimizedInstructionIRCompiler<'a> {
     instructions: Vec<InstructionIR>
 }
 
-impl<'a> OptimizedInstructionIRCompiler<'a> {
+impl<'a> AllocatedInstructionIRCompiler<'a> {
     pub fn new(binder: &'a Binder,
                function: &'a Function,
-               compilation_result: &'a MIRCompilationResult) -> OptimizedInstructionIRCompiler<'a> {
-        OptimizedInstructionIRCompiler {
+               compilation_result: &'a MIRCompilationResult) -> AllocatedInstructionIRCompiler<'a> {
+        AllocatedInstructionIRCompiler {
             binder,
             function,
             instructions: Vec::new(),
             compilation_result,
-            register_allocation: OptimizedInstructionIRCompiler::register_allocate(compilation_result)
+            register_allocation: AllocatedInstructionIRCompiler::register_allocate(compilation_result)
         }
     }
 
@@ -412,13 +412,5 @@ impl<'a> OptimizedInstructionIRCompiler<'a> {
 
     fn get_register_stack_offset(&self, register: &VirtualRegister) -> i32 {
         stack_layout::virtual_register_stack_offset(self.function, register.number)
-    }
-}
-
-fn move_if_different(instructions: &mut Vec<InstructionIR>,
-                     destination: &HardwareRegister,
-                     source: &HardwareRegister) {
-    if destination != source {
-        instructions.push(InstructionIR::Move(destination.clone(), source.clone()));
     }
 }

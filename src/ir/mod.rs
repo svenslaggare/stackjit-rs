@@ -3,7 +3,7 @@ use iced_x86::Register;
 pub mod mid;
 pub mod compiler;
 pub mod ir_compiler;
-pub mod optimized_ir_compiler;
+pub mod allocated_ir_compiler;
 pub mod branches;
 
 use crate::model::function::FunctionSignature;
