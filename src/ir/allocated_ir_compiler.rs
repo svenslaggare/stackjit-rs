@@ -78,7 +78,6 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
         CallingConventions::new().move_arguments_to_stack(self.function, &mut self.instructions);
 
         if !self.compilation_result.need_zero_initialize_registers.is_empty() {
-            // self.instructions.push(InstructionIR::LoadZeroToRegister(HardwareRegister::IntSpill));
             let mut int_initialized = false;
             let mut float_initialized = false;
 
@@ -115,15 +114,6 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                         }
                     }
                 }
-
-                // match self.register_allocation.get_register(register) {
-                //     AllocatedRegister::Hardware { register, .. } => {
-                //         self.instructions.push(InstructionIR::Move(*register, HardwareRegister::IntSpill));
-                //     }
-                //     AllocatedRegister::Stack { .. } => {
-                //         self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(register), HardwareRegister::IntSpill));
-                //     }
-                // }
             }
         }
     }

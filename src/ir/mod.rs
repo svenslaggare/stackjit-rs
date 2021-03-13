@@ -13,10 +13,8 @@ use crate::model::typesystem::Type;
 pub enum HardwareRegister {
     Int(u32),
     IntSpill,
-    IntArgument(u32),
     Float(u32),
     FloatSpill,
-    FloatArgument(u32)
 }
 
 impl std::fmt::Debug for HardwareRegister {
@@ -28,17 +26,11 @@ impl std::fmt::Debug for HardwareRegister {
             HardwareRegister::IntSpill => {
                 write!(f, "HardwareRegister::IntSpill")
             }
-            HardwareRegister::IntArgument(value) => {
-                write!(f, "HardwareRegister::IntArgument({})", value)
-            }
             HardwareRegister::Float(value) => {
                 write!(f, "HardwareRegister::Float({})", value)
             }
             HardwareRegister::FloatSpill => {
                 write!(f, "HardwareRegister::FloatSpill")
-            }
-            HardwareRegister::FloatArgument(value) => {
-                write!(f, "HardwareRegister::IntArgument({})", value)
             }
         }
     }

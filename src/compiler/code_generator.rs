@@ -375,7 +375,7 @@ impl<'a> CodeGenerator<'a> {
                 //Align the stack
                 let stack_alignment = calling_conventions.stack_alignment(func_to_call, *num_saved);
                 if stack_alignment > 0 {
-                    self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Add_rm64_imm32, Register::RSP, -stack_alignment).unwrap());
+                    self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Sub_rm64_imm32, Register::RSP, stack_alignment).unwrap());
                 }
 
                 let mut call_argument_instructions = Vec::new();
@@ -714,9 +714,6 @@ pub mod register_mapping {
                     mapping_i32[index as usize]
                 }
             }
-            HardwareRegister::IntArgument(index) => {
-                register_call_arguments::get_argument(index as usize)
-            }
             HardwareRegister::IntSpill => {
                 if is_64 {
                     Register::RAX
@@ -726,9 +723,6 @@ pub mod register_mapping {
             }
             HardwareRegister::Float(index) => {
                 mapping_f32[index as usize]
-            }
-            HardwareRegister::FloatArgument(index) => {
-                float_register_call_arguments::get_argument(index as usize)
             }
             HardwareRegister::FloatSpill => {
                 Register::XMM0
