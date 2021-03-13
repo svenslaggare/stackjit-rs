@@ -1,4 +1,4 @@
-use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments};
+use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments, float_register_call_arguments};
 use crate::compiler::stack_layout;
 use crate::engine::binder::Binder;
 use crate::ir::{HardwareRegister, HardwareRegisterExplicit, InstructionIR, Variable};
@@ -151,13 +151,29 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::ArrayBoundsCheck(HardwareRegister::Int(0), HardwareRegister::Int(1)));
 
                 self.instructions.push(InstructionIR::LoadElement(element.clone(), HardwareRegister::Int(0), HardwareRegister::Int(1)));
-                self.instructions.push(InstructionIR::StoreFrameMemoryExplicit(
-                    self.get_register_stack_offset(destination),
-                    HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)
-                ));
+
+                match element {
+                    Type::Float32 => {
+                        self.instructions.push(InstructionIR::StoreFrameMemoryExplicit(
+                            self.get_register_stack_offset(destination),
+                            HardwareRegisterExplicit(float_register_call_arguments::RETURN_VALUE)
+                        ));
+                    }
+                    _ => {
+                        self.instructions.push(InstructionIR::StoreFrameMemoryExplicit(
+                            self.get_register_stack_offset(destination),
+                            HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)
+                        ));
+                    }
+                }
             }
             InstructionMIRData::StoreElement(element, array_ref, index, value) => {
-                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(2), self.get_register_stack_offset(value)));
+                let value_register = match element {
+                    Type::Float32 => HardwareRegister::Float(2),
+                    _ => HardwareRegister::Int(2)
+                };
+
+                self.instructions.push(InstructionIR::LoadFrameMemory(value_register, self.get_register_stack_offset(value)));
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(1), self.get_register_stack_offset(index)));
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(array_ref)));
 
@@ -168,7 +184,7 @@ impl<'a> InstructionIRCompiler<'a> {
                     element.clone(),
                     HardwareRegister::Int(0),
                     HardwareRegister::Int(1),
-                    HardwareRegister::Int(2)
+                    value_register
                 ));
             }
             InstructionMIRData::LoadArrayLength(destination, array_ref) => {

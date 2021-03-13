@@ -2,7 +2,7 @@ use iced_x86::{Code, Encoder, MemoryOperand, Register};
 use iced_x86::Instruction as X86Instruction;
 
 use crate::compiler::{FunctionCallType, FunctionCompilationData, stack_layout, UnresolvedFunctionCall};
-use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments};
+use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments, float_register_call_arguments};
 use crate::compiler::error_handling::ErrorHandling;
 use crate::engine::binder::Binder;
 use crate::ir::{HardwareRegisterExplicit, InstructionIR, Condition};
@@ -491,11 +491,22 @@ impl<'a> CodeGenerator<'a> {
                         unimplemented!();
                     }
                     4 => {
-                        self.encode_x86_instruction(X86Instruction::with_reg_mem(
-                            Code::Mov_r32_rm32,
-                            register_call_arguments::RETURN_VALUE_32,
-                            MemoryOperand::with_base(reference_register),
-                        ));
+                        match element {
+                            Type::Float32 => {
+                                self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                                    Code::Movss_xmm_xmmm32,
+                                    float_register_call_arguments::RETURN_VALUE,
+                                    MemoryOperand::with_base(reference_register),
+                                ));
+                            }
+                            _ => {
+                                self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                                    Code::Mov_r32_rm32,
+                                    register_call_arguments::RETURN_VALUE_32,
+                                    MemoryOperand::with_base(reference_register),
+                                ));
+                            }
+                        }
                     }
                     1 => {
                         unimplemented!();
@@ -504,7 +515,6 @@ impl<'a> CodeGenerator<'a> {
                 }
             }
             InstructionIR::StoreElement(element, reference_register, index_register, value_register) => {
-                let value_register_32 = register_mapping::get(*value_register, false);
                 let reference_register = register_mapping::get(*reference_register, true);
                 let index_register = register_mapping::get(*index_register, true);
 
@@ -516,11 +526,24 @@ impl<'a> CodeGenerator<'a> {
                         unimplemented!();
                     }
                     4 => {
-                        self.encode_x86_instruction(X86Instruction::with_mem_reg(
-                            Code::Mov_rm32_r32,
-                            MemoryOperand::with_base(reference_register),
-                            value_register_32,
-                        ));
+                        match element {
+                            Type::Float32 => {
+                                let value_register = register_mapping::get(*value_register, true);
+                                self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                                    Code::Movss_xmmm32_xmm,
+                                    MemoryOperand::with_base(reference_register),
+                                    value_register,
+                                ));
+                            }
+                            _ => {
+                                let value_register_32 = register_mapping::get(*value_register, false);
+                                self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                                    Code::Mov_rm32_r32,
+                                    MemoryOperand::with_base(reference_register),
+                                    value_register_32,
+                                ));
+                            }
+                        }
                     }
                     1 => {
                         unimplemented!();
