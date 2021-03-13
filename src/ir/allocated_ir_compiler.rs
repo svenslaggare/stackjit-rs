@@ -78,16 +78,52 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
         CallingConventions::new().move_arguments_to_stack(self.function, &mut self.instructions);
 
         if !self.compilation_result.need_zero_initialize_registers.is_empty() {
-            self.instructions.push(InstructionIR::LoadZeroToRegister(HardwareRegister::IntSpill));
+            // self.instructions.push(InstructionIR::LoadZeroToRegister(HardwareRegister::IntSpill));
+            let mut int_initialized = false;
+            let mut float_initialized = false;
+
             for register in &self.compilation_result.need_zero_initialize_registers {
-                match self.register_allocation.get_register(register) {
-                    AllocatedRegister::Hardware { register, .. } => {
-                        self.instructions.push(InstructionIR::Move(*register, HardwareRegister::IntSpill));
+                match register.value_type {
+                    Type::Float32 => {
+                        if !float_initialized {
+                            self.instructions.push(InstructionIR::LoadZeroToRegister(HardwareRegister::FloatSpill));
+                            float_initialized = true;
+                        }
+
+                        match self.register_allocation.get_register(register) {
+                            AllocatedRegister::Hardware { register, .. } => {
+                                self.instructions.push(InstructionIR::Move(*register, HardwareRegister::FloatSpill));
+                            }
+                            AllocatedRegister::Stack { .. } => {
+                                self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(register), HardwareRegister::FloatSpill));
+                            }
+                        }
                     }
-                    AllocatedRegister::Stack { .. } => {
-                        self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(register), HardwareRegister::IntSpill));
+                    _ => {
+                        if !int_initialized {
+                            self.instructions.push(InstructionIR::LoadZeroToRegister(HardwareRegister::IntSpill));
+                            int_initialized = true;
+                        }
+
+                        match self.register_allocation.get_register(register) {
+                            AllocatedRegister::Hardware { register, .. } => {
+                                self.instructions.push(InstructionIR::Move(*register, HardwareRegister::IntSpill));
+                            }
+                            AllocatedRegister::Stack { .. } => {
+                                self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(register), HardwareRegister::IntSpill));
+                            }
+                        }
                     }
                 }
+
+                // match self.register_allocation.get_register(register) {
+                //     AllocatedRegister::Hardware { register, .. } => {
+                //         self.instructions.push(InstructionIR::Move(*register, HardwareRegister::IntSpill));
+                //     }
+                //     AllocatedRegister::Stack { .. } => {
+                //         self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(register), HardwareRegister::IntSpill));
+                //     }
+                // }
             }
         }
     }

@@ -94,7 +94,12 @@ impl<'a> CodeGenerator<'a> {
             },
             InstructionIR::LoadZeroToRegister(register) => {
                 let register = register_mapping::get(*register, true);
-                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Xor_r64_rm64, register, register));
+
+                if register.is_xmm() {
+                    self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Pxor_xmm_xmmm128, register, register));
+                } else {
+                    self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Xor_r64_rm64, register, register));
+                }
             }
             InstructionIR::AddToStackPointer(value) => {
                 self.encode_x86_instruction(X86Instruction::try_with_reg_i32(
