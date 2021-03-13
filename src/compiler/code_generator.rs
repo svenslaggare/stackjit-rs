@@ -479,7 +479,8 @@ impl<'a> CodeGenerator<'a> {
                     runtime_interface::new_array as u64
                 );
             }
-            InstructionIR::LoadElement(element, reference_register, index_register) => {
+            InstructionIR::LoadElement(element, destination_register, reference_register, index_register) => {
+                let destination_register = register_mapping::get(*destination_register, false);
                 let reference_register = register_mapping::get(*reference_register, true);
                 let index_register = register_mapping::get(*index_register, true);
 
@@ -495,14 +496,14 @@ impl<'a> CodeGenerator<'a> {
                             Type::Float32 => {
                                 self.encode_x86_instruction(X86Instruction::with_reg_mem(
                                     Code::Movss_xmm_xmmm32,
-                                    float_register_call_arguments::RETURN_VALUE,
+                                    destination_register,
                                     MemoryOperand::with_base(reference_register),
                                 ));
                             }
                             _ => {
                                 self.encode_x86_instruction(X86Instruction::with_reg_mem(
                                     Code::Mov_r32_rm32,
-                                    register_call_arguments::RETURN_VALUE_32,
+                                    destination_register,
                                     MemoryOperand::with_base(reference_register),
                                 ));
                             }

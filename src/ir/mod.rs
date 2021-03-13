@@ -97,7 +97,7 @@ pub enum InstructionIR {
     ArrayBoundsCheck(HardwareRegister, HardwareRegister),
 
     NewArray(Type, HardwareRegister),
-    LoadElement(Type, HardwareRegister, HardwareRegister),
+    LoadElement(Type, HardwareRegister, HardwareRegister, HardwareRegister),
     StoreElement(Type, HardwareRegister, HardwareRegister, HardwareRegister),
     LoadArrayLength(HardwareRegister),
 

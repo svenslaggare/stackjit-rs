@@ -150,22 +150,17 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
                 self.instructions.push(InstructionIR::ArrayBoundsCheck(HardwareRegister::Int(0), HardwareRegister::Int(1)));
 
-                self.instructions.push(InstructionIR::LoadElement(element.clone(), HardwareRegister::Int(0), HardwareRegister::Int(1)));
+                let return_value = match element {
+                    Type::Float32 => HardwareRegister::Float(2),
+                    _ => HardwareRegister::Int(2)
+                };
 
-                match element {
-                    Type::Float32 => {
-                        self.instructions.push(InstructionIR::StoreFrameMemoryExplicit(
-                            self.get_register_stack_offset(destination),
-                            HardwareRegisterExplicit(float_register_call_arguments::RETURN_VALUE)
-                        ));
-                    }
-                    _ => {
-                        self.instructions.push(InstructionIR::StoreFrameMemoryExplicit(
-                            self.get_register_stack_offset(destination),
-                            HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)
-                        ));
-                    }
-                }
+                self.instructions.push(InstructionIR::LoadElement(element.clone(), return_value, HardwareRegister::Int(0), HardwareRegister::Int(1)));
+
+                self.instructions.push(InstructionIR::StoreFrameMemory(
+                    self.get_register_stack_offset(destination),
+                    return_value
+                ));
             }
             InstructionMIRData::StoreElement(element, array_ref, index, value) => {
                 let value_register = match element {
