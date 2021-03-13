@@ -8,6 +8,7 @@ use crate::runtime::array;
 use crate::engine::execution::{ExecutionEngineError, RuntimeError};
 
 thread_local!(static ARRAY_RESULT: RefCell<u64> = RefCell::new(0));
+thread_local!(static FLOAT_RESULT: RefCell<f32> = RefCell::new(0.0));
 
 extern "C" fn print_array(ptr: u64) {
     println!("0x{:x}", ptr);
@@ -21,6 +22,20 @@ extern "C" fn set_array(ptr: u64, index: i32, value: i32) {
     unsafe {
         *ptr.add(index as usize) = value;
     }
+}
+
+extern "C" fn set_array_float(ptr: u64, index: i32, value: f32) {
+    let ptr = (ptr + array::LENGTH_SIZE as u64) as *mut f32;
+    unsafe {
+        *ptr.add(index as usize) = value;
+    }
+}
+
+extern "C" fn print_float(x: f32) {
+    println!("{}", x);
+    FLOAT_RESULT.with(|result| {
+        *result.borrow_mut() = x;
+    });
 }
 
 #[test]
@@ -88,6 +103,54 @@ fn test_load1() {
 
     let execution_result = vm.execute().unwrap();
     assert_eq!(i32::MIN, execution_result);
+}
+
+#[test]
+fn test_load2() {
+    FLOAT_RESULT.with(|result| {
+        *result.borrow_mut() = 0.0;
+    });
+
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.binder_mut().define(
+        FunctionDefinition::new_external(
+            "set_array".to_owned(), vec![Type::Array(Box::new(Type::Float32)), Type::Int32, Type::Float32], Type::Void,
+            set_array_float as *mut std::ffi::c_void
+        )
+    );
+
+    vm.engine.binder_mut().define(
+        FunctionDefinition::new_external(
+            "print".to_owned(), vec![Type::Float32], Type::Void,
+            print_float as *mut std::ffi::c_void
+        )
+    );
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![Type::Array(Box::new(Type::Float32))],
+        vec![
+            Instruction::LoadInt32(4711),
+            Instruction::NewArray(Type::Float32),
+            Instruction::StoreLocal(0),
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(0),
+            Instruction::LoadFloat32(1337.0),
+            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![Type::Array(Box::new(Type::Float32)), Type::Int32, Type::Float32] }),
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(0),
+            Instruction::LoadElement(Type::Float32),
+            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![Type::Float32] }),
+
+            Instruction::LoadInt32(0),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(0, execution_result);
+    assert_eq!(1337.0, FLOAT_RESULT.with(|result| *result.borrow()));
 }
 
 #[test]
@@ -169,6 +232,54 @@ fn test_store2() {
 
     let execution_result = vm.execute().unwrap();
     assert_eq!(1337, execution_result);
+}
+
+#[test]
+fn test_store3() {
+    FLOAT_RESULT.with(|result| {
+        *result.borrow_mut() = 0.0;
+    });
+
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.binder_mut().define(
+        FunctionDefinition::new_external(
+            "print".to_owned(), vec![Type::Float32], Type::Void,
+            print_float as *mut std::ffi::c_void
+        )
+    );
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![Type::Array(Box::new(Type::Float32))],
+        vec![
+            Instruction::LoadInt32(4711),
+            Instruction::NewArray(Type::Float32),
+            Instruction::StoreLocal(0),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(1),
+            Instruction::LoadFloat32(1337.0),
+            Instruction::StoreElement(Type::Float32),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(0),
+            Instruction::LoadFloat32(4711.0),
+            Instruction::StoreElement(Type::Float32),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(1),
+            Instruction::LoadElement(Type::Float32),
+            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![Type::Float32] }),
+
+            Instruction::LoadInt32(0),
+            Instruction::Return
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(0, execution_result);
+    assert_eq!(1337.0, FLOAT_RESULT.with(|result| *result.borrow()));
 }
 
 #[test]

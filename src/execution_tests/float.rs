@@ -50,8 +50,6 @@ fn test1() {
         ]
     )).unwrap();
 
-    // vm.create_execution().unwrap();
-
     let execution_result = vm.execute().unwrap();
     assert_eq!(0, execution_result);
     assert_eq!(13.37 + 47.11, FLOAT_RESULT.with(|result| *result.borrow()));
