@@ -72,6 +72,7 @@ pub enum InstructionIR {
     PushExplicit(HardwareRegisterExplicit),
     PopExplicit(HardwareRegisterExplicit),
     PopEmpty,
+    PushInt32(i32),
 
     LoadFrameMemory(HardwareRegister, i32),
     StoreFrameMemory(i32, HardwareRegister),
@@ -93,9 +94,11 @@ pub enum InstructionIR {
     SubInt32ToFrameMemory(i32, HardwareRegister),
 
     AddFloat32(HardwareRegister, HardwareRegister),
+    AddFloat32FromFrameMemory(HardwareRegister, i32),
     SubFloat32(HardwareRegister, HardwareRegister),
+    SubFloat32FromFrameMemory(HardwareRegister, i32),
 
-    Call(FunctionSignature, Vec<Variable>),
+    Call(FunctionSignature, Vec<Variable>, usize),
     Return,
 
     NullReferenceCheck(HardwareRegister),

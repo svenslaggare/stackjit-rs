@@ -114,7 +114,7 @@ impl<'a> InstructionIRCompiler<'a> {
                     .map(|argument| Variable::FrameMemory(self.get_register_stack_offset(argument)))
                     .collect::<Vec<_>>();
 
-                self.instructions.push(InstructionIR::Call(signature.clone(), arguments_source));
+                self.instructions.push(InstructionIR::Call(signature.clone(), arguments_source, 0));
 
                 if let Some(return_value) = return_value {
                     CallingConventions::new().handle_return_value(

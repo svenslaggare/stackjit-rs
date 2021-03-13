@@ -39,7 +39,7 @@ fn test1() {
 
     vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Float32],
+        vec![],
         vec![
             Instruction::LoadFloat32(13.37),
             Instruction::LoadFloat32(47.11),
@@ -49,6 +49,8 @@ fn test1() {
             Instruction::Return
         ]
     )).unwrap();
+
+    // vm.create_execution().unwrap();
 
     let execution_result = vm.execute().unwrap();
     assert_eq!(0, execution_result);
@@ -79,7 +81,7 @@ fn test2() {
 
     vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Float32],
+        vec![],
         vec![
             Instruction::LoadFloat32(13.37),
             Instruction::LoadFloat32(47.11),
@@ -155,4 +157,37 @@ fn test3() {
     let execution_result = vm.execute().unwrap();
     assert_eq!(0, execution_result);
     assert_eq!(1.1 + 2.1 + 3.1 + 4.1 + 5.1 + 6.1 + 7.1 + 8.1, FLOAT_RESULT.with(|result| *result.borrow()));
+}
+
+#[test]
+fn test4() {
+    FLOAT_RESULT.with(|result| {
+        *result.borrow_mut() = 0.0;
+    });
+
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.binder_mut().define(
+        FunctionDefinition::new_external(
+            "print".to_owned(), vec![Type::Float32], Type::Void,
+            print_float as *mut std::ffi::c_void
+        )
+    );
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![],
+        vec![
+            Instruction::LoadFloat32(13.37),
+            Instruction::LoadFloat32(47.11),
+            Instruction::Sub,
+            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![Type::Float32] }),
+            Instruction::LoadInt32(0),
+            Instruction::Return
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(0, execution_result);
+    assert_eq!(13.37 - 47.11, FLOAT_RESULT.with(|result| *result.borrow()));
 }

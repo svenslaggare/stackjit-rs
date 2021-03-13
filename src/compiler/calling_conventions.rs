@@ -229,8 +229,8 @@ impl CallingConventions {
         num_stack_arguments
     }
 
-    pub fn stack_alignment(&self, func_to_call: &FunctionDefinition) -> i32 {
-        (self.num_stack_arguments(func_to_call.parameters()) % 2) as i32 * stack_layout::STACK_ENTRY_SIZE
+    pub fn stack_alignment(&self, func_to_call: &FunctionDefinition, num_saved: usize) -> i32 {
+        ((self.num_stack_arguments(func_to_call.parameters()) + num_saved) % 2) as i32 * stack_layout::STACK_ENTRY_SIZE
     }
 }
 

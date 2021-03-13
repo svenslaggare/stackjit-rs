@@ -63,7 +63,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
         let live_intervals = liveness::compute_liveness(instructions, &basic_blocks, &control_flow_graph);
         register_allocation::linear_scan::allocate(
             &live_intervals,
-            &Settings { num_int_registers: 2, num_float_registers: 1 }
+            &Settings { num_int_registers: 2, num_float_registers: 2 }
         )
     }
 
@@ -107,7 +107,17 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 }
             }
             InstructionMIRData::LoadFloat32(destination, value) => {
+                let value: i32 = unsafe { std::mem::transmute(*value) };
 
+                match self.register_allocation.get_register(destination) {
+                    AllocatedRegister::Hardware { register, .. } => {
+                        self.instructions.push(InstructionIR::PushInt32(value));
+                        self.instructions.push(InstructionIR::Pop(*register));
+                    }
+                    AllocatedRegister::Stack { .. } => {
+                        self.instructions.push(InstructionIR::MoveInt32ToFrameMemory(self.get_register_stack_offset(destination), value));
+                    }
+                }
             }
             InstructionMIRData::Move(destination, source) => {
                 self.move_register(destination, source);
@@ -151,10 +161,36 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 }
             }
             InstructionMIRData::AddFloat32(destination, operand1, operand2) => {
+                self.binary_operator_f32(
+                    operand1,
+                    operand2,
+                    |instructions, op1, op2| {
+                        instructions.push(InstructionIR::AddFloat32(op1, op2));
+                    },
+                    |instructions, op1, op2| {
+                        instructions.push(InstructionIR::AddFloat32FromFrameMemory(op1, op2));
+                    }
+                );
 
+                if destination != operand1 {
+                    self.move_register(destination, operand1);
+                }
             }
             InstructionMIRData::SubFloat32(destination, operand1, operand2) => {
+                self.binary_operator_f32(
+                    operand1,
+                    operand2,
+                    |instructions, op1, op2| {
+                        instructions.push(InstructionIR::SubFloat32(op1, op2));
+                    },
+                    |instructions, op1, op2| {
+                        instructions.push(InstructionIR::SubFloat32FromFrameMemory(op1, op2));
+                    }
+                );
 
+                if destination != operand1 {
+                    self.move_register(destination, operand1);
+                }
             }
             InstructionMIRData::Return(source) => {
                 if let Some(source) = source {
@@ -191,7 +227,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     arguments
                 );
 
-                self.instructions.push(InstructionIR::Call(signature.clone(), arguments_source));
+                self.instructions.push(InstructionIR::Call(signature.clone(), arguments_source, alive_registers.len()));
 
                 let return_register = if let Some(return_value) = return_value {
                     CallingConventions::new().handle_return_value(
@@ -274,7 +310,17 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                         true
                     }
                     Type::Float32 => {
-                        unimplemented!();
+                        self.binary_operator_f32(
+                            operand1,
+                            operand2,
+                            |instructions, op1, op2| {
+                                instructions.push(InstructionIR::Compare(Type::Float32, op1, op2));
+                            },
+                            |instructions, op1, op2| {
+                                instructions.push(InstructionIR::CompareFromFrameMemory(Type::Float32, op1, op2));
+                            }
+                        );
+
                         false
                     }
                     _ => { panic!("unexpected."); }
@@ -406,6 +452,42 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 let operand2_offset = self.get_register_stack_offset(operand2);
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::IntSpill, operand2_offset));
                 mem_reg(&mut self.instructions, operand1_offset, HardwareRegister::IntSpill);
+            }
+        }
+    }
+
+    fn binary_operator_f32<
+        F1: Fn(&mut Vec<InstructionIR>, HardwareRegister, HardwareRegister),
+        F2: Fn(&mut Vec<InstructionIR>, HardwareRegister, i32)
+    >(&mut self,
+      operand1: &VirtualRegister,
+      operand2: &VirtualRegister,
+      reg_reg: F1,
+      reg_mem: F2) {
+        let operand1_allocation = self.register_allocation.get_register(operand1).clone();
+        let operand2_allocation = self.register_allocation.get_register(operand2).clone();
+
+        use AllocatedRegister::{Hardware, Stack};
+        match (operand1_allocation, operand2_allocation) {
+            (Hardware { register: operand1_register, .. },  Hardware { register: operand2_register, .. }) => {
+                reg_reg(&mut self.instructions, operand1_register, operand2_register);
+            }
+            (Hardware { register: operand1_register, .. }, Stack { .. }) => {
+                let operand2_offset = self.get_register_stack_offset(operand2);
+                reg_mem(&mut self.instructions, operand1_register, operand2_offset);
+            }
+            (Stack { ..}, Hardware { register: operand2_register, .. }) => {
+                let operand1_offset = self.get_register_stack_offset(operand1);
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::FloatSpill, operand1_offset));
+                reg_reg(&mut self.instructions, HardwareRegister::FloatSpill, operand2_register);
+                self.instructions.push(InstructionIR::StoreFrameMemory(operand1_offset, HardwareRegister::FloatSpill));
+            }
+            (Stack { .. }, Stack { .. }) => {
+                let operand1_offset = self.get_register_stack_offset(operand1);
+                let operand2_offset = self.get_register_stack_offset(operand2);
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::FloatSpill, operand1_offset));
+                reg_mem(&mut self.instructions, HardwareRegister::FloatSpill, operand2_offset);
+                self.instructions.push(InstructionIR::StoreFrameMemory(operand1_offset, HardwareRegister::FloatSpill));
             }
         }
     }

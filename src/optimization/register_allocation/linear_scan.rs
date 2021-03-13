@@ -300,3 +300,86 @@ fn test_allocate2() {
 
     print_allocation(&instructions, &live_intervals, &allocation);
 }
+
+#[test]
+fn test_allocate3() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Float32),
+        vec![],
+        vec![
+            Instruction::LoadFloat32(1.0),
+
+            Instruction::LoadFloat32(2.0),
+            Instruction::Add,
+
+            Instruction::LoadFloat32(3.0),
+            Instruction::Add,
+
+            Instruction::LoadFloat32(4.0),
+            Instruction::Add,
+
+            Instruction::LoadFloat32(5.0),
+            Instruction::Add,
+
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    Verifier::new(&binder, &mut function).verify().unwrap();
+
+    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    compiler.compile(function.instructions());
+    let instructions = compiler.done().instructions;
+
+    let (_, _, live_intervals) = analyze(&instructions);
+
+    let allocation = allocate(
+        &live_intervals,
+        &Settings { num_int_registers: 0, num_float_registers: 1 }
+    );
+
+    assert_eq!(1, allocation.num_allocated_registers());
+    assert_eq!(1, allocation.num_spilled_registers());
+
+    print_allocation(&instructions, &live_intervals, &allocation);
+}
+
+#[test]
+fn test_allocate4() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Float32),
+        vec![Type::Float32, Type::Float32],
+        vec![
+            Instruction::LoadFloat32(40000.0),
+            Instruction::StoreLocal(1),
+
+            Instruction::LoadFloat32(1337.0),
+            Instruction::LoadFloat32(4711.0),
+            Instruction::Add,
+            Instruction::StoreLocal(0),
+
+            Instruction::LoadLocal(1),
+            Instruction::Return
+        ]
+    );
+
+    let binder = Binder::new();
+    Verifier::new(&binder, &mut function).verify().unwrap();
+
+    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    compiler.compile(function.instructions());
+    let instructions = compiler.done().instructions;
+
+    let (_, _, live_intervals) = analyze(&instructions);
+
+    let allocation = allocate(
+        &live_intervals,
+        &Settings { num_int_registers: 0, num_float_registers: 1 }
+    );
+
+    assert_eq!(2, allocation.num_allocated_registers());
+    assert_eq!(2, allocation.num_spilled_registers());
+
+    print_allocation(&instructions, &live_intervals, &allocation);
+}
