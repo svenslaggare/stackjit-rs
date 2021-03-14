@@ -63,7 +63,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
         let live_intervals = liveness::compute_liveness(instructions, &basic_blocks, &control_flow_graph);
         register_allocation::linear_scan::allocate(
             &live_intervals,
-            &Settings { num_int_registers: 2, num_float_registers: 2 }
+            &Settings { num_int_registers: 3, num_float_registers: 2 }
         )
     }
 

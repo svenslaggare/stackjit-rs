@@ -109,6 +109,44 @@ fn test5() {
 }
 
 #[test]
+fn test6() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        Vec::new(),
+        vec![
+            Instruction::LoadInt32(-10),
+            Instruction::LoadInt32(-30),
+            Instruction::Add,
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(-40, execution_result);
+}
+
+#[test]
+fn test7() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        Vec::new(),
+        vec![
+            Instruction::LoadInt32(-10),
+            Instruction::LoadInt32(40),
+            Instruction::Add,
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(30, execution_result);
+}
+
+#[test]
 fn test_locals1() {
     let mut vm = VirtualMachine::new();
 

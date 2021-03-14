@@ -468,8 +468,8 @@ impl<'a> CodeGenerator<'a> {
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_r64_rm64, register_call_arguments::ARG1, size_register));
 
                 // Check that the size is valid
-                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Xor_r64_rm64, Register::RAX, Register::RAX));
-                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Cmp_r64_rm64, Register::RAX, register_call_arguments::ARG1));
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Xor_r32_rm32, Register::EAX, Register::EAX));
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Cmp_r32_rm32, Register::EAX, register_call_arguments::ARG1.full_register32()));
 
                 let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Jg_rel32_64, 0).unwrap());
                 compilation_data.unresolved_native_branches.insert(
@@ -484,7 +484,6 @@ impl<'a> CodeGenerator<'a> {
                     runtime_interface::new_array as u64
                 );
 
-                //Unalign the stack
                 if stack_alignment > 0 {
                     self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Add_rm64_imm32, Register::RSP, stack_alignment).unwrap());
                 }
