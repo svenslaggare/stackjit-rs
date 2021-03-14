@@ -22,6 +22,13 @@ impl AllocatedRegister {
         }
     }
 
+    pub fn is_stack(&self) -> bool {
+        match self {
+            AllocatedRegister::Hardware { .. } => false,
+            AllocatedRegister::Stack { .. } => true
+        }
+    }
+
     pub fn hardware_register(&self) -> Option<HardwareRegister> {
         match self {
             AllocatedRegister::Hardware { register, .. } => Some(register.clone()),

@@ -284,17 +284,10 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
             InstructionMIRData::NewArray(element, destination, size) => {
                 let alive_registers = self.push_alive_registers(instruction_index);
 
-                let size_register = match self.register_allocation.get_register(size).hardware_register() {
-                    Some(register) => register,
-                    None => {
-                        // TODO: fix this
-                        self.instructions.push(InstructionIR::LoadFrameMemory(
-                            HardwareRegister::IntSpill,
-                            self.get_register_stack_offset(size)
-                        ));
-                        HardwareRegister::IntSpill
-                    }
-                };
+                let mut temp_registers = TempRegisters::new(&self.register_allocation);
+                temp_registers.try_remove(size);
+                let (size_is_stack, size_register) = temp_registers.get_register(size);
+                let size_alive = self.push_if_alive(&alive_registers, size, &size_register, size_is_stack);
 
                 self.instructions.push(InstructionIR::NewArray(element.clone(), size_register, alive_registers.len()));
 
@@ -317,26 +310,22 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     }
                 };
 
+                if size_alive {
+                    self.instructions.push(InstructionIR::Pop(size_register));
+                }
+
                 self.pop_alive_registers(&alive_registers, destination_register);
             }
             InstructionMIRData::LoadElement(element, destination, array_ref, index) => {
-                let (array_ref_is_stack, array_ref_register) = match self.register_allocation.get_register(array_ref).hardware_register() {
-                    Some(register) => (false, register.clone()),
-                    None => (true, HardwareRegister::Int(5))
-                };
-
-                let (index_is_stack, index_register) = match self.register_allocation.get_register(index).hardware_register() {
-                    Some(register) => (false, register.clone()),
-                    None => {
-                        if array_ref_register == HardwareRegister::Int(5) {
-                            (true, HardwareRegister::Int(4))
-                        } else {
-                            (true, HardwareRegister::Int(5))
-                        }
-                    }
-                };
-
                 let alive_registers = self.register_allocation.alive_registers_at(instruction_index);
+
+                let mut temp_registers = TempRegisters::new(&self.register_allocation);
+                temp_registers.try_remove(array_ref);
+                temp_registers.try_remove(index);
+
+                let (array_ref_is_stack, array_ref_register) = temp_registers.get_register(array_ref);
+                let (index_is_stack, index_register) = temp_registers.get_register(index);
+
                 let array_ref_alive = self.push_if_alive(&alive_registers, array_ref, &array_ref_register, array_ref_is_stack);
                 let index_alive = self.push_if_alive(&alive_registers, index, &index_register, index_is_stack);
 
@@ -360,14 +349,11 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     index_register
                 ));
 
-                match self.register_allocation.get_register(destination) {
-                    AllocatedRegister::Stack { .. } => {
-                        self.instructions.push(InstructionIR::StoreFrameMemory(
-                            self.get_register_stack_offset(destination),
-                            return_value
-                        ));
-                    }
-                    _ => {}
+                if self.register_allocation.get_register(destination).is_stack() {
+                    self.instructions.push(InstructionIR::StoreFrameMemory(
+                        self.get_register_stack_offset(destination),
+                        return_value
+                    ));
                 }
 
                 if index_alive {
@@ -379,39 +365,17 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 }
             }
             InstructionMIRData::StoreElement(element, array_ref, index, value) => {
-                let mut used_registers = BTreeSet::new();
-                used_registers.insert(HardwareRegister::Int(5));
-                used_registers.insert(HardwareRegister::Int(4));
-                used_registers.insert(HardwareRegister::Int(3));
-
-                if let Some(register) = self.register_allocation.get_register(array_ref).hardware_register() {
-                    used_registers.remove(&register);
-                }
-
-                if let Some(register) = self.register_allocation.get_register(index).hardware_register() {
-                    used_registers.remove(&register);
-                }
-
-                if let Some(register) = self.register_allocation.get_register(value).hardware_register() {
-                    used_registers.remove(&register);
-                }
-
-                let mut get_register = |virtual_register: &VirtualRegister| {
-                    match self.register_allocation.get_register(virtual_register).hardware_register() {
-                        Some(register) => (false, register.clone()),
-                        None => {
-                            let register = used_registers.iter().next().unwrap().clone();
-                            used_registers.remove(&register);
-                            (true, register)
-                        }
-                    }
-                };
-
-                let (array_ref_is_stack, array_ref_register) = get_register(array_ref);
-                let (index_is_stack, index_register) = get_register(index);
-                let (value_is_stack, value_register) = get_register(value);
-
                 let alive_registers = self.register_allocation.alive_registers_at(instruction_index);
+
+                let mut temp_registers = TempRegisters::new(&self.register_allocation);
+                temp_registers.try_remove(array_ref);
+                temp_registers.try_remove(index);
+                temp_registers.try_remove(value);
+
+                let (array_ref_is_stack, array_ref_register) = temp_registers.get_register(array_ref);
+                let (index_is_stack, index_register) = temp_registers.get_register(index);
+                let (value_is_stack, value_register) = temp_registers.get_register(value);
+
                 let array_ref_alive = self.push_if_alive(&alive_registers, array_ref, &array_ref_register, array_ref_is_stack);
                 let index_alive = self.push_if_alive(&alive_registers, index, &index_register, index_is_stack);
                 let value_alive = self.push_if_alive(&alive_registers, value, &value_register, value_is_stack);
@@ -439,12 +403,12 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 }
             }
             InstructionMIRData::LoadArrayLength(destination, array_ref) => {
-                let (array_ref_is_stack, array_ref_register) = match self.register_allocation.get_register(array_ref).hardware_register() {
-                    Some(register) => (false, register.clone()),
-                    None => (true, HardwareRegister::Int(5))
-                };
-
                 let alive_registers = self.register_allocation.alive_registers_at(instruction_index);
+
+                let mut temp_registers = TempRegisters::new(&self.register_allocation);
+                temp_registers.try_remove(array_ref);
+
+                let (array_ref_is_stack, array_ref_register) = temp_registers.get_register(array_ref);
                 let array_ref_alive = self.push_if_alive(&alive_registers, array_ref, &array_ref_register, array_ref_is_stack);
 
                 self.instructions.push(InstructionIR::NullReferenceCheck(array_ref_register));
@@ -456,14 +420,11 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
 
                 self.instructions.push(InstructionIR::LoadArrayLength(return_value, array_ref_register));
 
-                match self.register_allocation.get_register(destination) {
-                    AllocatedRegister::Stack { .. } => {
-                        self.instructions.push(InstructionIR::StoreFrameMemory(
-                            self.get_register_stack_offset(destination),
-                            return_value
-                        ));
-                    }
-                    _ => {}
+                if self.register_allocation.get_register(destination).is_stack() {
+                    self.instructions.push(InstructionIR::StoreFrameMemory(
+                        self.get_register_stack_offset(destination),
+                        return_value
+                    ));
                 }
 
                 if array_ref_alive {
@@ -524,22 +485,6 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                                  alive_registers_mapping: &HashMap<HardwareRegister, usize>,
                                  func_to_call: &FunctionDefinition,
                                  arguments: &Vec<VirtualRegister>) -> Vec<Variable> {
-        // arguments
-        //     .iter()
-        //     .map(|argument| {
-        //         match self.register_allocation.get_register(argument) {
-        //             AllocatedRegister::Hardware { register, .. } => {
-        //                 let argument_stack_index = alive_registers_mapping[register] as u32;
-        //                 let stack_offset = stack_layout::stack_value_offset(self.function, self.compilation_result, argument_stack_index);
-        //                 Variable::FrameMemory(stack_offset)
-        //             },
-        //             AllocatedRegister::Stack { .. } => {
-        //                 Variable::FrameMemory(self.get_register_stack_offset(argument))
-        //             }
-        //         }
-        //     })
-        //     .collect::<Vec<_>>()
-
         let mut variables = Vec::new();
 
         let mut overwritten = HashSet::new();
@@ -726,5 +671,41 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
 
     fn get_register_stack_offset(&self, register: &VirtualRegister) -> i32 {
         stack_layout::virtual_register_stack_offset(self.function, register.number)
+    }
+}
+
+struct TempRegisters<'a> {
+    register_allocation: &'a RegisterAllocation,
+    int_registers: BTreeSet<HardwareRegister>
+}
+
+impl<'a> TempRegisters<'a> {
+    pub fn new(register_allocation: &'a RegisterAllocation) -> TempRegisters<'a> {
+        let mut int_registers = BTreeSet::new();
+        int_registers.insert(HardwareRegister::Int(5));
+        int_registers.insert(HardwareRegister::Int(4));
+        int_registers.insert(HardwareRegister::Int(3));
+
+        TempRegisters {
+            register_allocation,
+            int_registers
+        }
+    }
+
+    pub fn try_remove(&mut self, register: &VirtualRegister) {
+        if let Some(register) = self.register_allocation.get_register(register).hardware_register() {
+            self.int_registers.remove(&register);
+        }
+    }
+
+    pub fn get_register(&mut self, register: &VirtualRegister) -> (bool, HardwareRegister) {
+        match self.register_allocation.get_register(register).hardware_register() {
+            Some(register) => (false, register.clone()),
+            None => {
+                let register = self.int_registers.iter().rev().next().unwrap().clone();
+                self.int_registers.remove(&register);
+                (true, register)
+            }
+        }
     }
 }
