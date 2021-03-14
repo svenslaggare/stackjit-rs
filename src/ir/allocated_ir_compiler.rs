@@ -226,17 +226,12 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
             InstructionMIRData::Call(signature, return_value, arguments) => {
                 let func_to_call = self.binder.get(signature).unwrap();
 
-                let alive_registers = self.register_allocation.alive_registers_at(instruction_index);
-
+                let alive_registers = self.push_alive_registers(instruction_index);
                 let alive_registers_mapping = HashMap::<HardwareRegister, usize>::from_iter(
                     alive_registers
                         .iter().enumerate()
                         .map(|(index, register)| (register.clone(), index))
                 );
-
-                for register in &alive_registers{
-                    self.instructions.push(InstructionIR::Push(register.clone()));
-                }
 
                 let arguments_source = self.get_call_argument_sources(
                     &alive_registers_mapping,
@@ -262,18 +257,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     None
                 };
 
-                for register in alive_registers.iter().rev() {
-                    if let Some(return_register) = return_register.as_ref() {
-                        if return_register != register {
-                            self.instructions.push(InstructionIR::Pop(register.clone()));
-                        } else {
-                            // The assign register will have the return value as value, so don't pop to a register.
-                            self.instructions.push(InstructionIR::PopEmpty);
-                        }
-                    } else {
-                        self.instructions.push(InstructionIR::Pop(register.clone()));
-                    }
-                }
+                self.pop_alive_registers(&alive_registers, return_register);
             }
             InstructionMIRData::LoadArgument(argument_index, destination) => {
                 let argument_offset = stack_layout::argument_stack_offset(self.function, *argument_index);
@@ -295,10 +279,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 }
             }
             InstructionMIRData::NewArray(element, destination, size) => {
-                let alive_registers = self.register_allocation.alive_registers_at(instruction_index);
-                for register in &alive_registers {
-                    self.instructions.push(InstructionIR::Push(register.clone()));
-                }
+                let alive_registers = self.push_alive_registers(instruction_index);
 
                 let size_register = match self.register_allocation.get_register(size).hardware_register() {
                     Some(register) => register,
@@ -330,18 +311,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     }
                 };
 
-                for register in alive_registers.iter().rev() {
-                    if let Some(destination_register) = destination_register.as_ref() {
-                        if destination_register != register {
-                            self.instructions.push(InstructionIR::Pop(register.clone()));
-                        } else {
-                            // The assign register will have the return value as value, so don't pop to a register.
-                            self.instructions.push(InstructionIR::PopEmpty);
-                        }
-                    } else {
-                        self.instructions.push(InstructionIR::Pop(register.clone()));
-                    }
-                }
+                self.pop_alive_registers(&alive_registers, destination_register);
             }
             InstructionMIRData::LoadElement(element, destination, array_ref, index) => {
                 let (array_ref_is_stack, array_ref_register) = match self.register_allocation.get_register(array_ref).hardware_register() {
@@ -679,6 +649,32 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
 
         variables.reverse();
         variables
+    }
+
+    fn push_alive_registers(&mut self, instruction_index: usize) -> Vec<HardwareRegister> {
+        let alive_registers = self.register_allocation.alive_registers_at(instruction_index);
+        for register in &alive_registers {
+            self.instructions.push(InstructionIR::Push(register.clone()));
+        }
+
+        alive_registers
+    }
+
+    fn pop_alive_registers(&mut self,
+                           alive_registers: &Vec<HardwareRegister>,
+                           destination_register: Option<HardwareRegister>) {
+        for register in alive_registers.iter().rev() {
+            if let Some(destination_register) = destination_register.as_ref() {
+                if destination_register != register {
+                    self.instructions.push(InstructionIR::Pop(register.clone()));
+                } else {
+                    // The assign register will have the return value as value, so don't pop to a register.
+                    self.instructions.push(InstructionIR::PopEmpty);
+                }
+            } else {
+                self.instructions.push(InstructionIR::Pop(register.clone()));
+            }
+        }
     }
 
     fn move_register(&mut self,
