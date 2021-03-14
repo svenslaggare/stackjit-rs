@@ -154,6 +154,52 @@ fn test_load2() {
 }
 
 #[test]
+fn test_load3() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.binder_mut().define(
+        FunctionDefinition::new_external(
+            "set_array".to_owned(), vec![Type::Array(Box::new(Type::Int32)), Type::Int32, Type::Int32], Type::Void,
+            set_array as *mut std::ffi::c_void
+        )
+    );
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![Type::Array(Box::new(Type::Int32))],
+        vec![
+            Instruction::LoadInt32(4711),
+            Instruction::NewArray(Type::Int32),
+            Instruction::StoreLocal(0),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(0),
+            Instruction::LoadInt32(1000),
+            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![Type::Array(Box::new(Type::Int32)), Type::Int32, Type::Int32] }),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(1),
+            Instruction::LoadInt32(2000),
+            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![Type::Array(Box::new(Type::Int32)), Type::Int32, Type::Int32] }),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(0),
+            Instruction::LoadElement(Type::Int32),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(1),
+            Instruction::LoadElement(Type::Int32),
+
+            Instruction::Add,
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(3000, execution_result);
+}
+
+#[test]
 fn test_load1_no_null_check() {
     let mut vm = VirtualMachine::new();
 

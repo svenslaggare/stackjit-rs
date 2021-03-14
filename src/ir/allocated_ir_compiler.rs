@@ -288,7 +288,10 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     Some(register) => register,
                     None => {
                         // TODO: fix this
-                        self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::IntSpill, self.get_register_stack_offset(size)));
+                        self.instructions.push(InstructionIR::LoadFrameMemory(
+                            HardwareRegister::IntSpill,
+                            self.get_register_stack_offset(size)
+                        ));
                         HardwareRegister::IntSpill
                     }
                 };
