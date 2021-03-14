@@ -63,7 +63,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
         let live_intervals = liveness::compute_liveness(instructions, &basic_blocks, &control_flow_graph);
         register_allocation::linear_scan::allocate(
             &live_intervals,
-            &Settings { num_int_registers: 3, num_float_registers: 2 }
+            &Settings { num_int_registers: 2, num_float_registers: 2 }
         )
     }
 
@@ -128,7 +128,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
             }
             InstructionMIRData::LoadFloat32(destination, value) => {
                 let value: i32 = unsafe { std::mem::transmute(*value) };
-                
+
                 match self.register_allocation.get_register(destination).hardware_register() {
                     Some(register) => {
                         self.instructions.push(InstructionIR::PushInt32(value));
@@ -322,9 +322,9 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     None => (true, HardwareRegister::Int(5))
                 };
 
-                let (index_is_stack, index_register) = match self.register_allocation.get_register(index) {
-                    AllocatedRegister::Hardware { register, .. } => (false, register.clone()),
-                    AllocatedRegister::Stack { .. } => {
+                let (index_is_stack, index_register) = match self.register_allocation.get_register(index).hardware_register() {
+                    Some(register) => (false, register.clone()),
+                    None => {
                         if array_ref_register == HardwareRegister::Int(5) {
                             (true, HardwareRegister::Int(4))
                         } else {
@@ -335,27 +335,26 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
 
                 let alive_registers = self.register_allocation.alive_registers_at(instruction_index);
 
-                let array_ref_alive = if array_ref_is_stack && alive_registers.contains(&array_ref_register) {
-                    self.instructions.push(InstructionIR::Push(array_ref_register));
-                    true
-                } else {
-                    false
+                let mut push_if_alive = |virtual_register: &VirtualRegister, register: &HardwareRegister, is_stack: bool| {
+                    let alive = if is_stack && alive_registers.contains(&register) {
+                        self.instructions.push(InstructionIR::Push(register.clone()));
+                        true
+                    } else {
+                        false
+                    };
+
+                    if is_stack {
+                        self.instructions.push(InstructionIR::LoadFrameMemory(
+                            register.clone(),
+                            self.get_register_stack_offset(virtual_register)
+                        ));
+                    }
+
+                    alive
                 };
 
-                if array_ref_is_stack {
-                    self.instructions.push(InstructionIR::LoadFrameMemory(array_ref_register, self.get_register_stack_offset(array_ref)));
-                }
-
-                let index_alive = if index_is_stack && alive_registers.contains(&index_register) {
-                    self.instructions.push(InstructionIR::Push(index_register));
-                    true
-                } else {
-                    false
-                };
-
-                if index_is_stack {
-                    self.instructions.push(InstructionIR::LoadFrameMemory(index_register, self.get_register_stack_offset(index)));
-                }
+                let array_ref_alive = push_if_alive(array_ref, &array_ref_register, array_ref_is_stack);
+                let index_alive = push_if_alive(index, &index_register, index_is_stack);
 
                 self.instructions.push(InstructionIR::NullReferenceCheck(array_ref_register));
                 self.instructions.push(InstructionIR::ArrayBoundsCheck(array_ref_register, index_register));
@@ -413,67 +412,43 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     used_registers.remove(&register);
                 }
 
-                let (array_ref_is_stack, array_ref_register) = match self.register_allocation.get_register(array_ref) {
-                    AllocatedRegister::Hardware { register, .. } => (false, register.clone()),
-                    AllocatedRegister::Stack { .. } => {
-                        let register = used_registers.iter().next().unwrap().clone();
-                        used_registers.remove(&register);
-                        (true, register)
+                let mut get_register = |virtual_register: &VirtualRegister| {
+                    match self.register_allocation.get_register(virtual_register).hardware_register() {
+                        Some(register) => (false, register.clone()),
+                        None => {
+                            let register = used_registers.iter().next().unwrap().clone();
+                            used_registers.remove(&register);
+                            (true, register)
+                        }
                     }
                 };
 
-                let (index_is_stack, index_register) = match self.register_allocation.get_register(index) {
-                    AllocatedRegister::Hardware { register, .. } => (false, register.clone()),
-                    AllocatedRegister::Stack { .. } => {
-                        let register = used_registers.iter().next().unwrap().clone();
-                        used_registers.remove(&register);
-                        (true, register)
-                    }
-                };
-
-                let (value_is_stack, value_register) = match self.register_allocation.get_register(value) {
-                    AllocatedRegister::Hardware { register, .. } => (false, register.clone()),
-                    AllocatedRegister::Stack { .. } => {
-                        let register = used_registers.iter().next().unwrap().clone();
-                        used_registers.remove(&register);
-                        (true, register)
-                    }
-                };
+                let (array_ref_is_stack, array_ref_register) = get_register(array_ref);
+                let (index_is_stack, index_register) = get_register(index);
+                let (value_is_stack, value_register) = get_register(value);
 
                 let alive_registers = self.register_allocation.alive_registers_at(instruction_index);
+                let mut push_if_alive = |virtual_register: &VirtualRegister, register: &HardwareRegister, is_stack: bool| {
+                    let alive = if is_stack && alive_registers.contains(&register) {
+                        self.instructions.push(InstructionIR::Push(register.clone()));
+                        true
+                    } else {
+                        false
+                    };
 
-                let array_ref_alive = if array_ref_is_stack && alive_registers.contains(&array_ref_register) {
-                    self.instructions.push(InstructionIR::Push(array_ref_register));
-                    true
-                } else {
-                    false
+                    if is_stack {
+                        self.instructions.push(InstructionIR::LoadFrameMemory(
+                            register.clone(),
+                            self.get_register_stack_offset(virtual_register)
+                        ));
+                    }
+
+                    alive
                 };
 
-                if array_ref_is_stack {
-                    self.instructions.push(InstructionIR::LoadFrameMemory(array_ref_register, self.get_register_stack_offset(array_ref)));
-                }
-
-                let index_alive = if index_is_stack && alive_registers.contains(&index_register) {
-                    self.instructions.push(InstructionIR::Push(index_register));
-                    true
-                } else {
-                    false
-                };
-
-                if index_is_stack {
-                    self.instructions.push(InstructionIR::LoadFrameMemory(index_register, self.get_register_stack_offset(index)));
-                }
-
-                let value_alive = if value_is_stack && alive_registers.contains(&value_register) {
-                    self.instructions.push(InstructionIR::Push(value_register));
-                    true
-                } else {
-                    false
-                };
-
-                if value_is_stack {
-                    self.instructions.push(InstructionIR::LoadFrameMemory(value_register, self.get_register_stack_offset(value)));
-                }
+                let array_ref_alive = push_if_alive(array_ref, &array_ref_register, array_ref_is_stack);
+                let index_alive = push_if_alive(index, &index_register, index_is_stack);
+                let value_alive = push_if_alive(value, &value_register, value_is_stack);
 
                 self.instructions.push(InstructionIR::NullReferenceCheck(array_ref_register));
                 self.instructions.push(InstructionIR::ArrayBoundsCheck(array_ref_register, index_register));
