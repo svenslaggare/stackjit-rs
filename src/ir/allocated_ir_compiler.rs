@@ -117,23 +117,26 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
 
         match &instruction.data {
             InstructionMIRData::LoadInt32(destination, value) => {
-                match self.register_allocation.get_register(destination) {
-                    AllocatedRegister::Hardware { register, .. } => {
-                        self.instructions.push(InstructionIR::MoveInt32ToRegister(*register, *value));
+                match self.register_allocation.get_register(destination).hardware_register() {
+                    Some(register) => {
+                        self.instructions.push(InstructionIR::MoveInt32ToRegister(register, *value));
                     }
-                    AllocatedRegister::Stack { .. } => {
+                    None => {
                         self.instructions.push(InstructionIR::MoveInt32ToFrameMemory(self.get_register_stack_offset(destination), *value));
                     }
                 }
             }
             InstructionMIRData::LoadFloat32(destination, value) => {
                 let value: i32 = unsafe { std::mem::transmute(*value) };
-
-                if let Some(register) = self.register_allocation.get_register(destination).hardware_register() {
-                    self.instructions.push(InstructionIR::PushInt32(value));
-                    self.instructions.push(InstructionIR::Pop(register));
-                } else {
-                    self.instructions.push(InstructionIR::MoveInt32ToFrameMemory(self.get_register_stack_offset(destination), value));
+                
+                match self.register_allocation.get_register(destination).hardware_register() {
+                    Some(register) => {
+                        self.instructions.push(InstructionIR::PushInt32(value));
+                        self.instructions.push(InstructionIR::Pop(register));
+                    }
+                    None => {
+                        self.instructions.push(InstructionIR::MoveInt32ToFrameMemory(self.get_register_stack_offset(destination), value));
+                    }
                 }
             }
             InstructionMIRData::Move(destination, source) => {
@@ -213,9 +216,9 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 if let Some(source) = source {
                     CallingConventions::new().make_return_value(
                         self.function,
-                        &match self.register_allocation.get_register(source) {
-                            AllocatedRegister::Hardware { register, .. } => Variable::Register(register.clone()),
-                            AllocatedRegister::Stack { .. } => Variable::FrameMemory(self.get_register_stack_offset(source))
+                        &match self.register_allocation.get_register(source).hardware_register() {
+                            Some(register) => Variable::Register(register.clone()),
+                            None => Variable::FrameMemory(self.get_register_stack_offset(source))
                         },
                         &mut self.instructions
                     );
@@ -244,9 +247,9 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 let return_register = if let Some(return_value) = return_value {
                     CallingConventions::new().handle_return_value(
                         self.function,
-                        &match self.register_allocation.get_register(return_value) {
-                            AllocatedRegister::Hardware { register, .. } => Variable::Register(register.clone()),
-                            AllocatedRegister::Stack { .. } => Variable::FrameMemory(self.get_register_stack_offset(return_value))
+                        &match self.register_allocation.get_register(return_value).hardware_register() {
+                            Some(register) => Variable::Register(register.clone()),
+                            None => Variable::FrameMemory(self.get_register_stack_offset(return_value))
                         },
                         func_to_call,
                         &mut self.instructions
