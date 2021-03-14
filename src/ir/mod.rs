@@ -96,10 +96,10 @@ pub enum InstructionIR {
     NullReferenceCheck(HardwareRegister),
     ArrayBoundsCheck(HardwareRegister, HardwareRegister),
 
-    NewArray(Type, HardwareRegister),
+    NewArray(Type, HardwareRegister, usize),
     LoadElement(Type, HardwareRegister, HardwareRegister, HardwareRegister),
     StoreElement(Type, HardwareRegister, HardwareRegister, HardwareRegister),
-    LoadArrayLength(HardwareRegister),
+    LoadArrayLength(HardwareRegister, HardwareRegister),
 
     Compare(Type, HardwareRegister, HardwareRegister),
     CompareFromFrameMemory(Type, HardwareRegister, i32),

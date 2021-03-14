@@ -137,7 +137,7 @@ impl<'a> InstructionIRCompiler<'a> {
             }
             InstructionMIRData::NewArray(element, destination, size) => {
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(size)));
-                self.instructions.push(InstructionIR::NewArray(element.clone(), HardwareRegister::Int(0)));
+                self.instructions.push(InstructionIR::NewArray(element.clone(), HardwareRegister::Int(0), 0));
                 self.instructions.push(InstructionIR::StoreFrameMemoryExplicit(
                     self.get_register_stack_offset(destination),
                     HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)
@@ -185,10 +185,10 @@ impl<'a> InstructionIRCompiler<'a> {
             InstructionMIRData::LoadArrayLength(destination, array_ref) => {
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(array_ref)));
                 self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
-                self.instructions.push(InstructionIR::LoadArrayLength(HardwareRegister::Int(0)));
-                self.instructions.push(InstructionIR::StoreFrameMemoryExplicit(
+                self.instructions.push(InstructionIR::LoadArrayLength(HardwareRegister::IntSpill, HardwareRegister::Int(0)));
+                self.instructions.push(InstructionIR::StoreFrameMemory(
                     self.get_register_stack_offset(destination),
-                    HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)
+                    HardwareRegister::IntSpill
                 ));
             }
             InstructionMIRData::BranchLabel(label) => {

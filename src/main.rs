@@ -82,7 +82,7 @@ fn main() {
         FunctionDefinition::new_managed("new_array".to_owned(), Vec::new(), Type::Int32),
         vec![],
         vec![
-            Instruction::LoadNull,
+            Instruction::LoadNull(Type::Array(Box::new(Type::Int32))),
             Instruction::LoadInt32(1000),
             Instruction::LoadElement(Type::Int32),
             Instruction::Return

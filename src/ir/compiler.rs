@@ -146,8 +146,8 @@ impl<'a> InstructionMIRCompiler<'a> {
                 let assign_reg = self.assign_stack_register(self.function.definition().parameters()[*argument_index as usize].clone());
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadArgument(*argument_index, assign_reg)));
             }
-            Instruction::LoadNull => {
-                let assign_reg = self.assign_stack_register(Type::Null);
+            Instruction::LoadNull(null_type) => {
+                let assign_reg = self.assign_stack_register(null_type.clone());
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadNull(assign_reg)));
             }
             Instruction::NewArray(element) => {

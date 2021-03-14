@@ -288,7 +288,7 @@ fn test_load_length1() {
 
     vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Array(Box::new(Type::Int32))],
+        vec![],
         vec![
             Instruction::LoadInt32(4711),
             Instruction::NewArray(Type::Int32),
@@ -336,7 +336,7 @@ fn test_checks1() {
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
-            Instruction::LoadNull,
+            Instruction::LoadNull(Type::Array(Box::new(Type::Int32))),
             Instruction::LoadInt32(1000),
             Instruction::LoadElement(Type::Int32),
             Instruction::Return
@@ -355,7 +355,7 @@ fn test_checks2() {
         FunctionDefinition::new_managed("new_array".to_owned(), Vec::new(), Type::Int32),
         vec![],
         vec![
-            Instruction::LoadNull,
+            Instruction::LoadNull(Type::Array(Box::new(Type::Int32))),
             Instruction::LoadInt32(1000),
             Instruction::LoadElement(Type::Int32),
             Instruction::Return
@@ -383,7 +383,7 @@ fn test_checks3() {
 
     vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Array(Box::new(Type::Int32))],
+        vec![],
         vec![
             Instruction::LoadInt32(1000),
             Instruction::NewArray(Type::Int32),
@@ -403,7 +403,7 @@ fn test_check4() {
 
     vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Array(Box::new(Type::Int32))],
+        vec![],
         vec![
             Instruction::LoadInt32(1000),
             Instruction::NewArray(Type::Int32),
@@ -423,7 +423,7 @@ fn test_check5() {
 
     vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Array(Box::new(Type::Int32))],
+        vec![],
         vec![
             Instruction::LoadInt32(1000),
             Instruction::NewArray(Type::Int32),

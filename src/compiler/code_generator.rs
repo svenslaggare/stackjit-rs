@@ -455,7 +455,12 @@ impl<'a> CodeGenerator<'a> {
                     self.error_handling.array_bounds_check_handler as usize
                 );
             }
-            InstructionIR::NewArray(element, size_register) => {
+            InstructionIR::NewArray(element, size_register, num_saved) => {
+                let stack_alignment = (*num_saved as i32 % 2) * stack_layout::STACK_ENTRY_SIZE;
+                if stack_alignment > 0 {
+                    self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Sub_rm64_imm32, Register::RSP, stack_alignment).unwrap());
+                }
+
                 let array_type = Type::Array(Box::new(element.clone()));
                 let array_type_id = self.type_storage.add_or_get_type(array_type);
 
@@ -478,6 +483,11 @@ impl<'a> CodeGenerator<'a> {
                     |instruction| self.encode_x86_instruction(instruction),
                     runtime_interface::new_array as u64
                 );
+
+                //Unalign the stack
+                if stack_alignment > 0 {
+                    self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Add_rm64_imm32, Register::RSP, stack_alignment).unwrap());
+                }
             }
             InstructionIR::LoadElement(element, destination_register, reference_register, index_register) => {
                 let destination_register = register_mapping::get(*destination_register, false);
@@ -552,11 +562,12 @@ impl<'a> CodeGenerator<'a> {
                     _ => { panic!("unexpected."); }
                 }
             }
-            InstructionIR::LoadArrayLength(reference_register) => {
+            InstructionIR::LoadArrayLength(destination_register, reference_register) => {
+                let destination_register = register_mapping::get(*destination_register, false);
                 let reference_register = register_mapping::get(*reference_register, true);
                 self.encode_x86_instruction(X86Instruction::with_reg_mem(
                     Code::Mov_r32_rm32,
-                    register_call_arguments::RETURN_VALUE_32,
+                    destination_register,
                     MemoryOperand::with_base(reference_register)
                 ));
             },

@@ -136,8 +136,8 @@ impl JitCompiler {
         mir_compiler.compile(function.instructions());
         let compilation_result = mir_compiler.done();
 
-        let mut ir_compiler = InstructionIRCompiler::new(&binder, &function, &compilation_result);
-        // let mut ir_compiler = AllocatedInstructionIRCompiler::new(&binder, &function, &compilation_result);
+        // let mut ir_compiler = InstructionIRCompiler::new(&binder, &function, &compilation_result);
+        let mut ir_compiler = AllocatedInstructionIRCompiler::new(&binder, &function, &compilation_result);
         ir_compiler.compile();
         ir_compiler.done()
     }

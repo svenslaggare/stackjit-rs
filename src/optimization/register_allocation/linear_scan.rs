@@ -9,7 +9,7 @@ use crate::engine::binder::Binder;
 use crate::ir::branches;
 use crate::ir::mid::{InstructionMIR, VirtualRegister};
 use crate::ir::compiler::InstructionMIRCompiler;
-use crate::model::function::{Function, FunctionDefinition};
+use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
@@ -41,7 +41,7 @@ pub fn allocate(live_intervals: &Vec<LiveInterval>, settings: &Settings) -> Regi
 
         let active_of_same_type = active
             .iter()
-            .map(|register| &register.0.register.value_type == register_type)
+            .filter(|register| same_type(&register.0.register.value_type, register_type))
             .count();
 
         if active_of_same_type == free_registers.max_for_type(register_type) {
@@ -134,7 +134,7 @@ fn split_at_interval(allocated_registers: &mut HashMap<LiveInterval, u32>,
                      active: &mut BTreeSet<LiveIntervalByEndPoint>,
                      current_interval: &LiveInterval) {
     let spill = active.iter()
-        .filter(|register| register.0.register.value_type == current_interval.register.value_type)
+        .filter(|register| same_type(&register.0.register.value_type, &current_interval.register.value_type))
         .last()
         .unwrap()
         .clone();
@@ -151,6 +151,20 @@ fn split_at_interval(allocated_registers: &mut HashMap<LiveInterval, u32>,
         spilled_registers.push(current_interval.clone());
         allocated_registers.remove(current_interval);
     }
+}
+
+fn same_type(x: &Type, y: &Type) -> bool {
+    let x = match x {
+        Type::Float32 => false,
+        _ => true
+    };
+
+    let y = match y {
+        Type::Float32 => false,
+        _ => true
+    };
+
+    x == y
 }
 
 #[derive(Clone)]
@@ -380,6 +394,93 @@ fn test_allocate4() {
 
     assert_eq!(2, allocation.num_allocated_registers());
     assert_eq!(2, allocation.num_spilled_registers());
+
+    print_allocation(&instructions, &live_intervals, &allocation);
+}
+
+#[test]
+fn test_allocate5() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![Type::Array(Box::new(Type::Float32))],
+        vec![
+            Instruction::LoadInt32(4711),
+            Instruction::NewArray(Type::Float32),
+            Instruction::StoreLocal(0),
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(0),
+            Instruction::LoadFloat32(1337.0),
+            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![Type::Array(Box::new(Type::Float32)), Type::Int32, Type::Float32] }),
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(0),
+            Instruction::LoadElement(Type::Float32),
+            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![Type::Float32] }),
+
+            Instruction::LoadInt32(0),
+            Instruction::Return,
+        ]
+    );
+
+    let mut binder = Binder::new();
+
+    binder.define(FunctionDefinition::new_external(
+        "set_array".to_owned(), vec![Type::Array(Box::new(Type::Float32)), Type::Int32, Type::Float32], Type::Void,
+        std::ptr::null_mut()
+    ));
+
+    binder.define(FunctionDefinition::new_external(
+        "print".to_owned(), vec![Type::Float32], Type::Void,
+        std::ptr::null_mut()
+    ));
+
+    Verifier::new(&binder, &mut function).verify().unwrap();
+
+    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    compiler.compile(function.instructions());
+    let instructions = compiler.done().instructions;
+
+    let (_, _, live_intervals) = analyze(&instructions);
+
+    let allocation = allocate(
+        &live_intervals,
+        &Settings { num_int_registers: 1, num_float_registers: 1 }
+    );
+
+    assert_eq!(3, allocation.num_allocated_registers());
+    assert_eq!(3, allocation.num_spilled_registers());
+
+    print_allocation(&instructions, &live_intervals, &allocation);
+}
+
+#[test]
+fn test_allocate6() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![],
+        vec![
+            Instruction::LoadNull(Type::Array(Box::new(Type::Int32))),
+            Instruction::LoadInt32(1000),
+            Instruction::LoadElement(Type::Int32),
+            Instruction::Return
+        ]
+    );
+
+    let binder = Binder::new();
+    Verifier::new(&binder, &mut function).verify().unwrap();
+
+    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    compiler.compile(function.instructions());
+    let instructions = compiler.done().instructions;
+
+    let (_, _, live_intervals) = analyze(&instructions);
+
+    let allocation = allocate(
+        &live_intervals,
+        &Settings { num_int_registers: 2, num_float_registers: 2 }
+    );
+
+    assert_eq!(2, allocation.num_allocated_registers());
+    assert_eq!(1, allocation.num_spilled_registers());
 
     print_allocation(&instructions, &live_intervals, &allocation);
 }

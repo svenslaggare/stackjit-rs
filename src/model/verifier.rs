@@ -110,8 +110,8 @@ impl<'a> Verifier<'a> {
                 Instruction::LoadFloat32(_) => {
                     self.push_operand_stack(Type::Float32);
                 }
-                Instruction::LoadNull => {
-                    self.push_operand_stack(Type::Null);
+                Instruction::LoadNull(null_type) => {
+                    self.push_operand_stack(null_type.clone());
                 }
                 Instruction::LoadLocal(index) => {
                     let local_type = self.function.locals().get(*index as usize)
@@ -123,8 +123,10 @@ impl<'a> Verifier<'a> {
                 Instruction::StoreLocal(index) => {
                     let operand = self.pop_operand_stack(instruction_index)?;
                     let local_type = self.function.locals().get(*index as usize)
-                        .ok_or(VerifyError::with_index(instruction_index, VerifyErrorMessage::LocalIndexOutOfRange))?;
-                    self.same_type(instruction_index, local_type, &operand)?;
+                        .ok_or(VerifyError::with_index(instruction_index, VerifyErrorMessage::LocalIndexOutOfRange))?
+                        .clone();
+
+                    self.same_type(instruction_index, &local_type, &operand)?;
                 }
                 Instruction::Add | Instruction::Sub => {
                     let op2 = self.pop_operand_stack(instruction_index)?;
@@ -183,9 +185,10 @@ impl<'a> Verifier<'a> {
                     let array_index = self.pop_operand_stack(instruction_index)?;
                     let array_reference_info = self.pop_operand_stack_with_info(instruction_index)?;
                     let array_reference = &array_reference_info.value_type;
+                    let array_reference_type = Type::Array(Box::new(element.clone()));
 
                     self.same_type(instruction_index, &Type::Int32, &array_index)?;
-                    self.same_type(instruction_index, &Type::Array(Box::new(element.clone())), array_reference)?;
+                    self.same_type(instruction_index, &array_reference_type, array_reference)?;
 
                     self.push_operand_stack(element.clone());
                 }
@@ -194,16 +197,17 @@ impl<'a> Verifier<'a> {
                     let array_index = self.pop_operand_stack(instruction_index)?;
                     let array_reference_info = self.pop_operand_stack_with_info(instruction_index)?;
                     let array_reference = &array_reference_info.value_type;
+                    let array_reference_type = Type::Array(Box::new(element.clone()));
 
                     self.same_type(instruction_index, &Type::Int32, &array_index)?;
-                    self.same_type(instruction_index, &Type::Array(Box::new(element.clone())), array_reference)?;
+                    self.same_type(instruction_index, &array_reference_type, array_reference)?;
                     self.same_type(instruction_index, &array_value, &element)?;
                 }
                 Instruction::LoadArrayLength => {
                     let array_reference_info = self.pop_operand_stack_with_info(instruction_index)?;
                     let array_reference = &array_reference_info.value_type;
 
-                    if !(array_reference.is_array() || array_reference.is_null()) {
+                    if !array_reference.is_array() {
                         return Err(VerifyError::with_index(instruction_index, VerifyErrorMessage::ExpectedArrayReference));
                     }
 
@@ -811,7 +815,7 @@ fn test_null1() {
         FunctionDefinition::new_managed("test".to_owned(), Vec::new(), Type::Int32),
         vec![Type::Array(Box::new(Type::Int32))],
         vec![
-            Instruction::LoadNull,
+            Instruction::LoadNull(Type::Array(Box::new(Type::Int32))),
             Instruction::StoreLocal(0),
             Instruction::LoadInt32(4711),
             Instruction::Return,
@@ -821,6 +825,8 @@ fn test_null1() {
     let binder = Binder::new();
     let mut verifier = Verifier::new(&binder, &mut function);
     assert_eq!(Ok(()), verifier.verify());
+
+    assert!(function.instruction_operand_types(1)[0].value_type.is_reference());
 }
 
 #[test]
@@ -829,7 +835,7 @@ fn test_null2() {
         FunctionDefinition::new_managed("test".to_owned(), Vec::new(), Type::Int32),
         Vec::new(),
         vec![
-            Instruction::LoadNull,
+            Instruction::LoadNull(Type::Array(Box::new(Type::Int32))),
             Instruction::LoadInt32(1000),
             Instruction::LoadElement(Type::Int32),
             Instruction::Return,
@@ -839,4 +845,28 @@ fn test_null2() {
     let binder = Binder::new();
     let mut verifier = Verifier::new(&binder, &mut function);
     assert_eq!(Ok(()), verifier.verify());
+
+    assert!(function.instruction_operand_types(2)[0].value_type.is_reference());
+}
+
+#[test]
+fn test_null3() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), Type::Int32),
+        Vec::new(),
+        vec![
+            Instruction::LoadNull(Type::Array(Box::new(Type::Int32))),
+            Instruction::LoadInt32(1000),
+            Instruction::LoadInt32(4711),
+            Instruction::StoreElement(Type::Int32),
+            Instruction::LoadInt32(0),
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let mut verifier = Verifier::new(&binder, &mut function);
+    assert_eq!(Ok(()), verifier.verify());
+
+    assert!(function.instruction_operand_types(3)[0].value_type.is_reference());
 }
