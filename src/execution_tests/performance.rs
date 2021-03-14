@@ -7,7 +7,7 @@ use crate::model::typesystem::Type;
 fn test_sum1() {
     let mut vm = VirtualMachine::new();
 
-    let n = 30000000;
+    let n = 20000000;
 
     vm.engine.add_function(Function::new(
         FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
