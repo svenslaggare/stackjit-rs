@@ -473,11 +473,9 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 }
             }
             InstructionMIRData::LoadArrayLength(destination, array_ref) => {
-                let (array_ref_is_stack, array_ref_register) = match self.register_allocation.get_register(array_ref) {
-                    AllocatedRegister::Hardware { register, .. } => (false, register.clone()),
-                    AllocatedRegister::Stack { .. } => {
-                        (true, HardwareRegister::Int(5))
-                    }
+                let (array_ref_is_stack, array_ref_register) = match self.register_allocation.get_register(array_ref).hardware_register() {
+                    Some(register) => (false, register.clone()),
+                    None => (true, HardwareRegister::Int(5))
                 };
 
                 let alive_registers = self.register_allocation.alive_registers_at(instruction_index);
