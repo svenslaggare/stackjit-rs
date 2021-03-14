@@ -115,7 +115,7 @@ fn test_no_branches1() {
         ]
     );
 
-    let mut binder = Binder::new();
+    let binder = Binder::new();
     Verifier::new(&binder, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);

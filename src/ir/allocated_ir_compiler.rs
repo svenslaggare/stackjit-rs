@@ -89,13 +89,10 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                             float_initialized = true;
                         }
 
-                        match self.register_allocation.get_register(register) {
-                            AllocatedRegister::Hardware { register, .. } => {
-                                self.instructions.push(InstructionIR::Move(*register, HardwareRegister::FloatSpill));
-                            }
-                            AllocatedRegister::Stack { .. } => {
-                                self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(register), HardwareRegister::FloatSpill));
-                            }
+                        if let Some(register) = self.register_allocation.get_register(register).hardware_register() {
+                            self.instructions.push(InstructionIR::Move(register, HardwareRegister::FloatSpill));
+                        } else {
+                            self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(register), HardwareRegister::FloatSpill));
                         }
                     }
                     _ => {
@@ -104,13 +101,10 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                             int_initialized = true;
                         }
 
-                        match self.register_allocation.get_register(register) {
-                            AllocatedRegister::Hardware { register, .. } => {
-                                self.instructions.push(InstructionIR::Move(*register, HardwareRegister::IntSpill));
-                            }
-                            AllocatedRegister::Stack { .. } => {
-                                self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(register), HardwareRegister::IntSpill));
-                            }
+                        if let Some(register) = self.register_allocation.get_register(register).hardware_register() {
+                            self.instructions.push(InstructionIR::Move(register, HardwareRegister::IntSpill));
+                        } else {
+                            self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(register), HardwareRegister::IntSpill));
                         }
                     }
                 }
@@ -135,14 +129,11 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
             InstructionMIRData::LoadFloat32(destination, value) => {
                 let value: i32 = unsafe { std::mem::transmute(*value) };
 
-                match self.register_allocation.get_register(destination) {
-                    AllocatedRegister::Hardware { register, .. } => {
-                        self.instructions.push(InstructionIR::PushInt32(value));
-                        self.instructions.push(InstructionIR::Pop(*register));
-                    }
-                    AllocatedRegister::Stack { .. } => {
-                        self.instructions.push(InstructionIR::MoveInt32ToFrameMemory(self.get_register_stack_offset(destination), value));
-                    }
+                if let Some(register) = self.register_allocation.get_register(destination).hardware_register() {
+                    self.instructions.push(InstructionIR::PushInt32(value));
+                    self.instructions.push(InstructionIR::Pop(register));
+                } else {
+                    self.instructions.push(InstructionIR::MoveInt32ToFrameMemory(self.get_register_stack_offset(destination), value));
                 }
             }
             InstructionMIRData::Move(destination, source) => {
@@ -286,22 +277,19 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
             }
             InstructionMIRData::LoadArgument(argument_index, destination) => {
                 let argument_offset = stack_layout::argument_stack_offset(self.function, *argument_index);
-                match self.register_allocation.get_register(destination) {
-                    AllocatedRegister::Hardware { register, .. } => {
-                        self.instructions.push(InstructionIR::LoadFrameMemory(register.clone(), argument_offset));
-                    }
-                    AllocatedRegister::Stack { .. } => {
-                        self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::IntSpill, argument_offset));
-                        self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::IntSpill));
-                    }
+                if let Some(register) = self.register_allocation.get_register(destination).hardware_register() {
+                    self.instructions.push(InstructionIR::LoadFrameMemory(register, argument_offset));
+                } else {
+                    self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::IntSpill, argument_offset));
+                    self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::IntSpill));
                 }
             }
             InstructionMIRData::LoadNull(destination) => {
-                match self.register_allocation.get_register(destination) {
-                    AllocatedRegister::Hardware { register, .. } => {
-                        self.instructions.push(InstructionIR::MoveInt32ToRegister(*register, 0));
+                match self.register_allocation.get_register(destination).hardware_register() {
+                    Some(register) => {
+                        self.instructions.push(InstructionIR::MoveInt32ToRegister(register, 0));
                     }
-                    AllocatedRegister::Stack { .. } => {
+                    None => {
                         self.instructions.push(InstructionIR::MoveInt32ToFrameMemory(self.get_register_stack_offset(destination), 0));
                     }
                 }
@@ -312,9 +300,9 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     self.instructions.push(InstructionIR::Push(register.clone()));
                 }
 
-                let size_register = match self.register_allocation.get_register(size) {
-                    AllocatedRegister::Hardware { register, .. } => register.clone(),
-                    AllocatedRegister::Stack { .. } => {
+                let size_register = match self.register_allocation.get_register(size).hardware_register() {
+                    Some(register) => register,
+                    None => {
                         // TODO: fix this
                         self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::IntSpill, self.get_register_stack_offset(size)));
                         HardwareRegister::IntSpill
@@ -323,16 +311,16 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
 
                 self.instructions.push(InstructionIR::NewArray(element.clone(), size_register, alive_registers.len()));
 
-                let destination_register = match self.register_allocation.get_register(destination) {
-                    AllocatedRegister::Hardware { register, .. } => {
+                let destination_register = match self.register_allocation.get_register(destination).hardware_register() {
+                    Some(register) => {
                         self.instructions.push(InstructionIR::MoveExplicitToImplicit(
-                            *register,
+                            register.clone(),
                             HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)
                         ));
 
-                        Some(register.clone())
+                        Some(register)
                     }
-                    AllocatedRegister::Stack { .. } => {
+                    None => {
                         self.instructions.push(InstructionIR::StoreFrameMemoryExplicit(
                             self.get_register_stack_offset(destination),
                             HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)
@@ -356,11 +344,9 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 }
             }
             InstructionMIRData::LoadElement(element, destination, array_ref, index) => {
-                let (array_ref_is_stack, array_ref_register) = match self.register_allocation.get_register(array_ref) {
-                    AllocatedRegister::Hardware { register, .. } => (false, register.clone()),
-                    AllocatedRegister::Stack { .. } => {
-                        (true, HardwareRegister::Int(5))
-                    }
+                let (array_ref_is_stack, array_ref_register) = match self.register_allocation.get_register(array_ref).hardware_register() {
+                    Some(register) => (false, register.clone()),
+                    None => (true, HardwareRegister::Int(5))
                 };
 
                 let (index_is_stack, index_register) = match self.register_allocation.get_register(index) {
