@@ -86,7 +86,7 @@ impl<'a> InstructionMIRCompiler<'a> {
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::Move(local_reg, value_reg)));
             }
             Instruction::Add => {
-                let value_type = &operand_types[0].value_type;
+                let value_type = &operand_types[0];
                 let op2_reg = self.use_stack_register(value_type.clone());
                 let op1_reg = self.use_stack_register(value_type.clone());
                 let assign_reg = self.assign_stack_register(value_type.clone());
@@ -102,7 +102,7 @@ impl<'a> InstructionMIRCompiler<'a> {
                 }
             }
             Instruction::Sub => {
-                let value_type = &operand_types[0].value_type;
+                let value_type = &operand_types[0];
                 let op2_reg = self.use_stack_register(value_type.clone());
                 let op1_reg = self.use_stack_register(value_type.clone());
                 let assign_reg = self.assign_stack_register(value_type.clone());
@@ -169,7 +169,7 @@ impl<'a> InstructionMIRCompiler<'a> {
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::StoreElement(element.clone(), array_ref_reg, index_reg, value_ref)));
             }
             Instruction::LoadArrayLength => {
-                let array_ref_reg = self.use_stack_register(operand_types[0].value_type.clone());
+                let array_ref_reg = self.use_stack_register(operand_types[0].clone());
                 let assign_reg = self.assign_stack_register(Type::Int32);
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadArrayLength(assign_reg, array_ref_reg)));
             }
@@ -192,7 +192,7 @@ impl<'a> InstructionMIRCompiler<'a> {
                     _ => { panic!("unexpected."); }
                 };
 
-                let compare_type = operand_types[0].value_type.clone();
+                let compare_type = operand_types[0].clone();
                 let label = self.branch_manager.get_label(*target).unwrap();
                 let op2_reg = self.use_stack_register(compare_type.clone());
                 let op1_reg = self.use_stack_register(compare_type.clone());

@@ -1,6 +1,5 @@
 use crate::model::typesystem::Type;
 use crate::model::instruction::Instruction;
-use crate::model::verifier::OperandTypeInfo;
 
 pub type FunctionAddress = *mut std::ffi::c_void;
 
@@ -84,7 +83,7 @@ pub struct Function {
     definition: FunctionDefinition,
     locals: Vec<Type>,
     instructions: Vec<Instruction>,
-    instruction_operand_types: Vec<Vec<OperandTypeInfo>>,
+    instruction_operand_types: Vec<Vec<Type>>,
     operand_stack_size: usize
 }
 
@@ -122,11 +121,11 @@ impl Function {
         &self.instructions
     }
 
-    pub fn instruction_operand_types(&self, index: usize) -> &Vec<OperandTypeInfo> {
+    pub fn instruction_operand_types(&self, index: usize) -> &Vec<Type> {
         &self.instruction_operand_types[index]
     }
 
-    pub fn instruction_operand_types_mut(&mut self, index: usize) -> &mut Vec<OperandTypeInfo> {
+    pub fn instruction_operand_types_mut(&mut self, index: usize) -> &mut Vec<Type> {
         &mut self.instruction_operand_types[index]
     }
 }

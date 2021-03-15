@@ -45,25 +45,10 @@ pub enum VerifyErrorMessage {
 
 pub type VerifyResult<T> = Result<T, VerifyError>;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OperandTypeInfo {
-    pub value_type: Type,
-    pub non_null: bool
-}
-
-impl OperandTypeInfo {
-    pub fn new(value_type: Type) -> OperandTypeInfo {
-        OperandTypeInfo {
-            value_type,
-            non_null: false
-        }
-    }
-}
-
 pub struct Verifier<'a> {
     function: &'a mut Function,
     binder: &'a Binder,
-    operand_stack: Vec<OperandTypeInfo>,
+    operand_stack: Vec<Type>,
     branches: Vec<(usize, usize, Vec<Type>)>
 }
 
@@ -179,33 +164,30 @@ impl<'a> Verifier<'a> {
                 Instruction::NewArray(element) => {
                     let length = self.pop_operand_stack(instruction_index)?;
                     self.same_type(instruction_index, &Type::Int32, &length)?;
-                    self.push_non_null_operand_stack(Type::Array(Box::new(element.clone())));
+                    self.push_operand_stack(Type::Array(Box::new(element.clone())));
                 }
                 Instruction::LoadElement(element) => {
                     let array_index = self.pop_operand_stack(instruction_index)?;
-                    let array_reference_info = self.pop_operand_stack_with_info(instruction_index)?;
-                    let array_reference = &array_reference_info.value_type;
+                    let array_reference = self.pop_operand_stack(instruction_index)?;
                     let array_reference_type = Type::Array(Box::new(element.clone()));
 
                     self.same_type(instruction_index, &Type::Int32, &array_index)?;
-                    self.same_type(instruction_index, &array_reference_type, array_reference)?;
+                    self.same_type(instruction_index, &array_reference_type, &array_reference)?;
 
                     self.push_operand_stack(element.clone());
                 }
                 Instruction::StoreElement(element) => {
                     let array_value = self.pop_operand_stack(instruction_index)?;
                     let array_index = self.pop_operand_stack(instruction_index)?;
-                    let array_reference_info = self.pop_operand_stack_with_info(instruction_index)?;
-                    let array_reference = &array_reference_info.value_type;
+                    let array_reference = self.pop_operand_stack(instruction_index)?;
                     let array_reference_type = Type::Array(Box::new(element.clone()));
 
                     self.same_type(instruction_index, &Type::Int32, &array_index)?;
-                    self.same_type(instruction_index, &array_reference_type, array_reference)?;
+                    self.same_type(instruction_index, &array_reference_type, &array_reference)?;
                     self.same_type(instruction_index, &array_value, &element)?;
                 }
                 Instruction::LoadArrayLength => {
-                    let array_reference_info = self.pop_operand_stack_with_info(instruction_index)?;
-                    let array_reference = &array_reference_info.value_type;
+                    let array_reference = self.pop_operand_stack(instruction_index)?;
 
                     if !array_reference.is_array() {
                         return Err(VerifyError::with_index(instruction_index, VerifyErrorMessage::ExpectedArrayReference));
@@ -277,7 +259,7 @@ impl<'a> Verifier<'a> {
             if branch_source_operands.len() == branch_target_operands.len() {
                 for index in 0..branch_source_operands.len() {
                     let source_type = &branch_source_operands[index];
-                    let target_type = &branch_target_operands[index].value_type;
+                    let target_type = &branch_target_operands[index];
                     self.same_type(*branch_source, source_type, target_type)?;
                 }
             } else {
@@ -292,24 +274,16 @@ impl<'a> Verifier<'a> {
     }
 
     fn push_operand_stack(&mut self, value_type: Type) {
-        self.operand_stack.push(OperandTypeInfo { value_type, non_null: false });
+        self.operand_stack.push(value_type);
     }
 
-    fn push_non_null_operand_stack(&mut self, value_type: Type) {
-        self.operand_stack.push(OperandTypeInfo { value_type, non_null: true });
-    }
-
-    fn pop_operand_stack_with_info(&mut self, instruction_index: usize) -> VerifyResult<OperandTypeInfo> {
+    fn pop_operand_stack(&mut self, instruction_index: usize) -> VerifyResult<Type> {
         self.operand_stack.pop()
             .ok_or(VerifyError::with_index(instruction_index, VerifyErrorMessage::EmptyOperandStack))
     }
 
-    fn pop_operand_stack(&mut self, instruction_index: usize) -> VerifyResult<Type> {
-        self.pop_operand_stack_with_info(instruction_index).map(|o| o.value_type)
-    }
-
     fn clone_operand_stack(&self) -> Vec<Type> {
-        self.operand_stack.iter().map(|o| o.value_type.clone()).collect()
+        self.operand_stack.iter().map(|o| o.clone()).collect()
     }
 
     fn same_type(&self, instruction_index: usize, expected: &Type, actual: &Type) -> VerifyResult<()> {
@@ -356,7 +330,7 @@ fn test_simple2() {
     let binder = Binder::new();
     let mut verifier = Verifier::new(&binder, &mut function);
     assert_eq!(Ok(()), verifier.verify());
-    assert_eq!(&vec![OperandTypeInfo::new(Type::Int32), OperandTypeInfo::new(Type::Int32)], function.instruction_operand_types(2));
+    assert_eq!(&vec![Type::Int32, Type::Int32], function.instruction_operand_types(2));
 }
 
 #[test]
@@ -375,7 +349,7 @@ fn test_simple3() {
     let binder = Binder::new();
     let mut verifier = Verifier::new(&binder, &mut function);
     assert_eq!(Ok(()), verifier.verify());
-    assert_eq!(&vec![OperandTypeInfo::new(Type::Float32), OperandTypeInfo::new(Type::Float32)], function.instruction_operand_types(2));
+    assert_eq!(&vec![Type::Float32, Type::Float32], function.instruction_operand_types(2));
 }
 
 #[test]
@@ -489,7 +463,7 @@ fn test_call1() {
     let binder = Binder::new();
     let mut verifier = Verifier::new(&binder, &mut function);
     assert_eq!(Ok(()), verifier.verify());
-    assert_eq!(&vec![OperandTypeInfo::new(Type::Int32)], function.instruction_operand_types(1));
+    assert_eq!(&vec![Type::Int32], function.instruction_operand_types(1));
 }
 
 #[test]
@@ -826,7 +800,7 @@ fn test_null1() {
     let mut verifier = Verifier::new(&binder, &mut function);
     assert_eq!(Ok(()), verifier.verify());
 
-    assert!(function.instruction_operand_types(1)[0].value_type.is_reference());
+    assert!(function.instruction_operand_types(1)[0].is_reference());
 }
 
 #[test]
@@ -846,7 +820,7 @@ fn test_null2() {
     let mut verifier = Verifier::new(&binder, &mut function);
     assert_eq!(Ok(()), verifier.verify());
 
-    assert!(function.instruction_operand_types(2)[0].value_type.is_reference());
+    assert!(function.instruction_operand_types(2)[0].is_reference());
 }
 
 #[test]
@@ -868,5 +842,5 @@ fn test_null3() {
     let mut verifier = Verifier::new(&binder, &mut function);
     assert_eq!(Ok(()), verifier.verify());
 
-    assert!(function.instruction_operand_types(3)[0].value_type.is_reference());
+    assert!(function.instruction_operand_types(3)[0].is_reference());
 }
