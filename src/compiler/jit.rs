@@ -7,12 +7,15 @@ use crate::compiler::error_handling::ErrorHandling;
 use crate::engine::binder::Binder;
 use crate::ir;
 use crate::ir::compiler::InstructionMIRCompiler;
-use crate::ir::InstructionIR;
+use crate::ir::{InstructionIR, branches};
 use crate::ir::mid;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::typesystem::TypeStorage;
 use crate::ir::ir_compiler::InstructionIRCompiler;
 use crate::ir::allocated_ir_compiler::AllocatedInstructionIRCompiler;
+use crate::analysis::{AnalysisResult, null_check_elision};
+use crate::analysis::basic_block::BasicBlock;
+use crate::analysis::control_flow_graph::ControlFlowGraph;
 
 pub struct JitCompiler {
     memory_allocator: ExecutableMemoryAllocator,
@@ -136,8 +139,24 @@ impl JitCompiler {
         mir_compiler.compile(function.instructions());
         let compilation_result = mir_compiler.done();
 
+        let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
+        let control_flow_graph = ControlFlowGraph::new(
+            &compilation_result.instructions,
+            &basic_blocks,
+            &branches::create_label_mapping(&compilation_result.instructions)
+        );
+
+        let analysis_result = AnalysisResult {
+            instructions_register_null_status: null_check_elision::compute_null_check_elision(
+                function,
+                &compilation_result,
+                &basic_blocks,
+                &control_flow_graph
+            )
+        };
+
         // let mut ir_compiler = InstructionIRCompiler::new(&binder, &function, &compilation_result);
-        let mut ir_compiler = AllocatedInstructionIRCompiler::new(&binder, &function, &compilation_result);
+        let mut ir_compiler = AllocatedInstructionIRCompiler::new(&binder, &function, &compilation_result, &analysis_result);
         ir_compiler.compile();
         ir_compiler.done()
     }

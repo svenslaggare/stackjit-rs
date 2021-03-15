@@ -9,20 +9,26 @@ use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
+use crate::analysis::AnalysisResult;
 
 pub struct InstructionIRCompiler<'a> {
     binder: &'a Binder,
     function: &'a Function,
     compilation_result: &'a MIRCompilationResult,
+    analysis_result: &'a AnalysisResult,
     instructions: Vec<InstructionIR>
 }
 
 impl<'a> InstructionIRCompiler<'a> {
-    pub fn new(binder: &'a Binder, function: &'a Function, compilation_result: &'a MIRCompilationResult,) -> InstructionIRCompiler<'a> {
+    pub fn new(binder: &'a Binder,
+               function: &'a Function,
+               compilation_result: &'a MIRCompilationResult,
+               analysis_result: &'a AnalysisResult) -> InstructionIRCompiler<'a> {
         InstructionIRCompiler {
             binder,
             function,
             compilation_result,
+            analysis_result,
             instructions: Vec::new()
         }
     }
@@ -147,7 +153,10 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(1), self.get_register_stack_offset(index)));
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(array_ref)));
 
-                self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+                if self.can_be_null(instruction_index, array_ref) {
+                    self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+                }
+
                 self.instructions.push(InstructionIR::ArrayBoundsCheck(HardwareRegister::Int(0), HardwareRegister::Int(1)));
 
                 let return_value = match element {
@@ -172,7 +181,10 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(1), self.get_register_stack_offset(index)));
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(array_ref)));
 
-                self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+                if self.can_be_null(instruction_index, array_ref) {
+                    self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+                }
+
                 self.instructions.push(InstructionIR::ArrayBoundsCheck(HardwareRegister::Int(0), HardwareRegister::Int(1)));
 
                 self.instructions.push(InstructionIR::StoreElement(
@@ -184,7 +196,11 @@ impl<'a> InstructionIRCompiler<'a> {
             }
             InstructionMIRData::LoadArrayLength(destination, array_ref) => {
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(array_ref)));
-                self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+
+                if self.can_be_null(instruction_index, array_ref) {
+                    self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+                }
+
                 self.instructions.push(InstructionIR::LoadArrayLength(HardwareRegister::IntSpill, HardwareRegister::Int(0)));
                 self.instructions.push(InstructionIR::StoreFrameMemory(
                     self.get_register_stack_offset(destination),
@@ -223,177 +239,16 @@ impl<'a> InstructionIRCompiler<'a> {
         }
     }
 
+    fn can_be_null(&self, instruction_index: usize, register: &VirtualRegister) -> bool {
+        assert!(register.value_type.is_reference());
+        self.analysis_result.instructions_register_null_status[instruction_index].get(register).cloned().unwrap_or(true)
+    }
+
     fn get_register_stack_offset(&self, register: &VirtualRegister) -> i32 {
         stack_layout::virtual_register_stack_offset(self.function, register.number)
     }
 
     pub fn done(self) -> Vec<InstructionIR> {
         self.instructions
-    }
-}
-
-#[test]
-fn test_simple1() {
-    let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
-        vec![],
-        vec![
-            Instruction::LoadInt32(1),
-            Instruction::LoadInt32(2),
-            Instruction::Add,
-            Instruction::LoadInt32(3),
-            Instruction::Add,
-            Instruction::Return,
-        ]
-    );
-
-    let binder = Binder::new();
-    Verifier::new(&binder, &mut function).verify().unwrap();
-
-    let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
-    mir_compiler.compile(function.instructions());
-    let mir_result = mir_compiler.done();
-
-    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mir_result);
-    mir_to_ir_compiler.compile();
-    let instructions_ir = mir_to_ir_compiler.done();
-
-    println_vec(function.instructions(), &instructions_ir);
-}
-
-#[test]
-fn test_simple2() {
-    let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
-        vec![],
-        vec![
-            Instruction::LoadInt32(1),
-            Instruction::LoadInt32(2),
-            Instruction::LoadInt32(3),
-            Instruction::Add,
-            Instruction::Add,
-            Instruction::Return,
-        ]
-    );
-
-    let binder = Binder::new();
-    Verifier::new(&binder, &mut function).verify().unwrap();
-
-    let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
-    mir_compiler.compile(function.instructions());
-    let mir_result = mir_compiler.done();
-
-    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mir_result);
-    mir_to_ir_compiler.compile();
-    let instructions_ir = mir_to_ir_compiler.done();
-
-    println_vec(function.instructions(), &instructions_ir);
-}
-
-#[test]
-fn test_simple3() {
-    let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
-        vec![Type::Int32, Type::Int32],
-        vec![
-            Instruction::LoadInt32(1000),
-            Instruction::StoreLocal(0),
-            Instruction::LoadInt32(2000),
-            Instruction::StoreLocal(1),
-            Instruction::LoadLocal(0),
-            Instruction::LoadLocal(1),
-            Instruction::Add,
-            Instruction::LoadInt32(3000),
-            Instruction::Add,
-            Instruction::Return
-        ]
-    );
-
-    let binder = Binder::new();
-    Verifier::new(&binder, &mut function).verify().unwrap();
-
-    let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
-    mir_compiler.compile(function.instructions());
-    let mir_result = mir_compiler.done();
-
-    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mir_result);
-    mir_to_ir_compiler.compile();
-    let instructions_ir = mir_to_ir_compiler.done();
-
-    println_vec(function.instructions(), &instructions_ir);
-}
-
-#[test]
-fn test_simple4() {
-    let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
-        vec![Type::Int32],
-        vec![
-            Instruction::LoadInt32(1000),
-            Instruction::LoadInt32(2000),
-            Instruction::Add,
-            Instruction::StoreLocal(0),
-            Instruction::LoadInt32(0),
-            Instruction::Return
-        ]
-    );
-
-    let binder = Binder::new();
-    Verifier::new(&binder, &mut function).verify().unwrap();
-
-    let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
-    mir_compiler.compile(function.instructions());
-    let mir_result = mir_compiler.done();
-
-    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mir_result);
-    mir_to_ir_compiler.compile();
-    let instructions_ir = mir_to_ir_compiler.done();
-
-    println_vec(function.instructions(), &instructions_ir);
-}
-
-#[test]
-fn test_simple5() {
-    let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
-        vec![Type::Int32],
-        vec![
-            Instruction::LoadInt32(1000),
-            Instruction::LoadFloat32(2000.0),
-            Instruction::Call(FunctionSignature::new("add".to_owned(), vec![Type::Int32, Type::Float32])),
-            Instruction::Return
-        ]
-    );
-
-    let mut binder = Binder::new();
-    binder.define(FunctionDefinition::new_managed(
-        "add".to_owned(),
-        vec![Type::Int32, Type::Float32],
-        Type::Int32
-    ));
-
-    Verifier::new(&binder, &mut function).verify().unwrap();
-
-    let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
-    mir_compiler.compile(function.instructions());
-    let mir_result = mir_compiler.done();
-
-    let mut mir_to_ir_compiler = InstructionIRCompiler::new(&binder, &function, &mir_result);
-    mir_to_ir_compiler.compile();
-    let instructions_ir = mir_to_ir_compiler.done();
-
-    println_vec(function.instructions(), &instructions_ir);
-}
-
-fn println_vec(original: &Vec<Instruction>, irs: &Vec<InstructionIR>) {
-    for ir in irs {
-        match ir {
-            InstructionIR::Marker(index) => {
-                println!("{:?}", original[*index]);
-            }
-            instruction => {
-                println!("\t{:?}", instruction);
-            }
-        }
     }
 }

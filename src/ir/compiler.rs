@@ -9,10 +9,12 @@ use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
+use crate::analysis::null_check_elision::InstructionsRegisterNullStatus;
 
 pub struct MIRCompilationResult {
     pub instructions: Vec<InstructionMIR>,
     pub num_virtual_registers: usize,
+    pub local_virtual_registers: Vec<VirtualRegister>,
     pub need_zero_initialize_registers: Vec<VirtualRegister>
 }
 
@@ -21,7 +23,7 @@ pub struct InstructionMIRCompiler<'a> {
     function: &'a Function,
     instructions: Vec<InstructionMIR>,
     branch_manager: BranchManager,
-    local_virtual_registers: HashMap<u32, VirtualRegister>,
+    local_virtual_registers: Vec<VirtualRegister>,
     next_operand_virtual_register: u32,
     max_num_virtual_register: usize
 }
@@ -33,7 +35,7 @@ impl<'a> InstructionMIRCompiler<'a> {
             function,
             branch_manager: BranchManager::new(),
             instructions: Vec::new(),
-            local_virtual_registers: HashMap::new(),
+            local_virtual_registers: Vec::new(),
             next_operand_virtual_register: 0,
             max_num_virtual_register: 0
         }
@@ -42,9 +44,8 @@ impl<'a> InstructionMIRCompiler<'a> {
     pub fn compile(&mut self, instructions: &Vec<Instruction>) {
         self.branch_manager.define_branch_labels(instructions);
 
-        for (local_index, local_type) in self.function.locals().iter().enumerate() {
-            self.local_virtual_registers.insert(
-                local_index as u32,
+        for local_type in self.function.locals() {
+            self.local_virtual_registers.push(
                 VirtualRegister::new(self.next_operand_virtual_register, local_type.clone())
             );
 
@@ -75,12 +76,12 @@ impl<'a> InstructionMIRCompiler<'a> {
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadFloat32(assign_reg, *value)));
             }
             Instruction::LoadLocal(index) => {
-                let local_reg = self.local_virtual_registers[index].clone();
+                let local_reg = self.local_virtual_registers[*index as usize].clone();
                 let assign_reg = self.assign_stack_register(local_reg.value_type.clone());
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::Move(assign_reg, local_reg)));
             }
             Instruction::StoreLocal(index) => {
-                let local_reg = self.local_virtual_registers[index].clone();
+                let local_reg = self.local_virtual_registers[*index as usize].clone();
                 let value_reg = self.use_stack_register(local_reg.value_type.clone());
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::Move(local_reg, value_reg)));
             }
@@ -224,17 +225,11 @@ impl<'a> InstructionMIRCompiler<'a> {
     }
 
     pub fn done(self) -> MIRCompilationResult {
-        let mut need_zero_initialize_registers = self.local_virtual_registers
-            .values()
-            .cloned()
-            .collect::<Vec<_>>();
-
-        need_zero_initialize_registers.sort_by_key(|reg| reg.number);
-
         MIRCompilationResult {
             instructions: self.instructions,
             num_virtual_registers: self.max_num_virtual_register,
-            need_zero_initialize_registers
+            local_virtual_registers: self.local_virtual_registers.clone(),
+            need_zero_initialize_registers: self.local_virtual_registers.clone()
         }
     }
 }

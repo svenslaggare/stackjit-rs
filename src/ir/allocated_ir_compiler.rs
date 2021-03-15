@@ -16,7 +16,7 @@ use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
-use crate::analysis::liveness;
+use crate::analysis::{liveness, AnalysisResult};
 use crate::optimization::register_allocation;
 use crate::optimization::register_allocation::linear_scan::Settings;
 use crate::optimization::register_allocation::{RegisterAllocation, AllocatedRegister};
@@ -26,6 +26,7 @@ pub struct AllocatedInstructionIRCompiler<'a> {
     binder: &'a Binder,
     function: &'a Function,
     compilation_result: &'a MIRCompilationResult,
+    analysis_result: &'a AnalysisResult,
     register_allocation: RegisterAllocation,
     instructions: Vec<InstructionIR>
 }
@@ -33,12 +34,14 @@ pub struct AllocatedInstructionIRCompiler<'a> {
 impl<'a> AllocatedInstructionIRCompiler<'a> {
     pub fn new(binder: &'a Binder,
                function: &'a Function,
-               compilation_result: &'a MIRCompilationResult) -> AllocatedInstructionIRCompiler<'a> {
+               compilation_result: &'a MIRCompilationResult,
+               analysis_result: &'a AnalysisResult) -> AllocatedInstructionIRCompiler<'a> {
         AllocatedInstructionIRCompiler {
             binder,
             function,
             instructions: Vec::new(),
             compilation_result,
+            analysis_result,
             register_allocation: AllocatedInstructionIRCompiler::register_allocate(compilation_result)
         }
     }
@@ -329,7 +332,10 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 let array_ref_alive = self.push_if_alive(&alive_registers, array_ref, &array_ref_register, array_ref_is_stack);
                 let index_alive = self.push_if_alive(&alive_registers, index, &index_register, index_is_stack);
 
-                self.instructions.push(InstructionIR::NullReferenceCheck(array_ref_register));
+                if self.can_be_null(instruction_index, array_ref) {
+                    self.instructions.push(InstructionIR::NullReferenceCheck(array_ref_register));
+                }
+
                 self.instructions.push(InstructionIR::ArrayBoundsCheck(array_ref_register, index_register));
 
                 let return_value = match self.register_allocation.get_register(destination).hardware_register() {
@@ -380,7 +386,10 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 let index_alive = self.push_if_alive(&alive_registers, index, &index_register, index_is_stack);
                 let value_alive = self.push_if_alive(&alive_registers, value, &value_register, value_is_stack);
 
-                self.instructions.push(InstructionIR::NullReferenceCheck(array_ref_register));
+                if self.can_be_null(instruction_index, array_ref) {
+                    self.instructions.push(InstructionIR::NullReferenceCheck(array_ref_register));
+                }
+
                 self.instructions.push(InstructionIR::ArrayBoundsCheck(array_ref_register, index_register));
 
                 self.instructions.push(InstructionIR::StoreElement(
@@ -411,7 +420,9 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 let (array_ref_is_stack, array_ref_register) = temp_registers.get_register(array_ref);
                 let array_ref_alive = self.push_if_alive(&alive_registers, array_ref, &array_ref_register, array_ref_is_stack);
 
-                self.instructions.push(InstructionIR::NullReferenceCheck(array_ref_register));
+                if self.can_be_null(instruction_index, array_ref) {
+                    self.instructions.push(InstructionIR::NullReferenceCheck(array_ref_register));
+                }
 
                 let return_value = match self.register_allocation.get_register(destination).hardware_register() {
                     Some(register) => register,
@@ -526,6 +537,11 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
 
         variables.reverse();
         variables
+    }
+
+    fn can_be_null(&self, instruction_index: usize, register: &VirtualRegister) -> bool {
+        assert!(register.value_type.is_reference());
+        self.analysis_result.instructions_register_null_status[instruction_index].get(register).cloned().unwrap_or(true)
     }
 
     fn push_alive_registers(&mut self, instruction_index: usize) -> Vec<HardwareRegister> {
