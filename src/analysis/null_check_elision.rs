@@ -11,7 +11,8 @@ use crate::engine::binder::Binder;
 use crate::model::verifier::Verifier;
 use crate::ir::branches;
 
-pub type InstructionsRegisterNullStatus = Vec<HashMap<VirtualRegister, bool>>;
+pub type RegisterNullStatus = HashMap<VirtualRegister, bool>;
+pub type InstructionsRegisterNullStatus = Vec<RegisterNullStatus>;
 
 pub fn compute_null_check_elision(function: &Function,
                                   compilation_result: &MIRCompilationResult,
@@ -20,27 +21,31 @@ pub fn compute_null_check_elision(function: &Function,
     // return compilation_result.instructions.iter().map(|_| HashMap::new()).collect();
 
     if basic_blocks.len() == 1 {
-        compute_null_check_elision_for_block(function, compilation_result, &basic_blocks[0])
+        compute_null_check_elision_for_block(function, compilation_result, &basic_blocks[0]).0
     } else {
         // compilation_result.instructions.iter().map(|_| HashMap::new()).collect()
 
-        let mut basic_blocks_results = Vec::<InstructionsRegisterNullStatus>::new();
+        let mut basic_blocks_results = Vec::<(InstructionsRegisterNullStatus, RegisterNullStatus)>::new();
         let mut instruction_results: InstructionsRegisterNullStatus = compilation_result.instructions.iter().map(|_| HashMap::new()).collect();
         for (basic_block_index, basic_block) in basic_blocks.iter().enumerate() {
             let entry_points = &control_flow_graph.back_edges.get(&basic_block_index);
 
             let block_result = if let Some(entry_points) = entry_points {
-                let mut potential_block_results = Vec::new();
+                let mut potential_block_result_instructions = Vec::new();
+                let mut potential_block_result_registers = Vec::new();
 
-                // Record all potential null status of blocks that jump into this block
+                // For each block that jumps into this block, use that as the starting block for null check elision for the current block
                 for entry_point_block_index in entry_points.iter().map(|edge| edge.to) {
                     if let Some(basic_blocks_result) = basic_blocks_results.get(entry_point_block_index) {
-                        potential_block_results.push(compute_null_check_elision_for_block_internal(
+                        let (potential_instructions, potential_registers) = compute_null_check_elision_for_block_internal(
                             function,
                             compilation_result,
                             basic_block,
-                            basic_blocks_result.last().unwrap().clone()
-                        ));
+                            basic_blocks_result.1.clone()
+                        );
+
+                        potential_block_result_instructions.push(potential_instructions);
+                        potential_block_result_registers.push(potential_registers);
                     } else {
                         // Too complicated to analyze (cyclic jumps), all are nulls.
                         return compilation_result.instructions.iter().map(|_| HashMap::new()).collect();
@@ -48,13 +53,16 @@ pub fn compute_null_check_elision(function: &Function,
                 }
 
                 // Conservative merge all the potential results into one final result
-                merge_results(potential_block_results)
+                (
+                    merge_results_instructions(potential_block_result_instructions),
+                    merge_results_registers(potential_block_result_registers)
+                )
             } else {
                 // Should only be the first block
                 compute_null_check_elision_for_block(function, compilation_result, basic_block)
             };
 
-            for (instruction_offset, instruction) in block_result.iter().enumerate() {
+            for (instruction_offset, instruction) in block_result.0.iter().enumerate() {
                 let instruction_index = basic_block.instructions[instruction_offset];
                 instruction_results[instruction_index] = instruction.clone();
             }
@@ -68,7 +76,7 @@ pub fn compute_null_check_elision(function: &Function,
 
 fn compute_null_check_elision_for_block(function: &Function,
                                         compilation_result: &MIRCompilationResult,
-                                        basic_block: &BasicBlock) -> InstructionsRegisterNullStatus {
+                                        basic_block: &BasicBlock) -> (InstructionsRegisterNullStatus, RegisterNullStatus) {
     let mut register_is_null = HashMap::new();
     for register in &compilation_result.local_virtual_registers {
         register_is_null.insert(register.clone(), true);
@@ -80,7 +88,7 @@ fn compute_null_check_elision_for_block(function: &Function,
 fn compute_null_check_elision_for_block_internal(function: &Function,
                                                  compilation_result: &MIRCompilationResult,
                                                  basic_block: &BasicBlock,
-                                                 mut register_is_null: HashMap<VirtualRegister, bool>) -> InstructionsRegisterNullStatus {
+                                                 mut register_is_null: HashMap<VirtualRegister, bool>) -> (InstructionsRegisterNullStatus, RegisterNullStatus) {
     let mut instructions_status = Vec::new();
 
     for instruction_index in &basic_block.instructions {
@@ -132,10 +140,10 @@ fn compute_null_check_elision_for_block_internal(function: &Function,
         }
     }
 
-    instructions_status
+    (instructions_status, register_is_null)
 }
 
-fn merge_results(mut potential_results: Vec<InstructionsRegisterNullStatus>) -> InstructionsRegisterNullStatus  {
+fn merge_results_instructions(mut potential_results: Vec<InstructionsRegisterNullStatus>) -> InstructionsRegisterNullStatus  {
     let mut final_result = potential_results.remove(0);
 
     for potential_result in potential_results {
@@ -147,6 +155,22 @@ fn merge_results(mut potential_results: Vec<InstructionsRegisterNullStatus>) -> 
                     is_null || current_is_null
                 );
             }
+        }
+    }
+
+    final_result
+}
+
+fn merge_results_registers(mut potential_results: Vec<RegisterNullStatus>) -> RegisterNullStatus  {
+    let mut final_result = potential_results.remove(0);
+
+    for potential_result in potential_results {
+        for (register, &is_null) in &potential_result {
+            let current_is_null = final_result.get(&register).cloned().unwrap_or(false);
+            final_result.insert(
+                register.clone(),
+                is_null || current_is_null
+            );
         }
     }
 
@@ -172,7 +196,7 @@ fn test_no_branches1() {
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
 
-    let result = compute_null_check_elision_for_block(&function, &compilation_result, &basic_blocks[0]);
+    let (result, _) = compute_null_check_elision_for_block(&function, &compilation_result, &basic_blocks[0]);
 
     for instruction in &result {
         println!("{:?}", instruction);
@@ -202,7 +226,7 @@ fn test_no_branches2() {
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
 
-    let result = compute_null_check_elision_for_block(&function, &compilation_result, &basic_blocks[0]);
+    let (result, _) = compute_null_check_elision_for_block(&function, &compilation_result, &basic_blocks[0]);
 
     for instruction in &result {
         println!("{:?}", instruction);
@@ -234,7 +258,7 @@ fn test_no_branches3() {
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
 
-    let result = compute_null_check_elision_for_block(&function, &compilation_result, &basic_blocks[0]);
+    let (result, _) = compute_null_check_elision_for_block(&function, &compilation_result, &basic_blocks[0]);
 
     for instruction in &result {
         println!("{:?}", instruction);
@@ -271,7 +295,7 @@ fn test_no_branches4() {
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
 
-    let result = compute_null_check_elision_for_block(&function, &compilation_result, &basic_blocks[0]);
+    let (result, _) = compute_null_check_elision_for_block(&function, &compilation_result, &basic_blocks[0]);
 
     for instruction in &result {
         println!("{:?}", instruction);
@@ -318,7 +342,7 @@ fn test_no_branches5() {
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
 
-    let result = compute_null_check_elision_for_block(&function, &compilation_result, &basic_blocks[0]);
+    let (result, _) = compute_null_check_elision_for_block(&function, &compilation_result, &basic_blocks[0]);
 
     for instruction in &result {
         println!("{:?}", instruction);
@@ -380,7 +404,7 @@ fn test_no_branches6() {
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
 
-    let result = compute_null_check_elision_for_block(&function, &compilation_result, &basic_blocks[0]);
+    let (result, _) = compute_null_check_elision_for_block(&function, &compilation_result, &basic_blocks[0]);
 
     for instruction in &result {
         println!("{:?}", instruction);
@@ -445,7 +469,7 @@ fn test_no_branches7() {
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
 
-    let result = compute_null_check_elision_for_block(&function, &compilation_result, &basic_blocks[0]);
+    let (result, _) = compute_null_check_elision_for_block(&function, &compilation_result, &basic_blocks[0]);
 
     for instruction in &result {
         println!("{:?}", instruction);
@@ -509,5 +533,54 @@ fn test_branches1() {
 
     assert_eq!(2, result[12].len());
     assert_eq!(true, result[12][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(true, result[12][&VirtualRegister::new(1, Type::Array(Box::new(Type::Int32)))]);
+}
+
+#[test]
+fn test_branches2() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Array(Box::new(Type::Int32))),
+        vec![Type::Array(Box::new(Type::Int32))],
+        vec![
+            Instruction::LoadInt32(0),
+            Instruction::LoadInt32(0),
+            Instruction::BranchEqual(7),
+
+            Instruction::LoadInt32(1000),
+            Instruction::NewArray(Type::Int32),
+            Instruction::StoreLocal(0),
+            Instruction::Branch(10),
+
+            Instruction::LoadInt32(1000),
+            Instruction::NewArray(Type::Int32),
+            Instruction::StoreLocal(0),
+
+            Instruction::LoadLocal(0),
+            Instruction::Return
+        ]
+    );
+
+    let binder = Binder::new();
+    Verifier::new(&binder, &mut function).verify().unwrap();
+
+    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    compiler.compile(function.instructions());
+    let compilation_result = compiler.done();
+    let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
+    let control_flow_graph = ControlFlowGraph::new(
+        &compilation_result.instructions,
+        &basic_blocks,
+        &branches::create_label_mapping(&compilation_result.instructions)
+    );
+
+    let result = compute_null_check_elision(&function, &compilation_result, &basic_blocks, &control_flow_graph);
+
+    for (block_index, block) in basic_blocks.iter().enumerate() {
+        println!("Block #{}", block_index);
+        for &instruction_index in &block.instructions {
+            println!("\t{}: {:?}", compilation_result.instructions[instruction_index].name(), result[instruction_index]);
+        }
+    }
+
+    assert_eq!(2, result[13].len());
+    assert_eq!(false, result[13][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
 }
