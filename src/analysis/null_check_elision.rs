@@ -31,8 +31,8 @@ pub fn compute_null_check_elision(function: &Function,
             let entry_points = &control_flow_graph.back_edges.get(&basic_block_index);
 
             let block_result = if let Some(entry_points) = entry_points {
-                let mut potential_block_result_instructions = Vec::new();
-                let mut potential_block_result_registers = Vec::new();
+                let mut potentials_instructions = Vec::new();
+                let mut potentials_registers = Vec::new();
 
                 // For each block that jumps into this block, use that as the starting block for null check elision for the current block
                 for entry_point_block_index in entry_points.iter().map(|edge| edge.to) {
@@ -44,8 +44,8 @@ pub fn compute_null_check_elision(function: &Function,
                             basic_blocks_result.1.clone()
                         );
 
-                        potential_block_result_instructions.push(potential_instructions);
-                        potential_block_result_registers.push(potential_registers);
+                        potentials_instructions.push(potential_instructions);
+                        potentials_registers.push(potential_registers);
                     } else {
                         // Too complicated to analyze (cyclic jumps), all are nulls.
                         return compilation_result.instructions.iter().map(|_| HashMap::new()).collect();
@@ -53,9 +53,9 @@ pub fn compute_null_check_elision(function: &Function,
                 }
 
                 // Conservative merge all the potential results into one final result
-                (
-                    merge_results_instructions(potential_block_result_instructions),
-                    merge_results_registers(potential_block_result_registers)
+                merge_results(
+                    potentials_instructions,
+                    potentials_registers
                 )
             } else {
                 // Should only be the first block
@@ -143,14 +143,14 @@ fn compute_null_check_elision_for_block_internal(function: &Function,
     (instructions_status, register_is_null)
 }
 
-fn merge_results_instructions(mut potential_results: Vec<InstructionsRegisterNullStatus>) -> InstructionsRegisterNullStatus  {
-    let mut final_result = potential_results.remove(0);
-
-    for potential_result in potential_results {
-        for (instruction_index, instruction) in potential_result.iter().enumerate() {
+fn merge_results(mut potentials_instructions: Vec<InstructionsRegisterNullStatus>,
+                 mut potentials_register: Vec<RegisterNullStatus>) -> (InstructionsRegisterNullStatus, RegisterNullStatus)  {
+    let mut final_instructions = potentials_instructions.remove(0);
+    for potential_instructions in potentials_instructions {
+        for (instruction_index, instruction) in potential_instructions.iter().enumerate() {
             for (register, &is_null) in instruction {
-                let current_is_null = final_result[instruction_index].get(register).cloned().unwrap_or(false);
-                final_result[instruction_index].insert(
+                let current_is_null = final_instructions[instruction_index].get(register).cloned().unwrap_or(false);
+                final_instructions[instruction_index].insert(
                     register.clone(),
                     is_null || current_is_null
                 );
@@ -158,23 +158,18 @@ fn merge_results_instructions(mut potential_results: Vec<InstructionsRegisterNul
         }
     }
 
-    final_result
-}
-
-fn merge_results_registers(mut potential_results: Vec<RegisterNullStatus>) -> RegisterNullStatus  {
-    let mut final_result = potential_results.remove(0);
-
-    for potential_result in potential_results {
+    let mut final_registers = potentials_register.remove(0);
+    for potential_result in potentials_register {
         for (register, &is_null) in &potential_result {
-            let current_is_null = final_result.get(&register).cloned().unwrap_or(false);
-            final_result.insert(
+            let current_is_null = final_registers.get(&register).cloned().unwrap_or(false);
+            final_registers.insert(
                 register.clone(),
                 is_null || current_is_null
             );
         }
     }
 
-    final_result
+    (final_instructions, final_registers)
 }
 
 #[test]

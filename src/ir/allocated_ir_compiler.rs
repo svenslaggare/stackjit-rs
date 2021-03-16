@@ -701,6 +701,9 @@ impl<'a> TempRegisters<'a> {
         int_registers.insert(HardwareRegister::Int(5));
         int_registers.insert(HardwareRegister::Int(4));
         int_registers.insert(HardwareRegister::Int(3));
+        // int_registers.insert(HardwareRegister::Int(0));
+        // int_registers.insert(HardwareRegister::Int(1));
+        // int_registers.insert(HardwareRegister::Int(2));
 
         TempRegisters {
             register_allocation,
