@@ -3,23 +3,23 @@ use std::iter::FromIterator;
 use crate::ir::{BranchLabel, Condition};
 use crate::model::function::FunctionSignature;
 use crate::model::typesystem::Type;
-use crate::analysis::VirtualHardwareRegister;
+use crate::analysis::VirtualRegister;
 
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct VirtualRegister {
+pub struct RegisterMIR {
     pub number: u32,
     pub value_type: Type
 }
 
-impl std::fmt::Debug for VirtualRegister {
+impl std::fmt::Debug for RegisterMIR {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "VirtualRegister(number: {}, type: {})", self.number, self.value_type)
+        write!(f, "RegisterMIR(number: {}, type: {})", self.number, self.value_type)
     }
 }
 
-impl VirtualRegister {
-    pub fn new(number: u32, value_type: Type) -> VirtualRegister {
-        VirtualRegister {
+impl RegisterMIR {
+    pub fn new(number: u32, value_type: Type) -> RegisterMIR {
+        RegisterMIR {
             number,
             value_type
         }
@@ -69,7 +69,7 @@ impl InstructionMIRData {
         }
     }
 
-    pub fn assign_register(&self) -> Option<VirtualRegister> {
+    pub fn assign_register(&self) -> Option<RegisterMIR> {
         match self {
             InstructionMIRData::LoadInt32(register, _) => Some(register.clone()),
             InstructionMIRData::LoadFloat32(register, _) => Some(register.clone()),
@@ -92,11 +92,11 @@ impl InstructionMIRData {
         }
     }
 
-    pub fn assign_hardware_register(&self) -> Option<VirtualHardwareRegister> {
-        self.assign_register().map(|register| VirtualHardwareRegister::from(&register))
+    pub fn assign_hardware_register(&self) -> Option<VirtualRegister> {
+        self.assign_register().map(|register| VirtualRegister::from(&register))
     }
 
-    pub fn use_registers(&self) -> Vec<VirtualRegister> {
+    pub fn use_registers(&self) -> Vec<RegisterMIR> {
         match self {
             InstructionMIRData::LoadInt32(_, _) => Vec::new(),
             InstructionMIRData::LoadFloat32(_, _) => Vec::new(),
@@ -119,29 +119,29 @@ impl InstructionMIRData {
         }
     }
 
-    pub fn use_hardware_registers(&self) -> Vec<VirtualHardwareRegister> {
-        self.use_registers().iter().map(|register| VirtualHardwareRegister::from(register)).collect()
+    pub fn use_hardware_registers(&self) -> Vec<VirtualRegister> {
+        self.use_registers().iter().map(|register| VirtualRegister::from(register)).collect()
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum InstructionMIRData {
-    LoadInt32(VirtualRegister, i32),
-    LoadFloat32(VirtualRegister, f32),
-    Move(VirtualRegister, VirtualRegister),
-    AddInt32(VirtualRegister, VirtualRegister, VirtualRegister),
-    SubInt32(VirtualRegister, VirtualRegister, VirtualRegister),
-    AddFloat32(VirtualRegister, VirtualRegister, VirtualRegister),
-    SubFloat32(VirtualRegister, VirtualRegister, VirtualRegister),
-    Return(Option<VirtualRegister>),
-    Call(FunctionSignature, Option<VirtualRegister>, Vec<VirtualRegister>),
-    LoadArgument(u32, VirtualRegister),
-    LoadNull(VirtualRegister),
-    NewArray(Type, VirtualRegister, VirtualRegister),
-    LoadElement(Type, VirtualRegister, VirtualRegister, VirtualRegister),
-    StoreElement(Type, VirtualRegister, VirtualRegister, VirtualRegister),
-    LoadArrayLength(VirtualRegister, VirtualRegister),
+    LoadInt32(RegisterMIR, i32),
+    LoadFloat32(RegisterMIR, f32),
+    Move(RegisterMIR, RegisterMIR),
+    AddInt32(RegisterMIR, RegisterMIR, RegisterMIR),
+    SubInt32(RegisterMIR, RegisterMIR, RegisterMIR),
+    AddFloat32(RegisterMIR, RegisterMIR, RegisterMIR),
+    SubFloat32(RegisterMIR, RegisterMIR, RegisterMIR),
+    Return(Option<RegisterMIR>),
+    Call(FunctionSignature, Option<RegisterMIR>, Vec<RegisterMIR>),
+    LoadArgument(u32, RegisterMIR),
+    LoadNull(RegisterMIR),
+    NewArray(Type, RegisterMIR, RegisterMIR),
+    LoadElement(Type, RegisterMIR, RegisterMIR, RegisterMIR),
+    StoreElement(Type, RegisterMIR, RegisterMIR, RegisterMIR),
+    LoadArrayLength(RegisterMIR, RegisterMIR),
     BranchLabel(BranchLabel),
     Branch(BranchLabel),
-    BranchCondition(Condition, Type, BranchLabel, VirtualRegister, VirtualRegister)
+    BranchCondition(Condition, Type, BranchLabel, RegisterMIR, RegisterMIR)
 }

@@ -7,14 +7,14 @@ use crate::analysis::control_flow_graph::ControlFlowGraph;
 use crate::analysis::liveness::{compute_liveness, LiveInterval};
 use crate::engine::binder::Binder;
 use crate::ir::branches;
-use crate::ir::mid::{InstructionMIR, VirtualRegister};
+use crate::ir::mid::{InstructionMIR, RegisterMIR};
 use crate::ir::compiler::InstructionMIRCompiler;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
 use crate::optimization::register_allocation::{AllocatedRegister, RegisterAllocation};
-use crate::analysis::{VirtualHardwareRegister, VirtualHardwareRegisterType};
+use crate::analysis::{VirtualRegister, VirtualRegisterType};
 
 pub struct Settings {
     pub num_int_registers: usize,
@@ -77,28 +77,28 @@ impl FreeRegisters {
         }
     }
 
-    pub fn max_for_type(&self, register_type: &VirtualHardwareRegisterType) -> usize {
+    pub fn max_for_type(&self, register_type: &VirtualRegisterType) -> usize {
         match register_type {
-            VirtualHardwareRegisterType::Int => self.max_int,
-            VirtualHardwareRegisterType::Float => self.max_float
+            VirtualRegisterType::Int => self.max_int,
+            VirtualRegisterType::Float => self.max_float
         }
     }
 
-    pub fn for_type(&self, register_type: &VirtualHardwareRegisterType) -> &BTreeSet<u32> {
+    pub fn for_type(&self, register_type: &VirtualRegisterType) -> &BTreeSet<u32> {
         match register_type {
-            VirtualHardwareRegisterType::Int => &self.int_registers,
-            VirtualHardwareRegisterType::Float => &self.float_registers
+            VirtualRegisterType::Int => &self.int_registers,
+            VirtualRegisterType::Float => &self.float_registers
         }
     }
 
-    pub fn for_type_mut(&mut self, register_type: &VirtualHardwareRegisterType) -> &mut BTreeSet<u32> {
+    pub fn for_type_mut(&mut self, register_type: &VirtualRegisterType) -> &mut BTreeSet<u32> {
         match register_type {
-            VirtualHardwareRegisterType::Int => &mut self.int_registers,
-            VirtualHardwareRegisterType::Float => &mut self.float_registers
+            VirtualRegisterType::Int => &mut self.int_registers,
+            VirtualRegisterType::Float => &mut self.float_registers
         }
     }
 
-    pub fn get_free_register(&mut self, register_type: &VirtualHardwareRegisterType) -> u32 {
+    pub fn get_free_register(&mut self, register_type: &VirtualRegisterType) -> u32 {
         let registers = self.for_type_mut(register_type);
         let free_register = *registers.iter().next().unwrap();
         registers.remove(&free_register);

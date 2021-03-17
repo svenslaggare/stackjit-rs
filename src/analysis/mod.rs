@@ -1,5 +1,5 @@
 use crate::analysis::null_check_elision::InstructionsRegisterNullStatus;
-use crate::ir::mid::VirtualRegister;
+use crate::ir::mid::RegisterMIR;
 use crate::model::typesystem::Type;
 
 pub mod basic_block;
@@ -12,22 +12,22 @@ pub struct AnalysisResult {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum VirtualHardwareRegisterType {
+pub enum VirtualRegisterType {
     Int,
     Float
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct VirtualHardwareRegister {
+pub struct VirtualRegister {
     pub number: u32,
-    pub register_type: VirtualHardwareRegisterType
+    pub register_type: VirtualRegisterType
 }
 
-impl VirtualHardwareRegister {
-    pub fn from(register: &VirtualRegister) -> VirtualHardwareRegister {
+impl VirtualRegister {
+    pub fn from(register: &RegisterMIR) -> VirtualRegister {
         match register.value_type {
-            Type::Float32 => VirtualHardwareRegister { number: register.number, register_type: VirtualHardwareRegisterType::Float },
-            _ => VirtualHardwareRegister { number: register.number, register_type: VirtualHardwareRegisterType::Int }
+            Type::Float32 => VirtualRegister { number: register.number, register_type: VirtualRegisterType::Float },
+            _ => VirtualRegister { number: register.number, register_type: VirtualRegisterType::Int }
         }
     }
 }

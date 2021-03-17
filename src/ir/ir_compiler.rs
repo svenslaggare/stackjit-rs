@@ -2,7 +2,7 @@ use crate::compiler::calling_conventions::{CallingConventions, register_call_arg
 use crate::compiler::stack_layout;
 use crate::engine::binder::Binder;
 use crate::ir::{HardwareRegister, HardwareRegisterExplicit, InstructionIR, Variable};
-use crate::ir::mid::{InstructionMIR, VirtualRegister};
+use crate::ir::mid::{InstructionMIR, RegisterMIR};
 use crate::ir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::ir::mid::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
@@ -239,12 +239,12 @@ impl<'a> InstructionIRCompiler<'a> {
         }
     }
 
-    fn can_be_null(&self, instruction_index: usize, register: &VirtualRegister) -> bool {
+    fn can_be_null(&self, instruction_index: usize, register: &RegisterMIR) -> bool {
         assert!(register.value_type.is_reference());
         self.analysis_result.instructions_register_null_status[instruction_index].get(register).cloned().unwrap_or(true)
     }
 
-    fn get_register_stack_offset(&self, register: &VirtualRegister) -> i32 {
+    fn get_register_stack_offset(&self, register: &RegisterMIR) -> i32 {
         stack_layout::virtual_register_stack_offset(self.function, register.number)
     }
 

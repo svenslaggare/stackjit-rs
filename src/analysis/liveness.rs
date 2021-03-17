@@ -5,19 +5,19 @@ use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
 use crate::engine::binder::Binder;
 use crate::ir::branches;
-use crate::ir::mid::{InstructionMIR, VirtualRegister};
+use crate::ir::mid::{InstructionMIR, RegisterMIR};
 use crate::ir::compiler::InstructionMIRCompiler;
 use crate::model::function::{Function, FunctionDefinition};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
-use crate::analysis::VirtualHardwareRegister;
+use crate::analysis::VirtualRegister;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct LiveInterval {
     pub start: usize,
     pub end: usize,
-    pub register: VirtualHardwareRegister
+    pub register: VirtualRegister
 }
 
 pub fn compute_liveness(instructions: &Vec<InstructionMIR>,
@@ -54,7 +54,7 @@ pub fn compute_liveness(instructions: &Vec<InstructionMIR>,
     live_intervals
 }
 
-fn get_live_interval(register: &VirtualHardwareRegister, alive_at: &HashSet<usize>) -> LiveInterval {
+fn get_live_interval(register: &VirtualRegister, alive_at: &HashSet<usize>) -> LiveInterval {
     let mut start = usize::max_value();
     let mut end = 0;
 
@@ -72,7 +72,7 @@ fn get_live_interval(register: &VirtualHardwareRegister, alive_at: &HashSet<usiz
 
 fn get_virtual_registers(instructions: &Vec<InstructionMIR>,
                          basic_blocks: &Vec<BasicBlock>,
-                         control_flow_graph: &ControlFlowGraph) -> Vec<VirtualHardwareRegister> {
+                         control_flow_graph: &ControlFlowGraph) -> Vec<VirtualRegister> {
     let mut registers = HashSet::new();
 
     for &block_index in &control_flow_graph.vertices {
@@ -96,7 +96,7 @@ fn get_virtual_registers(instructions: &Vec<InstructionMIR>,
 fn compute_liveness_for_register(instructions: &Vec<InstructionMIR>,
                                  basic_blocks: &Vec<BasicBlock>,
                                  control_flow_graph: &ControlFlowGraph,
-                                 register: &VirtualHardwareRegister,
+                                 register: &VirtualRegister,
                                  use_sites: &Vec<UsageSite>,
                                  alive_at: &mut HashSet<usize>) {
     for use_site in use_sites {
@@ -119,7 +119,7 @@ fn compute_liveness_for_register_in_block(instructions: &Vec<InstructionMIR>,
                                           block_index: usize,
                                           start_offset: usize,
                                           visited: &mut HashSet<usize>,
-                                          register: &VirtualHardwareRegister,
+                                          register: &VirtualRegister,
                                           alive_at: &mut HashSet<usize>) {
     if visited.contains(&block_index) {
         return;
@@ -165,8 +165,8 @@ struct UsageSite {
     offset: usize
 }
 
-type UseSites = HashMap<VirtualHardwareRegister, Vec<UsageSite>>;
-type AssignSites = HashMap<VirtualHardwareRegister, Vec<UsageSite>>;
+type UseSites = HashMap<VirtualRegister, Vec<UsageSite>>;
+type AssignSites = HashMap<VirtualRegister, Vec<UsageSite>>;
 
 fn get_register_usage(instructions: &Vec<InstructionMIR>,
                       basic_blocks: &Vec<BasicBlock>,

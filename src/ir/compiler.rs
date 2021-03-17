@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::engine::binder::Binder;
 use crate::ir::branches::BranchManager;
 use crate::ir::Condition;
-use crate::ir::mid::{InstructionMIR, VirtualRegister};
+use crate::ir::mid::{InstructionMIR, RegisterMIR};
 use crate::ir::mid::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
@@ -14,8 +14,8 @@ use crate::analysis::null_check_elision::InstructionsRegisterNullStatus;
 pub struct MIRCompilationResult {
     pub instructions: Vec<InstructionMIR>,
     pub num_virtual_registers: usize,
-    pub local_virtual_registers: Vec<VirtualRegister>,
-    pub need_zero_initialize_registers: Vec<VirtualRegister>
+    pub local_virtual_registers: Vec<RegisterMIR>,
+    pub need_zero_initialize_registers: Vec<RegisterMIR>
 }
 
 pub struct InstructionMIRCompiler<'a> {
@@ -23,7 +23,7 @@ pub struct InstructionMIRCompiler<'a> {
     function: &'a Function,
     instructions: Vec<InstructionMIR>,
     branch_manager: BranchManager,
-    local_virtual_registers: Vec<VirtualRegister>,
+    local_virtual_registers: Vec<RegisterMIR>,
     next_operand_virtual_register: u32,
     max_num_virtual_register: usize
 }
@@ -46,7 +46,7 @@ impl<'a> InstructionMIRCompiler<'a> {
 
         for local_type in self.function.locals() {
             self.local_virtual_registers.push(
-                VirtualRegister::new(self.next_operand_virtual_register, local_type.clone())
+                RegisterMIR::new(self.next_operand_virtual_register, local_type.clone())
             );
 
             self.next_operand_virtual_register += 1;
@@ -207,21 +207,21 @@ impl<'a> InstructionMIRCompiler<'a> {
         }
     }
 
-    fn use_stack_register(&mut self, value_type: Type) -> VirtualRegister {
+    fn use_stack_register(&mut self, value_type: Type) -> RegisterMIR {
         if self.next_operand_virtual_register == 0 {
             panic!("Invalid stack virtual register.");
         }
 
         self.next_operand_virtual_register -= 1;
         let number = self.next_operand_virtual_register;
-        VirtualRegister::new(number, value_type)
+        RegisterMIR::new(number, value_type)
     }
 
-    fn assign_stack_register(&mut self, value_type: Type) -> VirtualRegister {
+    fn assign_stack_register(&mut self, value_type: Type) -> RegisterMIR {
         let number = self.next_operand_virtual_register;
         self.next_operand_virtual_register += 1;
         self.max_num_virtual_register = self.max_num_virtual_register.max(self.next_operand_virtual_register as usize);
-        VirtualRegister::new(number, value_type)
+        RegisterMIR::new(number, value_type)
     }
 
     pub fn done(self) -> MIRCompilationResult {

@@ -4,9 +4,9 @@ use std::collections::HashMap;
 
 use crate::ir::HardwareRegister;
 use crate::analysis::liveness::LiveInterval;
-use crate::ir::mid::{VirtualRegister};
+use crate::ir::mid::{RegisterMIR};
 use crate::model::typesystem::Type;
-use crate::analysis::{VirtualHardwareRegister, VirtualHardwareRegisterType};
+use crate::analysis::{VirtualRegister, VirtualRegisterType};
 
 #[derive(Debug, Clone)]
 pub enum AllocatedRegister {
@@ -38,7 +38,7 @@ impl AllocatedRegister {
 }
 
 pub struct RegisterAllocation {
-    registers: HashMap<VirtualHardwareRegister, AllocatedRegister>
+    registers: HashMap<VirtualRegister, AllocatedRegister>
 }
 
 impl RegisterAllocation {
@@ -46,8 +46,8 @@ impl RegisterAllocation {
         let mut registers = HashMap::new();
         for (live_interval, register_number) in allocated {
             let register = match &live_interval.register.register_type {
-                VirtualHardwareRegisterType::Int => HardwareRegister::Int(register_number),
-                VirtualHardwareRegisterType::Float => HardwareRegister::Float(register_number)
+                VirtualRegisterType::Int => HardwareRegister::Int(register_number),
+                VirtualRegisterType::Float => HardwareRegister::Float(register_number)
             };
 
             registers.insert(live_interval.register.clone(), AllocatedRegister::Hardware { register, live_interval });
@@ -70,11 +70,11 @@ impl RegisterAllocation {
         self.registers.values().filter(|register| register.hardware_register().is_none()).count()
     }
 
-    pub fn get_register(&self, register: &VirtualRegister) -> &AllocatedRegister {
-        &self.registers[&VirtualHardwareRegister::from(register)]
+    pub fn get_register(&self, register: &RegisterMIR) -> &AllocatedRegister {
+        &self.registers[&VirtualRegister::from(register)]
     }
 
-    pub fn alive_registers_at(&self, instruction_index: usize) -> Vec<(VirtualHardwareRegister, HardwareRegister)> {
+    pub fn alive_registers_at(&self, instruction_index: usize) -> Vec<(VirtualRegister, HardwareRegister)> {
         self.registers
             .iter()
             .filter(|(_, allocation)| allocation.hardware_register().is_some())

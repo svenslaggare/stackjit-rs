@@ -7,7 +7,7 @@ use crate::compiler::calling_conventions::{CallingConventions, register_call_arg
 use crate::compiler::stack_layout;
 use crate::engine::binder::Binder;
 use crate::ir::{HardwareRegister, HardwareRegisterExplicit, InstructionIR, Variable, branches};
-use crate::ir::mid::{InstructionMIR, VirtualRegister};
+use crate::ir::mid::{InstructionMIR, RegisterMIR};
 use crate::ir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::ir::mid::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
@@ -16,7 +16,7 @@ use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
-use crate::analysis::{liveness, AnalysisResult, VirtualHardwareRegister};
+use crate::analysis::{liveness, AnalysisResult, VirtualRegister};
 use crate::optimization::register_allocation;
 use crate::optimization::register_allocation::linear_scan::Settings;
 use crate::optimization::register_allocation::{RegisterAllocation, AllocatedRegister};
@@ -486,7 +486,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
         }
     }
 
-    fn get_call_argument_sources(&self, func_to_call: &FunctionDefinition, arguments: &Vec<VirtualRegister>) -> Vec<Variable> {
+    fn get_call_argument_sources(&self, func_to_call: &FunctionDefinition, arguments: &Vec<RegisterMIR>) -> Vec<Variable> {
         let mut variables = Vec::new();
 
         let mut overwritten = HashSet::new();
@@ -524,12 +524,12 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
         variables
     }
 
-    fn can_be_null(&self, instruction_index: usize, register: &VirtualRegister) -> bool {
+    fn can_be_null(&self, instruction_index: usize, register: &RegisterMIR) -> bool {
         assert!(register.value_type.is_reference());
         self.analysis_result.instructions_register_null_status[instruction_index].get(register).cloned().unwrap_or(true)
     }
 
-    fn push_alive_registers(&mut self, instruction_index: usize) -> Vec<(VirtualHardwareRegister, HardwareRegister)> {
+    fn push_alive_registers(&mut self, instruction_index: usize) -> Vec<(VirtualRegister, HardwareRegister)> {
         let alive_registers = self.register_allocation.alive_registers_at(instruction_index);
         for (virtual_register, register) in &alive_registers {
             self.instructions.push(InstructionIR::StoreFrameMemory(
@@ -542,7 +542,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
     }
 
     fn pop_alive_registers(&mut self,
-                           alive_registers: &Vec<(VirtualHardwareRegister, HardwareRegister)>,
+                           alive_registers: &Vec<(VirtualRegister, HardwareRegister)>,
                            destination_register: Option<HardwareRegister>) {
         for (virtual_register, register) in alive_registers.iter().rev() {
             if let Some(destination_register) = destination_register.as_ref() {
@@ -565,8 +565,9 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
 
     fn push_if_alive(&mut self,
                      alive_registers: &Vec<HardwareRegister>,
-                     virtual_register: &VirtualRegister,
-                     register: &HardwareRegister, is_stack: bool) -> bool {
+                     register_ir: &RegisterMIR,
+                     register: &HardwareRegister,
+                     is_stack: bool) -> bool {
         let alive = if is_stack && alive_registers.contains(&register) {
             self.instructions.push(InstructionIR::Push(register.clone()));
             true
@@ -577,7 +578,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
         if is_stack {
             self.instructions.push(InstructionIR::LoadFrameMemory(
                 register.clone(),
-                self.get_register_stack_offset(virtual_register)
+                self.get_register_stack_offset(register_ir)
             ));
         }
 
@@ -585,8 +586,8 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
     }
 
     fn move_register(&mut self,
-                     destination: &VirtualRegister,
-                     source: &VirtualRegister,) {
+                     destination: &RegisterMIR,
+                     source: &RegisterMIR,) {
         let destination_allocation = self.register_allocation.get_register(destination).clone();
         let source_allocation = self.register_allocation.get_register(source).clone();
 
@@ -612,8 +613,8 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
         F2: Fn(&mut Vec<InstructionIR>, HardwareRegister, i32),
         F3: Fn(&mut Vec<InstructionIR>, i32, HardwareRegister)
     >(&mut self,
-      operand1: &VirtualRegister,
-      operand2: &VirtualRegister,
+      operand1: &RegisterMIR,
+      operand2: &RegisterMIR,
       reg_reg: F1,
       reg_mem: F2,
       mem_reg: F3) {
@@ -646,8 +647,8 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
         F1: Fn(&mut Vec<InstructionIR>, HardwareRegister, HardwareRegister),
         F2: Fn(&mut Vec<InstructionIR>, HardwareRegister, i32)
     >(&mut self,
-      operand1: &VirtualRegister,
-      operand2: &VirtualRegister,
+      operand1: &RegisterMIR,
+      operand2: &RegisterMIR,
       reg_reg: F1,
       reg_mem: F2) {
         let operand1_allocation = self.register_allocation.get_register(operand1).clone();
@@ -678,11 +679,11 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
         }
     }
 
-    fn get_virtual_register_stack_offset(&self, register: &VirtualHardwareRegister) -> i32 {
+    fn get_virtual_register_stack_offset(&self, register: &VirtualRegister) -> i32 {
         stack_layout::virtual_register_stack_offset(self.function, register.number)
     }
 
-    fn get_register_stack_offset(&self, register: &VirtualRegister) -> i32 {
+    fn get_register_stack_offset(&self, register: &RegisterMIR) -> i32 {
         stack_layout::virtual_register_stack_offset(self.function, register.number)
     }
 }
@@ -708,13 +709,13 @@ impl<'a> TempRegisters<'a> {
         }
     }
 
-    pub fn try_remove(&mut self, register: &VirtualRegister) {
+    pub fn try_remove(&mut self, register: &RegisterMIR) {
         if let Some(register) = self.register_allocation.get_register(register).hardware_register() {
             self.int_registers.remove(&register);
         }
     }
 
-    pub fn get_register(&mut self, register: &VirtualRegister) -> (bool, HardwareRegister) {
+    pub fn get_register(&mut self, register: &RegisterMIR) -> (bool, HardwareRegister) {
         match self.register_allocation.get_register(register).hardware_register() {
             Some(register) => (false, register.clone()),
             None => {

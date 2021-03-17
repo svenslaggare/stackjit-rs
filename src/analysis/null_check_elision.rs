@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::ir::mid::{InstructionMIR, InstructionMIRData, VirtualRegister};
+use crate::ir::mid::{InstructionMIR, InstructionMIRData, RegisterMIR};
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
 use crate::ir::compiler::{MIRCompilationResult, InstructionMIRCompiler};
@@ -11,7 +11,7 @@ use crate::engine::binder::Binder;
 use crate::model::verifier::Verifier;
 use crate::ir::branches;
 
-pub type RegisterNullStatus = HashMap<VirtualRegister, bool>;
+pub type RegisterNullStatus = HashMap<RegisterMIR, bool>;
 pub type InstructionsRegisterNullStatus = Vec<RegisterNullStatus>;
 
 pub fn compute_null_check_elision(function: &Function,
@@ -88,7 +88,7 @@ fn compute_null_check_elision_for_block(function: &Function,
 fn compute_null_check_elision_for_block_internal(function: &Function,
                                                  compilation_result: &MIRCompilationResult,
                                                  basic_block: &BasicBlock,
-                                                 mut register_is_null: HashMap<VirtualRegister, bool>) -> (InstructionsRegisterNullStatus, RegisterNullStatus) {
+                                                 mut register_is_null: HashMap<RegisterMIR, bool>) -> (InstructionsRegisterNullStatus, RegisterNullStatus) {
     let mut instructions_status = Vec::new();
 
     for instruction_index in &basic_block.instructions {
@@ -198,7 +198,7 @@ fn test_no_branches1() {
     }
 
     assert_eq!(1, result[1].len());
-    assert_eq!(true, result[1][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[1][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
 }
 
 #[test]
@@ -228,7 +228,7 @@ fn test_no_branches2() {
     }
 
     assert_eq!(1, result[2].len());
-    assert_eq!(false, result[2][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[2][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
 }
 
 #[test]
@@ -260,13 +260,13 @@ fn test_no_branches3() {
     }
 
     assert_eq!(1, result[2].len());
-    assert_eq!(false, result[2][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[2][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(1, result[3].len());
-    assert_eq!(false, result[3][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[3][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(1, result[4].len());
-    assert_eq!(false, result[4][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[4][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
 }
 
 #[test]
@@ -297,19 +297,19 @@ fn test_no_branches4() {
     }
 
     assert_eq!(1, result[0].len());
-    assert_eq!(true, result[0][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[0][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(2, result[1].len());
-    assert_eq!(true, result[1][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(true, result[1][&VirtualRegister::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[1][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[1][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(2, result[2].len());
-    assert_eq!(true, result[2][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(true, result[2][&VirtualRegister::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[2][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[2][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(2, result[3].len());
-    assert_eq!(true, result[3][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(true, result[3][&VirtualRegister::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[3][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[3][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
 }
 
 #[test]
@@ -344,30 +344,30 @@ fn test_no_branches5() {
     }
 
     assert_eq!(1, result[0].len());
-    assert_eq!(true, result[0][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[0][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(1, result[1].len());
-    assert_eq!(true, result[1][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[1][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(2, result[2].len());
-    assert_eq!(true, result[2][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[2][&VirtualRegister::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[2][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[2][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(2, result[3].len());
-    assert_eq!(false, result[3][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[3][&VirtualRegister::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[3][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[3][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(2, result[4].len());
-    assert_eq!(false, result[4][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[4][&VirtualRegister::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[4][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[4][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(2, result[5].len());
-    assert_eq!(false, result[5][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[5][&VirtualRegister::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[5][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[5][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(2, result[6].len());
-    assert_eq!(false, result[6][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[6][&VirtualRegister::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[6][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[6][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
 }
 
 #[test]
@@ -406,40 +406,40 @@ fn test_no_branches6() {
     }
 
     assert_eq!(1, result[0].len());
-    assert_eq!(true, result[0][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[0][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(1, result[1].len());
-    assert_eq!(true, result[1][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[1][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(2, result[2].len());
-    assert_eq!(true, result[2][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[2][&VirtualRegister::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[2][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[2][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(2, result[3].len());
-    assert_eq!(false, result[3][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[3][&VirtualRegister::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[3][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[3][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(2, result[4].len());
-    assert_eq!(false, result[4][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[4][&VirtualRegister::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[4][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[4][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(2, result[5].len());
-    assert_eq!(false, result[5][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[5][&VirtualRegister::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[5][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[5][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(2, result[6].len());
-    assert_eq!(false, result[6][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[6][&VirtualRegister::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[6][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[6][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(3, result[7].len());
-    assert_eq!(false, result[7][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[7][&VirtualRegister::new(1, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(true, result[7][&VirtualRegister::new(2, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[7][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[7][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[7][&RegisterMIR::new(2, Type::Array(Box::new(Type::Int32)))]);
 
     assert_eq!(3, result[8].len());
-    assert_eq!(true, result[8][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[8][&VirtualRegister::new(1, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(true, result[8][&VirtualRegister::new(2, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[8][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[8][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[8][&RegisterMIR::new(2, Type::Array(Box::new(Type::Int32)))]);
 }
 
 #[test]
@@ -471,14 +471,14 @@ fn test_no_branches7() {
     }
 
     assert_eq!(1, result[2].len());
-    assert_eq!(false, result[2][&VirtualRegister::new(0, Type::Array(Box::new(Type::Array(Box::new(Type::Int32)))))]);
+    assert_eq!(false, result[2][&RegisterMIR::new(0, Type::Array(Box::new(Type::Array(Box::new(Type::Int32)))))]);
 
     assert_eq!(1, result[3].len());
-    assert_eq!(false, result[3][&VirtualRegister::new(0, Type::Array(Box::new(Type::Array(Box::new(Type::Int32)))))]);
+    assert_eq!(false, result[3][&RegisterMIR::new(0, Type::Array(Box::new(Type::Array(Box::new(Type::Int32)))))]);
 
     assert_eq!(2, result[4].len());
-    assert_eq!(false, result[4][&VirtualRegister::new(0, Type::Array(Box::new(Type::Array(Box::new(Type::Int32)))))]);
-    assert_eq!(true, result[4][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[4][&RegisterMIR::new(0, Type::Array(Box::new(Type::Array(Box::new(Type::Int32)))))]);
+    assert_eq!(true, result[4][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
 }
 
 #[test]
@@ -527,7 +527,7 @@ fn test_branches1() {
     }
 
     assert_eq!(2, result[12].len());
-    assert_eq!(true, result[12][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[12][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
 }
 
 #[test]
@@ -577,5 +577,5 @@ fn test_branches2() {
     }
 
     assert_eq!(2, result[13].len());
-    assert_eq!(false, result[13][&VirtualRegister::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[13][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
 }
