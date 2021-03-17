@@ -6,7 +6,7 @@ use crate::ir::HardwareRegister;
 use crate::analysis::liveness::LiveInterval;
 use crate::ir::mid::{VirtualRegister};
 use crate::model::typesystem::Type;
-use crate::analysis::VirtualHardwareRegister;
+use crate::analysis::{VirtualHardwareRegister, VirtualHardwareRegisterType};
 
 #[derive(Debug, Clone)]
 pub enum AllocatedRegister {
@@ -45,9 +45,9 @@ impl RegisterAllocation {
     pub fn new(allocated: HashMap<LiveInterval, u32>, spilled: Vec<LiveInterval>) -> RegisterAllocation {
         let mut registers = HashMap::new();
         for (live_interval, register_number) in allocated {
-            let register = match &live_interval.register {
-                VirtualHardwareRegister::Int(_) => HardwareRegister::Int(register_number),
-                VirtualHardwareRegister::Float(_) => HardwareRegister::Float(register_number)
+            let register = match &live_interval.register.register_type {
+                VirtualHardwareRegisterType::Int => HardwareRegister::Int(register_number),
+                VirtualHardwareRegisterType::Float => HardwareRegister::Float(register_number)
             };
 
             registers.insert(live_interval.register.clone(), AllocatedRegister::Hardware { register, live_interval });

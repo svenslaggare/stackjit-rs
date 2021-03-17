@@ -12,23 +12,22 @@ pub struct AnalysisResult {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum VirtualHardwareRegister {
-    Int(u32),
-    Float(u32)
+pub enum VirtualHardwareRegisterType {
+    Int,
+    Float
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct VirtualHardwareRegister {
+    pub number: u32,
+    pub register_type: VirtualHardwareRegisterType
 }
 
 impl VirtualHardwareRegister {
     pub fn from(register: &VirtualRegister) -> VirtualHardwareRegister {
         match register.value_type {
-            Type::Float32 => VirtualHardwareRegister::Float(register.number),
-            _ => VirtualHardwareRegister::Int(register.number)
-        }
-    }
-
-    pub fn number(&self) -> u32 {
-        match self {
-            VirtualHardwareRegister::Int(number) => *number,
-            VirtualHardwareRegister::Float(number) => *number
+            Type::Float32 => VirtualHardwareRegister { number: register.number, register_type: VirtualHardwareRegisterType::Float },
+            _ => VirtualHardwareRegister { number: register.number, register_type: VirtualHardwareRegisterType::Int }
         }
     }
 }

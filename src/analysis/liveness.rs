@@ -89,7 +89,7 @@ fn get_virtual_registers(instructions: &Vec<InstructionMIR>,
     }
 
     let mut registers = Vec::from_iter(registers.into_iter());
-    registers.sort_by_key(|register| register.number());
+    registers.sort_by_key(|register| register.number);
     registers
 }
 
@@ -237,11 +237,11 @@ fn test_liveness1() {
 
     assert_eq!(2, live_intervals.len());
 
-    assert_eq!(0, live_intervals[0].register.number());
+    assert_eq!(0, live_intervals[0].register.number);
     assert_eq!(0, live_intervals[0].start);
     assert_eq!(9, live_intervals[0].end);
 
-    assert_eq!(1, live_intervals[1].register.number());
+    assert_eq!(1, live_intervals[1].register.number);
     assert_eq!(1, live_intervals[1].start);
     assert_eq!(8, live_intervals[1].end);
 
@@ -289,15 +289,15 @@ fn test_liveness2() {
 
     assert_eq!(3, live_intervals.len());
 
-    assert_eq!(0, live_intervals[0].register.number());
+    assert_eq!(0, live_intervals[0].register.number);
     assert_eq!(3, live_intervals[0].start);
     assert_eq!(3, live_intervals[0].end);
 
-    assert_eq!(1, live_intervals[1].register.number());
+    assert_eq!(1, live_intervals[1].register.number);
     assert_eq!(0, live_intervals[1].start);
     assert_eq!(5, live_intervals[1].end);
 
-    assert_eq!(2, live_intervals[2].register.number());
+    assert_eq!(2, live_intervals[2].register.number);
     assert_eq!(1, live_intervals[2].start);
     assert_eq!(2, live_intervals[2].end);
 
@@ -350,15 +350,15 @@ fn test_liveness3() {
 
     assert_eq!(3, live_intervals.len());
 
-    assert_eq!(0, live_intervals[0].register.number());
+    assert_eq!(0, live_intervals[0].register.number);
     assert_eq!(4, live_intervals[0].start);
     assert_eq!(10, live_intervals[0].end);
 
-    assert_eq!(1, live_intervals[1].register.number());
+    assert_eq!(1, live_intervals[1].register.number);
     assert_eq!(0, live_intervals[1].start);
     assert_eq!(11, live_intervals[1].end);
 
-    assert_eq!(2, live_intervals[2].register.number());
+    assert_eq!(2, live_intervals[2].register.number);
     assert_eq!(1, live_intervals[2].start);
     assert_eq!(2, live_intervals[2].end);
 
