@@ -138,14 +138,14 @@ impl CallingConventions {
         let argument_stack_offset = stack_layout::argument_stack_offset(function, argument_index as u32);
         if relative_argument_index >= register_call_arguments::NUM_ARGUMENTS {
             let stack_argument_index = self.get_stack_argument_index(function, argument_index);
-            instructions.push(InstructionIR::LoadFrameMemoryExplicit(
-                HardwareRegisterExplicit(Register::RAX),
+            instructions.push(InstructionIR::LoadFrameMemory(
+                HardwareRegister::IntSpill,
                 STACK_ENTRY_SIZE * (STACK_OFFSET as usize + stack_argument_index + 1) as i32
             ));
 
-            instructions.push(InstructionIR::StoreFrameMemoryExplicit(
+            instructions.push(InstructionIR::StoreFrameMemory(
                 argument_stack_offset,
-                HardwareRegisterExplicit(Register::RAX)
+                HardwareRegister::IntSpill
             ));
         } else {
             instructions.push(InstructionIR::StoreFrameMemoryExplicit(
@@ -163,14 +163,14 @@ impl CallingConventions {
         let argument_stack_offset = stack_layout::argument_stack_offset(function, argument_index as u32);
         if relative_argument_index >= float_register_call_arguments::NUM_ARGUMENTS {
             let stack_argument_index = self.get_stack_argument_index(function, argument_index);
-            instructions.push(InstructionIR::LoadFrameMemoryExplicit(
-                HardwareRegisterExplicit(Register::RAX),
+            instructions.push(InstructionIR::LoadFrameMemory(
+                HardwareRegister::IntSpill,
                 STACK_ENTRY_SIZE * (STACK_OFFSET as usize + stack_argument_index + 1) as i32
             ));
 
-            instructions.push(InstructionIR::StoreFrameMemoryExplicit(
+            instructions.push(InstructionIR::StoreFrameMemory(
                 argument_stack_offset,
-                HardwareRegisterExplicit(Register::RAX)
+                HardwareRegister::IntSpill
             ));
         } else {
             instructions.push(InstructionIR::StoreFrameMemoryExplicit(

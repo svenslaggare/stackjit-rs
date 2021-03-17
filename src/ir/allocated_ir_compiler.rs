@@ -502,7 +502,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     variables.push(Variable::FrameMemory(self.get_register_stack_offset(argument)));
                 }
             }
-            
+
             if let Some(call_register) = get_call_register(func_to_call, index, &argument.value_type) {
                 overwritten.insert(call_register);
             }
