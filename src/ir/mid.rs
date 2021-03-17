@@ -3,6 +3,7 @@ use std::iter::FromIterator;
 use crate::ir::{BranchLabel, Condition};
 use crate::model::function::FunctionSignature;
 use crate::model::typesystem::Type;
+use crate::analysis::VirtualHardwareRegister;
 
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct VirtualRegister {
@@ -91,6 +92,10 @@ impl InstructionMIRData {
         }
     }
 
+    pub fn assign_hardware_register(&self) -> Option<VirtualHardwareRegister> {
+        self.assign_register().map(|register| VirtualHardwareRegister::from(&register))
+    }
+
     pub fn use_registers(&self) -> Vec<VirtualRegister> {
         match self {
             InstructionMIRData::LoadInt32(_, _) => Vec::new(),
@@ -112,6 +117,10 @@ impl InstructionMIRData {
             InstructionMIRData::Branch(_) => Vec::new(),
             InstructionMIRData::BranchCondition(_, _, _, op1, op2) => vec![op1.clone(), op2.clone()]
         }
+    }
+
+    pub fn use_hardware_registers(&self) -> Vec<VirtualHardwareRegister> {
+        self.use_registers().iter().map(|register| VirtualHardwareRegister::from(register)).collect()
     }
 }
 

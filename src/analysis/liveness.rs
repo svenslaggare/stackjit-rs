@@ -11,12 +11,13 @@ use crate::model::function::{Function, FunctionDefinition};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
+use crate::analysis::VirtualHardwareRegister;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct LiveInterval {
     pub start: usize,
     pub end: usize,
-    pub register: VirtualRegister
+    pub register: VirtualHardwareRegister
 }
 
 pub fn compute_liveness(instructions: &Vec<InstructionMIR>,
@@ -53,7 +54,7 @@ pub fn compute_liveness(instructions: &Vec<InstructionMIR>,
     live_intervals
 }
 
-fn get_live_interval(register: &VirtualRegister, alive_at: &HashSet<usize>) -> LiveInterval {
+fn get_live_interval(register: &VirtualHardwareRegister, alive_at: &HashSet<usize>) -> LiveInterval {
     let mut start = usize::max_value();
     let mut end = 0;
 
@@ -71,31 +72,31 @@ fn get_live_interval(register: &VirtualRegister, alive_at: &HashSet<usize>) -> L
 
 fn get_virtual_registers(instructions: &Vec<InstructionMIR>,
                          basic_blocks: &Vec<BasicBlock>,
-                         control_flow_graph: &ControlFlowGraph) -> Vec<VirtualRegister> {
+                         control_flow_graph: &ControlFlowGraph) -> Vec<VirtualHardwareRegister> {
     let mut registers = HashSet::new();
 
     for &block_index in &control_flow_graph.vertices {
         for &block_offset in &basic_blocks[block_index].instructions {
             let instruction = &instructions[block_offset];
-            if let Some(assign_register) = instruction.data.assign_register() {
+            if let Some(assign_register) = instruction.data.assign_hardware_register() {
                 registers.insert(assign_register);
             }
 
-            for register in instruction.data.use_registers() {
+            for register in instruction.data.use_hardware_registers() {
                 registers.insert(register);
             }
         }
     }
 
     let mut registers = Vec::from_iter(registers.into_iter());
-    registers.sort_by_key(|register| register.number);
+    registers.sort_by_key(|register| register.number());
     registers
 }
 
 fn compute_liveness_for_register(instructions: &Vec<InstructionMIR>,
                                  basic_blocks: &Vec<BasicBlock>,
                                  control_flow_graph: &ControlFlowGraph,
-                                 register: &VirtualRegister,
+                                 register: &VirtualHardwareRegister,
                                  use_sites: &Vec<UsageSite>,
                                  alive_at: &mut HashSet<usize>) {
     for use_site in use_sites {
@@ -118,7 +119,7 @@ fn compute_liveness_for_register_in_block(instructions: &Vec<InstructionMIR>,
                                           block_index: usize,
                                           start_offset: usize,
                                           visited: &mut HashSet<usize>,
-                                          register: &VirtualRegister,
+                                          register: &VirtualHardwareRegister,
                                           alive_at: &mut HashSet<usize>) {
     if visited.contains(&block_index) {
         return;
@@ -129,8 +130,8 @@ fn compute_liveness_for_register_in_block(instructions: &Vec<InstructionMIR>,
     for i in (0..(start_offset + 1)).rev() {
         let instruction = &instructions[basic_blocks[block_index].instructions[i]];
 
-        if let Some(assign_register) = instruction.data.assign_register() {
-            if &assign_register == register && !instruction.data.use_registers().contains(&register) {
+        if let Some(assign_register) = instruction.data.assign_hardware_register() {
+            if &assign_register == register && !instruction.data.use_hardware_registers().contains(&register) {
                 alive_at.insert(basic_blocks[block_index].start_offset + i);
                 terminated = true;
                 break;
@@ -164,8 +165,8 @@ struct UsageSite {
     offset: usize
 }
 
-type UseSites = HashMap<VirtualRegister, Vec<UsageSite>>;
-type AssignSites = HashMap<VirtualRegister, Vec<UsageSite>>;
+type UseSites = HashMap<VirtualHardwareRegister, Vec<UsageSite>>;
+type AssignSites = HashMap<VirtualHardwareRegister, Vec<UsageSite>>;
 
 fn get_register_usage(instructions: &Vec<InstructionMIR>,
                       basic_blocks: &Vec<BasicBlock>,
@@ -177,14 +178,14 @@ fn get_register_usage(instructions: &Vec<InstructionMIR>,
         for (block_offset, &instruction_index) in basic_blocks[block_index].instructions.iter().enumerate() {
             let instruction = &instructions[instruction_index];
 
-            if let Some(assign_register) = instruction.data.assign_register() {
+            if let Some(assign_register) = instruction.data.assign_hardware_register() {
                 assign_sites.entry(assign_register).or_insert_with(|| Vec::new()).push(UsageSite {
                     block_index,
                     offset: block_offset
                 });
             }
 
-            for use_register in instruction.data.use_registers() {
+            for use_register in instruction.data.use_hardware_registers() {
                 use_sites.entry(use_register).or_insert_with(|| Vec::new()).push(UsageSite {
                     block_index,
                     offset: block_offset
@@ -236,11 +237,11 @@ fn test_liveness1() {
 
     assert_eq!(2, live_intervals.len());
 
-    assert_eq!(0, live_intervals[0].register.number);
+    assert_eq!(0, live_intervals[0].register.number());
     assert_eq!(0, live_intervals[0].start);
     assert_eq!(9, live_intervals[0].end);
 
-    assert_eq!(1, live_intervals[1].register.number);
+    assert_eq!(1, live_intervals[1].register.number());
     assert_eq!(1, live_intervals[1].start);
     assert_eq!(8, live_intervals[1].end);
 
@@ -288,15 +289,15 @@ fn test_liveness2() {
 
     assert_eq!(3, live_intervals.len());
 
-    assert_eq!(0, live_intervals[0].register.number);
+    assert_eq!(0, live_intervals[0].register.number());
     assert_eq!(3, live_intervals[0].start);
     assert_eq!(3, live_intervals[0].end);
 
-    assert_eq!(1, live_intervals[1].register.number);
+    assert_eq!(1, live_intervals[1].register.number());
     assert_eq!(0, live_intervals[1].start);
     assert_eq!(5, live_intervals[1].end);
 
-    assert_eq!(2, live_intervals[2].register.number);
+    assert_eq!(2, live_intervals[2].register.number());
     assert_eq!(1, live_intervals[2].start);
     assert_eq!(2, live_intervals[2].end);
 
@@ -349,15 +350,15 @@ fn test_liveness3() {
 
     assert_eq!(3, live_intervals.len());
 
-    assert_eq!(0, live_intervals[0].register.number);
+    assert_eq!(0, live_intervals[0].register.number());
     assert_eq!(4, live_intervals[0].start);
     assert_eq!(10, live_intervals[0].end);
 
-    assert_eq!(1, live_intervals[1].register.number);
+    assert_eq!(1, live_intervals[1].register.number());
     assert_eq!(0, live_intervals[1].start);
     assert_eq!(11, live_intervals[1].end);
 
-    assert_eq!(2, live_intervals[2].register.number);
+    assert_eq!(2, live_intervals[2].register.number());
     assert_eq!(1, live_intervals[2].start);
     assert_eq!(2, live_intervals[2].end);
 

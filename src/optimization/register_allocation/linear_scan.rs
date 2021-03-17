@@ -14,6 +14,7 @@ use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
 use crate::optimization::register_allocation::{AllocatedRegister, RegisterAllocation};
+use crate::analysis::VirtualHardwareRegister;
 
 pub struct Settings {
     pub num_int_registers: usize,
@@ -37,14 +38,12 @@ pub fn allocate(live_intervals: &Vec<LiveInterval>, settings: &Settings) -> Regi
             interval
         );
 
-        let register_type = &interval.register.value_type;
-
         let active_of_same_type = active
             .iter()
-            .filter(|register| same_type(&register.0.register.value_type, register_type))
+            .filter(|register| same_type(&register.0.register, &interval.register))
             .count();
 
-        if active_of_same_type == free_registers.max_for_type(register_type) {
+        if active_of_same_type == free_registers.max_for_type(&interval.register) {
             split_at_interval(
                 &mut allocated_registers,
                 &mut spilled_registers,
@@ -52,7 +51,7 @@ pub fn allocate(live_intervals: &Vec<LiveInterval>, settings: &Settings) -> Regi
                 interval
             );
         } else {
-            let free_register = free_registers.get_free_register(register_type);
+            let free_register = free_registers.get_free_register(&interval.register);
             allocated_registers.insert(interval.clone(), free_register);
             active.insert(LiveIntervalByEndPoint(interval.clone()));
         }
@@ -78,29 +77,29 @@ impl FreeRegisters {
         }
     }
 
-    pub fn max_for_type(&self, value_type: &Type) -> usize {
-        match value_type {
-            Type::Float32 => self.max_float,
-            _ => self.max_int
+    pub fn max_for_type(&self, register: &VirtualHardwareRegister) -> usize {
+        match register {
+            VirtualHardwareRegister::Int(_) => self.max_int,
+            VirtualHardwareRegister::Float(_) => self.max_float
         }
     }
 
-    pub fn for_type(&self, value_type: &Type) -> &BTreeSet<u32> {
-        match value_type {
-            Type::Float32 => &self.float_registers,
-            _ => &self.int_registers
+    pub fn for_type(&self, register: &VirtualHardwareRegister) -> &BTreeSet<u32> {
+        match register {
+            VirtualHardwareRegister::Int(_) => &self.int_registers,
+            VirtualHardwareRegister::Float(_) => &self.float_registers
         }
     }
 
-    pub fn for_type_mut(&mut self, value_type: &Type) -> &mut BTreeSet<u32> {
-        match value_type {
-            Type::Float32 => &mut self.float_registers,
-            _ => &mut self.int_registers
+    pub fn for_type_mut(&mut self, register: &VirtualHardwareRegister) -> &mut BTreeSet<u32> {
+        match register {
+            VirtualHardwareRegister::Int(_) => &mut self.int_registers,
+            VirtualHardwareRegister::Float(_) => &mut self.float_registers
         }
     }
 
-    pub fn get_free_register(&mut self, value_type: &Type) -> u32 {
-        let registers = self.for_type_mut(value_type);
+    pub fn get_free_register(&mut self, register: &VirtualHardwareRegister) -> u32 {
+        let registers = self.for_type_mut(register);
         let free_register = *registers.iter().next().unwrap();
         registers.remove(&free_register);
         free_register
@@ -120,7 +119,7 @@ fn expire_old_intervals(allocated_registers: &mut HashMap<LiveInterval, u32>,
         to_remove.push(interval.clone());
 
         free_registers
-            .for_type_mut(&interval.0.register.value_type)
+            .for_type_mut(&interval.0.register)
             .insert(allocated_registers[&interval.0]);
     }
 
@@ -134,7 +133,7 @@ fn split_at_interval(allocated_registers: &mut HashMap<LiveInterval, u32>,
                      active: &mut BTreeSet<LiveIntervalByEndPoint>,
                      current_interval: &LiveInterval) {
     let spill = active.iter()
-        .filter(|register| same_type(&register.0.register.value_type, &current_interval.register.value_type))
+        .filter(|register| same_type(&register.0.register, &current_interval.register))
         .last()
         .unwrap()
         .clone();
@@ -153,14 +152,14 @@ fn split_at_interval(allocated_registers: &mut HashMap<LiveInterval, u32>,
     }
 }
 
-fn same_type(x: &Type, y: &Type) -> bool {
+fn same_type(x: &VirtualHardwareRegister, y: &VirtualHardwareRegister) -> bool {
     let x = match x {
-        Type::Float32 => false,
+        VirtualHardwareRegister::Float(_) => false,
         _ => true
     };
 
     let y = match y {
-        Type::Float32 => false,
+        VirtualHardwareRegister::Float(_) => false,
         _ => true
     };
 
@@ -447,7 +446,7 @@ fn test_allocate5() {
     );
 
     assert_eq!(3, allocation.num_allocated_registers());
-    assert_eq!(3, allocation.num_spilled_registers());
+    assert_eq!(2, allocation.num_spilled_registers());
 
     print_allocation(&instructions, &live_intervals, &allocation);
 }
@@ -480,7 +479,7 @@ fn test_allocate6() {
     );
 
     assert_eq!(2, allocation.num_allocated_registers());
-    assert_eq!(1, allocation.num_spilled_registers());
+    assert_eq!(0, allocation.num_spilled_registers());
 
     print_allocation(&instructions, &live_intervals, &allocation);
 }

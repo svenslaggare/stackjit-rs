@@ -1,5 +1,3 @@
-use iced_x86::Register;
-
 pub mod mid;
 pub mod compiler;
 pub mod ir_compiler;
@@ -134,8 +132,8 @@ impl Variable {
                 instructions.push(InstructionIR::Push(*source));
             }
             Variable::FrameMemory(offset) => {
-                instructions.push(InstructionIR::LoadFrameMemoryExplicit(HardwareRegisterExplicit(Register::RAX), *offset));
-                instructions.push(InstructionIR::PushExplicit(HardwareRegisterExplicit(Register::RAX)));
+                instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::IntSpill, *offset));
+                instructions.push(InstructionIR::Push(HardwareRegister::IntSpill));
             }
         }
     }

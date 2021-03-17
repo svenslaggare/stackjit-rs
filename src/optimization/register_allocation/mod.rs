@@ -4,9 +4,9 @@ use std::collections::HashMap;
 
 use crate::ir::HardwareRegister;
 use crate::analysis::liveness::LiveInterval;
-use crate::ir::mid::VirtualRegister;
+use crate::ir::mid::{VirtualRegister};
 use crate::model::typesystem::Type;
-use iced_x86::OpCodeOperandKind::al;
+use crate::analysis::VirtualHardwareRegister;
 
 #[derive(Debug, Clone)]
 pub enum AllocatedRegister {
@@ -38,16 +38,16 @@ impl AllocatedRegister {
 }
 
 pub struct RegisterAllocation {
-    registers: HashMap<VirtualRegister, AllocatedRegister>
+    registers: HashMap<VirtualHardwareRegister, AllocatedRegister>
 }
 
 impl RegisterAllocation {
     pub fn new(allocated: HashMap<LiveInterval, u32>, spilled: Vec<LiveInterval>) -> RegisterAllocation {
         let mut registers = HashMap::new();
         for (live_interval, register_number) in allocated {
-            let register = match &live_interval.register.value_type {
-                Type::Float32 => HardwareRegister::Float(register_number),
-                _ => HardwareRegister::Int(register_number)
+            let register = match &live_interval.register {
+                VirtualHardwareRegister::Int(_) => HardwareRegister::Int(register_number),
+                VirtualHardwareRegister::Float(_) => HardwareRegister::Float(register_number)
             };
 
             registers.insert(live_interval.register.clone(), AllocatedRegister::Hardware { register, live_interval });
@@ -71,7 +71,7 @@ impl RegisterAllocation {
     }
 
     pub fn get_register(&self, register: &VirtualRegister) -> &AllocatedRegister {
-        &self.registers[register]
+        &self.registers[&VirtualHardwareRegister::from(register)]
     }
 
     pub fn alive_registers_at(&self, instruction_index: usize) -> Vec<HardwareRegister> {
