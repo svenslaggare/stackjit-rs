@@ -74,7 +74,7 @@ impl RegisterAllocation {
         &self.registers[&VirtualHardwareRegister::from(register)]
     }
 
-    pub fn alive_registers_at(&self, instruction_index: usize) -> Vec<HardwareRegister> {
+    pub fn alive_registers_at(&self, instruction_index: usize) -> Vec<(VirtualHardwareRegister, HardwareRegister)> {
         self.registers
             .iter()
             .filter(|(_, allocation)| allocation.hardware_register().is_some())
@@ -82,7 +82,7 @@ impl RegisterAllocation {
                 let interval = allocation.interval();
                 instruction_index >= interval.start && instruction_index <= interval.end
             })
-            .map(|(register, allocation)| allocation.hardware_register().unwrap())
+            .map(|(register, allocation)| (register.clone(), allocation.hardware_register().unwrap()))
             .collect()
     }
 }
