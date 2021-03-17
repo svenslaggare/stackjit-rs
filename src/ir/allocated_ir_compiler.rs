@@ -311,8 +311,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 self.pop_alive_registers(&alive_registers, destination_register);
             }
             InstructionMIRData::LoadElement(element, destination, array_ref, index) => {
-                let alive_registers = self.register_allocation.alive_registers_at(instruction_index);
-                let alive_hardware_registers = alive_registers.iter().map(|(_, register)| register.clone()).collect::<Vec<_>>();
+                let alive_hardware_registers = self.register_allocation.alive_hardware_registers_at(instruction_index);
 
                 let mut temp_registers = TempRegisters::new(&self.register_allocation);
                 temp_registers.try_remove(array_ref);
@@ -363,8 +362,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 }
             }
             InstructionMIRData::StoreElement(element, array_ref, index, value) => {
-                let alive_registers = self.register_allocation.alive_registers_at(instruction_index);
-                let alive_hardware_registers = alive_registers.iter().map(|(_, register)| register.clone()).collect::<Vec<_>>();
+                let alive_hardware_registers = self.register_allocation.alive_hardware_registers_at(instruction_index);
 
                 let mut temp_registers = TempRegisters::new(&self.register_allocation);
                 temp_registers.try_remove(array_ref);
@@ -405,8 +403,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 }
             }
             InstructionMIRData::LoadArrayLength(destination, array_ref) => {
-                let alive_registers = self.register_allocation.alive_registers_at(instruction_index);
-                let alive_hardware_registers = alive_registers.iter().map(|(_, register)| register.clone()).collect::<Vec<_>>();
+                let alive_hardware_registers = self.register_allocation.alive_hardware_registers_at(instruction_index);
 
                 let mut temp_registers = TempRegisters::new(&self.register_allocation);
                 temp_registers.try_remove(array_ref);
@@ -493,6 +490,8 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
         for (index, argument) in arguments.iter().enumerate().rev() {
             match self.register_allocation.get_register(argument) {
                 AllocatedRegister::Hardware { register, .. } => {
+                    // We might overwrite the register value when doing moves to the register arguments,
+                    // so in that case, use cached version of the register on the stack that is created as part of the save register operation
                     if !overwritten.contains(&register_mapping::get(register.clone(), true)) {
                         variables.push(Variable::Register(register.clone()));
                     } else {

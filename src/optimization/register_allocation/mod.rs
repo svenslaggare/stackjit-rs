@@ -85,4 +85,8 @@ impl RegisterAllocation {
             .map(|(register, allocation)| (register.clone(), allocation.hardware_register().unwrap()))
             .collect()
     }
+
+    pub fn alive_hardware_registers_at(&self, instruction_index: usize) -> Vec<HardwareRegister> {
+        self.alive_registers_at(instruction_index).iter().map(|(_, register)| register.clone()).collect::<Vec<_>>()
+    }
 }
