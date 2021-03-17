@@ -2,7 +2,7 @@ use iced_x86::Register;
 
 use crate::compiler::stack_layout;
 use crate::compiler::stack_layout::{STACK_ENTRY_SIZE, STACK_OFFSET};
-use crate::ir::{HardwareRegisterExplicit, InstructionIR, Variable};
+use crate::ir::{HardwareRegisterExplicit, InstructionIR, Variable, HardwareRegister};
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::typesystem::Type;
 
@@ -232,6 +232,25 @@ impl CallingConventions {
     pub fn stack_alignment(&self, func_to_call: &FunctionDefinition, num_saved: usize) -> i32 {
         ((self.num_stack_arguments(func_to_call.parameters()) + num_saved) % 2) as i32 * stack_layout::STACK_ENTRY_SIZE
     }
+}
+
+pub fn get_call_register(func_to_call: &FunctionDefinition, index: usize, argument_type: &Type) -> Option<Register> {
+    match argument_type {
+        Type::Float32 => {
+            let relative_index = float_register_call_arguments::get_relative_index(func_to_call.parameters(), index);
+            if relative_index < float_register_call_arguments::NUM_ARGUMENTS {
+                return Some(float_register_call_arguments::get_argument(relative_index));
+            }
+        }
+        _ => {
+            let relative_index = register_call_arguments::get_relative_index(func_to_call.parameters(), index);
+            if relative_index < register_call_arguments::NUM_ARGUMENTS {
+                return Some(register_call_arguments::get_argument(relative_index));
+            }
+        }
+    }
+
+    None
 }
 
 pub mod register_call_arguments {

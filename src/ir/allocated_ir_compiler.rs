@@ -3,7 +3,7 @@ use std::iter::FromIterator;
 
 use iced_x86::Register;
 
-use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments, float_register_call_arguments};
+use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments, float_register_call_arguments, get_call_register};
 use crate::compiler::stack_layout;
 use crate::engine::binder::Binder;
 use crate::ir::{HardwareRegister, HardwareRegisterExplicit, InstructionIR, Variable, branches};
@@ -502,20 +502,9 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     variables.push(Variable::FrameMemory(self.get_register_stack_offset(argument)));
                 }
             }
-
-            match argument.value_type {
-                Type::Float32 => {
-                    let relative_index = float_register_call_arguments::get_relative_index(func_to_call.parameters(), index);
-                    if relative_index < float_register_call_arguments::NUM_ARGUMENTS {
-                        overwritten.insert(float_register_call_arguments::get_argument(relative_index));
-                    }
-                }
-                _ => {
-                    let relative_index = register_call_arguments::get_relative_index(func_to_call.parameters(), index);
-                    if relative_index < register_call_arguments::NUM_ARGUMENTS {
-                        overwritten.insert(register_call_arguments::get_argument(relative_index));
-                    }
-                }
+            
+            if let Some(call_register) = get_call_register(func_to_call, index, &argument.value_type) {
+                overwritten.insert(call_register);
             }
         }
 
