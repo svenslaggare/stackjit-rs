@@ -8,7 +8,7 @@ use crate::analysis::liveness::{compute_liveness, LiveInterval};
 use crate::engine::binder::Binder;
 use crate::ir::branches;
 use crate::ir::mid::{InstructionMIR, RegisterMIR};
-use crate::ir::compiler::InstructionMIRCompiler;
+use crate::ir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
@@ -186,15 +186,15 @@ impl Ord for LiveIntervalByEndPoint {
     }
 }
 
-fn analyze(instructions: &Vec<InstructionMIR>) -> (Vec<BasicBlock>, ControlFlowGraph, Vec<LiveInterval>) {
-    let blocks = BasicBlock::create_blocks(&instructions);
+fn analyze(compilation_result: &MIRCompilationResult) -> (Vec<BasicBlock>, ControlFlowGraph, Vec<LiveInterval>) {
+    let blocks = BasicBlock::create_blocks(&compilation_result.instructions);
     let control_flow_graph = ControlFlowGraph::new(
-        &instructions,
+        &compilation_result.instructions,
         &blocks,
-        &branches::create_label_mapping(&instructions)
+        &branches::create_label_mapping(&compilation_result.instructions)
     );
 
-    let live_intervals = compute_liveness(&instructions, &blocks, &control_flow_graph);
+    let live_intervals = compute_liveness(compilation_result, &blocks, &control_flow_graph);
 
     (blocks, control_flow_graph, live_intervals)
 }
@@ -246,9 +246,10 @@ fn test_allocate1() {
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
-    let instructions = compiler.done().instructions;
+    let compilation_result = compiler.done();
+    let instructions = &compilation_result.instructions;
 
-    let (_, _, live_intervals) = analyze(&instructions);
+    let (_, _, live_intervals) = analyze(&compilation_result);
 
     let allocation = allocate(
         &live_intervals,
@@ -285,9 +286,10 @@ fn test_allocate2() {
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
-    let instructions = compiler.done().instructions;
+    let compilation_result = compiler.done();
+    let instructions = &compilation_result.instructions;
 
-    let (_, _, live_intervals) = analyze(&instructions);
+    let (_, _, live_intervals) = analyze(&compilation_result);
 
     let allocation = allocate(
         &live_intervals,
@@ -329,9 +331,10 @@ fn test_allocate3() {
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
-    let instructions = compiler.done().instructions;
+    let compilation_result = compiler.done();
+    let instructions = &compilation_result.instructions;
 
-    let (_, _, live_intervals) = analyze(&instructions);
+    let (_, _, live_intervals) = analyze(&compilation_result);
 
     let allocation = allocate(
         &live_intervals,
@@ -368,9 +371,10 @@ fn test_allocate4() {
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
-    let instructions = compiler.done().instructions;
+    let compilation_result = compiler.done();
+    let instructions = &compilation_result.instructions;
 
-    let (_, _, live_intervals) = analyze(&instructions);
+    let (_, _, live_intervals) = analyze(&compilation_result);
 
     let allocation = allocate(
         &live_intervals,
@@ -422,9 +426,10 @@ fn test_allocate5() {
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
-    let instructions = compiler.done().instructions;
+    let compilation_result = compiler.done();
+    let instructions = &compilation_result.instructions;
 
-    let (_, _, live_intervals) = analyze(&instructions);
+    let (_, _, live_intervals) = analyze(&compilation_result);
 
     let allocation = allocate(
         &live_intervals,
@@ -455,9 +460,10 @@ fn test_allocate6() {
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
-    let instructions = compiler.done().instructions;
+    let compilation_result = compiler.done();
+    let instructions = &compilation_result.instructions;
 
-    let (_, _, live_intervals) = analyze(&instructions);
+    let (_, _, live_intervals) = analyze(&compilation_result);
 
     let allocation = allocate(
         &live_intervals,

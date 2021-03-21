@@ -51,7 +51,7 @@ pub enum Condition {
 
 #[derive(Debug)]
 pub enum InstructionIR {
-    Marker(usize),
+    Marker(usize, usize),
     InitializeFunction,
     LoadZeroToRegister(HardwareRegister),
     AddToStackPointer(i32),
@@ -105,7 +105,9 @@ pub enum InstructionIR {
 
     BranchLabel(BranchLabel),
     Branch(BranchLabel),
-    BranchCondition(Condition, bool, BranchLabel)
+    BranchCondition(Condition, bool, BranchLabel),
+
+    PrintStackFrame(usize)
 }
 
 #[derive(Debug)]

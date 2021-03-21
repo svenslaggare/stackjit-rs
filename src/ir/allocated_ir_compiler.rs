@@ -63,7 +63,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
         let basic_blocks = BasicBlock::create_blocks(instructions);
         let branch_label_mapping = branches::create_label_mapping(&instructions);
         let control_flow_graph = ControlFlowGraph::new(&instructions, &basic_blocks, &branch_label_mapping);
-        let live_intervals = liveness::compute_liveness(instructions, &basic_blocks, &control_flow_graph);
+        let live_intervals = liveness::compute_liveness(compilation_result, &basic_blocks, &control_flow_graph);
         register_allocation::linear_scan::allocate(
             &live_intervals,
             &Settings { num_int_registers: 2, num_float_registers: 2 }
@@ -116,7 +116,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
     }
 
     fn compile_instruction(&mut self, instruction_index: usize, instruction: &InstructionMIR) {
-        self.instructions.push(InstructionIR::Marker(instruction.index));
+        self.instructions.push(InstructionIR::Marker(instruction.index, instruction_index));
 
         match &instruction.data {
             InstructionMIRData::LoadInt32(destination, value) => {
@@ -275,6 +275,8 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 }
             }
             InstructionMIRData::NewArray(element, destination, size) => {
+                self.print_stack_frame(instruction_index);
+
                 let alive_registers = self.push_alive_registers(instruction_index);
                 let alive_hardware_registers = alive_registers.iter().map(|(_, register)| register.clone()).collect::<Vec<_>>();
 
@@ -481,6 +483,12 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 ));
             }
         }
+    }
+
+    fn print_stack_frame(&mut self, instruction_index: usize) {
+        let alive_registers = self.push_alive_registers(instruction_index);
+        self.instructions.push(InstructionIR::PrintStackFrame(instruction_index));
+        self.pop_alive_registers(&alive_registers, None);
     }
 
     fn get_call_argument_sources(&self, func_to_call: &FunctionDefinition, arguments: &Vec<RegisterMIR>) -> Vec<Variable> {

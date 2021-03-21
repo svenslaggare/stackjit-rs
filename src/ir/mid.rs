@@ -92,7 +92,7 @@ impl InstructionMIRData {
         }
     }
 
-    pub fn assign_hardware_register(&self) -> Option<VirtualRegister> {
+    pub fn assign_virtual_register(&self) -> Option<VirtualRegister> {
         self.assign_register().map(|register| VirtualRegister::from(&register))
     }
 
@@ -119,7 +119,7 @@ impl InstructionMIRData {
         }
     }
 
-    pub fn use_hardware_registers(&self) -> Vec<VirtualRegister> {
+    pub fn use_virtual_registers(&self) -> Vec<VirtualRegister> {
         self.use_registers().iter().map(|register| VirtualRegister::from(register)).collect()
     }
 }

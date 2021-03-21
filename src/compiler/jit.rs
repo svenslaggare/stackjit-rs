@@ -2,17 +2,17 @@ use std::collections::HashMap;
 
 use crate::compiler::{FunctionCallType, FunctionCompilationData};
 use crate::compiler::allocator::ExecutableMemoryAllocator;
-use crate::compiler::code_generator::CodeGenerator;
+use crate::compiler::code_generator::{CodeGenerator, CodeGeneratorResult};
 use crate::compiler::error_handling::ErrorHandling;
 use crate::engine::binder::Binder;
 use crate::ir;
-use crate::ir::compiler::InstructionMIRCompiler;
+use crate::ir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::ir::{InstructionIR, branches};
 use crate::ir::mid;
-use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
-use crate::model::typesystem::TypeStorage;
 use crate::ir::ir_compiler::InstructionIRCompiler;
 use crate::ir::allocated_ir_compiler::AllocatedInstructionIRCompiler;
+use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
+use crate::model::typesystem::TypeStorage;
 use crate::analysis::{AnalysisResult, null_check_elision};
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
@@ -39,27 +39,35 @@ impl JitCompiler {
         println!("{}", function.definition().signature());
         println!("{{");
 
-        let instructions_ir = self.compile_ir(binder, function);
-        let mut compilation_data = FunctionCompilationData::new();
-        let function_code_bytes = self.generate_code(
+        let (compilation_result, instructions_ir) = self.compile_ir(binder, function);
+        let mut compilation_data = FunctionCompilationData::new(compilation_result);
+        let generator_result = self.generate_code(
             binder,
             type_storage,
             function,
             &mut compilation_data,
             &instructions_ir
         );
+        compilation_data.instructions_offsets = generator_result.instructions_offsets;
 
         println!("}}");
         println!();
-        let function_code_ptr = self.memory_allocator.allocate(function_code_bytes.len());
+        let function_code_ptr = self.memory_allocator.allocate(generator_result.code_bytes.len());
 
         unsafe {
-            function_code_ptr.copy_from(function_code_bytes.as_ptr() as *const _, function_code_bytes.len());
+            function_code_ptr.copy_from(
+                generator_result.code_bytes.as_ptr() as *const _,
+                generator_result.code_bytes.len()
+            );
         }
 
         self.compiled_functions.insert(function.definition().call_signature(), compilation_data);
 
         binder.set_address(&function.definition().call_signature(), function_code_ptr);
+    }
+
+    pub fn get_compiled_function(&self, signature: &FunctionSignature) -> Option<&FunctionCompilationData> {
+        self.compiled_functions.get(signature)
     }
 
     pub fn resolve_calls_and_branches(&mut self, binder: &Binder) {
@@ -95,7 +103,7 @@ impl JitCompiler {
                     }
                 }
                 FunctionCallType::Absolute => {
-
+                    unimplemented!();
                 }
             }
         }
@@ -134,7 +142,7 @@ impl JitCompiler {
         compiled_function.unresolved_native_branches.clear();
     }
 
-    fn compile_ir(&self, binder: &Binder, function: &Function) -> Vec<InstructionIR> {
+    fn compile_ir(&self, binder: &Binder, function: &Function) -> (MIRCompilationResult, Vec<InstructionIR>) {
         let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
         mir_compiler.compile(function.instructions());
         let compilation_result = mir_compiler.done();
@@ -155,10 +163,11 @@ impl JitCompiler {
             )
         };
 
-        // let mut ir_compiler = InstructionIRCompiler::new(&binder, &function, &compilation_result);
+        // let mut ir_compiler = InstructionIRCompiler::new(&binder, &function, &compilation_result, &analysis_result);
         let mut ir_compiler = AllocatedInstructionIRCompiler::new(&binder, &function, &compilation_result, &analysis_result);
         ir_compiler.compile();
-        ir_compiler.done()
+        let instructions_ir = ir_compiler.done();
+        (compilation_result, instructions_ir)
     }
 
     fn generate_code(&self,
@@ -166,7 +175,7 @@ impl JitCompiler {
                      type_storage: &mut TypeStorage,
                      function: &Function,
                      compilation_data: &mut FunctionCompilationData,
-                     instructions_ir: &Vec<InstructionIR>) -> Vec<u8> {
+                     instructions_ir: &Vec<InstructionIR>) -> CodeGeneratorResult {
         let mut code_generator = CodeGenerator::new(binder, &self.error_handling, type_storage);
         code_generator.generate(function, compilation_data, instructions_ir);
         code_generator.done()

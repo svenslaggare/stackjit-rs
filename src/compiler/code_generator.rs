@@ -10,12 +10,18 @@ use crate::model::function::{Function, FunctionType};
 use crate::model::typesystem::{Type, TypeStorage};
 use crate::runtime::{array, runtime_interface};
 
+pub struct CodeGeneratorResult {
+    pub code_bytes: Vec<u8>,
+    pub instructions_offsets: Vec<(usize, usize)>
+}
+
 pub struct CodeGenerator<'a> {
     encoder: Encoder,
     encoder_offset: usize,
     binder: &'a Binder,
     error_handling: &'a ErrorHandling,
-    type_storage: &'a mut TypeStorage
+    type_storage: &'a mut TypeStorage,
+    instructions_offsets: Vec<(usize, usize)>
 }
 
 impl<'a> CodeGenerator<'a> {
@@ -27,7 +33,8 @@ impl<'a> CodeGenerator<'a> {
             encoder_offset: 0,
             binder,
             error_handling,
-            type_storage
+            type_storage,
+            instructions_offsets: Vec::new()
         }
     }
 
@@ -37,7 +44,7 @@ impl<'a> CodeGenerator<'a> {
                     instructions: &Vec<InstructionIR>) {
         for instruction in instructions {
             match instruction {
-                InstructionIR::Marker(index) => {
+                InstructionIR::Marker(index, _) => {
                     println!("{}", function.instructions()[*index]);
                 }
                 _ => {
@@ -49,8 +56,11 @@ impl<'a> CodeGenerator<'a> {
         }
     }
 
-    pub fn done(mut self) -> Vec<u8> {
-        self.encoder.take_buffer()
+    pub fn done(mut self) -> CodeGeneratorResult {
+        CodeGeneratorResult {
+            code_bytes: self.encoder.take_buffer(),
+            instructions_offsets: self.instructions_offsets
+        }
     }
 
     fn generate_instruction(&mut self,
@@ -58,7 +68,9 @@ impl<'a> CodeGenerator<'a> {
                             compilation_data: &mut FunctionCompilationData,
                             instruction: &InstructionIR) {
         match instruction {
-            InstructionIR::Marker(_) => {},
+            InstructionIR::Marker(_, mir_instruction_index) => {
+                self.instructions_offsets.push((*mir_instruction_index, self.encoder_offset));
+            },
             InstructionIR::InitializeFunction => {
                 let is_entry_point = function.definition().is_entry_point();
                 if is_entry_point {
@@ -91,6 +103,15 @@ impl<'a> CodeGenerator<'a> {
                         runtime_interface::set_error_return as u64
                     );
                 }
+
+                // Indicate which function that is being executed
+                let function_address = function as *const _ as *const u64 as i64;
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i64(Code::Mov_r64_imm64, Register::RAX, function_address).unwrap());
+                self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                    Code::Mov_rm64_r64,
+                    MemoryOperand::with_base_displ(Register::RBP, -(stack_layout::STACK_OFFSET as i32) * stack_layout::STACK_ENTRY_SIZE),
+                    Register::RAX
+                ));
             },
             InstructionIR::LoadZeroToRegister(register) => {
                 let register = register_mapping::get(*register, true);
@@ -650,6 +671,16 @@ impl<'a> CodeGenerator<'a> {
 
                 let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(compare_code, 0).unwrap());
                 compilation_data.unresolved_branches.insert(self.encoder_offset - instruction_size, (*target, instruction_size));
+            }
+            InstructionIR::PrintStackFrame(instruction_index) => {
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_r64_rm64, register_call_arguments::ARG0, Register::RBP));
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i64(Code::Mov_r64_imm64, register_call_arguments::ARG1, function as *const _ as i64).unwrap());
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Mov_rm64_imm32, register_call_arguments::ARG2, *instruction_index as i32).unwrap());
+
+                call_direct(
+                    |instruction| self.encode_x86_instruction(instruction),
+                    runtime_interface::print_stack_frame as u64
+                );
             }
         }
     }

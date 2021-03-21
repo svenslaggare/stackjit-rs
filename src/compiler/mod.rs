@@ -9,21 +9,26 @@ pub mod error_handling;
 
 use crate::ir::{BranchLabel, HardwareRegisterExplicit, InstructionIR};
 use crate::model::function::{Function, FunctionSignature};
+use crate::ir::compiler::MIRCompilationResult;
 
 pub struct FunctionCompilationData {
     pub unresolved_function_calls: Vec<UnresolvedFunctionCall>,
     pub branch_targets: HashMap<BranchLabel, usize>,
     pub unresolved_branches: HashMap<usize, (BranchLabel, usize)>,
-    pub unresolved_native_branches: HashMap<usize, usize>
+    pub unresolved_native_branches: HashMap<usize, usize>,
+    pub mir_compilation_result: MIRCompilationResult,
+    pub instructions_offsets: Vec<(usize, usize)>
 }
 
 impl FunctionCompilationData {
-    pub fn new() -> FunctionCompilationData {
+    pub fn new(mir_compilation_result: MIRCompilationResult) -> FunctionCompilationData {
         FunctionCompilationData {
             unresolved_function_calls: Vec::new(),
             unresolved_branches: HashMap::new(),
             branch_targets: HashMap::new(),
-            unresolved_native_branches: HashMap::new()
+            unresolved_native_branches: HashMap::new(),
+            mir_compilation_result,
+            instructions_offsets: Vec::new()
         }
     }
 }

@@ -1,6 +1,9 @@
 use crate::vm::get_vm;
-use crate::model::typesystem::TypeId;
+use crate::model::typesystem::{TypeId, Type};
 use crate::engine::execution::RuntimeError;
+use crate::model::function::{FunctionSignature, Function};
+use crate::compiler::stack_layout;
+use crate::runtime::stack_walker::StackFrame;
 
 pub extern "C" fn set_error_return(return_address: u64, base_pointer: u64, stack_pointer: u64) {
     get_vm(|vm| {
@@ -38,5 +41,30 @@ fn runtime_error(result_ptr: *mut u64, runtime_error: RuntimeError) {
             *result_ptr.add(1) = vm.engine.runtime_error.base_pointer;
             *result_ptr.add(2) = vm.engine.runtime_error.stack_pointer;
         }
+    });
+}
+
+pub extern "C" fn print_stack_frame(base_pointer: u64, function_ptr: u64, instruction_index: usize) {
+    get_vm(|vm| {
+        let function = unsafe { (function_ptr as *const Function).as_ref().unwrap() };
+
+        let compiled_function = vm.engine.compiler()
+            .get_compiled_function(&function.definition().call_signature())
+            .unwrap();
+
+        println!("--------------------------------------------");
+
+        let stack_frame = StackFrame::new(base_pointer, instruction_index, function, compiled_function);
+
+        stack_frame.walk(
+            vm.engine.compiler(),
+            vm.engine.binder(),
+            |frame| {
+                frame.print_frame();
+                println!();
+            }
+        );
+
+        println!("--------------------------------------------");
     });
 }

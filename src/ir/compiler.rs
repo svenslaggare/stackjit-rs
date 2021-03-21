@@ -10,12 +10,14 @@ use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
 use crate::analysis::null_check_elision::InstructionsRegisterNullStatus;
+use crate::analysis::VirtualRegister;
 
 pub struct MIRCompilationResult {
     pub instructions: Vec<InstructionMIR>,
     pub num_virtual_registers: usize,
     pub local_virtual_registers: Vec<RegisterMIR>,
-    pub need_zero_initialize_registers: Vec<RegisterMIR>
+    pub need_zero_initialize_registers: Vec<RegisterMIR>,
+    pub instructions_operand_types: Vec<Vec<RegisterMIR>>
 }
 
 pub struct InstructionMIRCompiler<'a> {
@@ -25,7 +27,8 @@ pub struct InstructionMIRCompiler<'a> {
     branch_manager: BranchManager,
     local_virtual_registers: Vec<RegisterMIR>,
     next_operand_virtual_register: u32,
-    max_num_virtual_register: usize
+    max_num_virtual_register: usize,
+    instructions_operand_types: Vec<Vec<RegisterMIR>>
 }
 
 impl<'a> InstructionMIRCompiler<'a> {
@@ -37,7 +40,8 @@ impl<'a> InstructionMIRCompiler<'a> {
             instructions: Vec::new(),
             local_virtual_registers: Vec::new(),
             next_operand_virtual_register: 0,
-            max_num_virtual_register: 0
+            max_num_virtual_register: 0,
+            instructions_operand_types: Vec::new()
         }
     }
 
@@ -63,8 +67,17 @@ impl<'a> InstructionMIRCompiler<'a> {
         let operand_types = self.function.instruction_operand_types(instruction_index);
 
         if let Some(branch_label) = self.branch_manager.is_branch(instruction_index) {
+            self.instructions_operand_types.push(Vec::new());
             self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::BranchLabel(branch_label)));
         }
+
+        self.instructions_operand_types.push(
+            operand_types
+                .iter()
+                .enumerate()
+                .map(|(i, op_type)| RegisterMIR::new((self.local_virtual_registers.len() + i) as u32, op_type.clone()))
+                .collect()
+        );
 
         match instruction {
             Instruction::LoadInt32(value) => {
@@ -229,7 +242,8 @@ impl<'a> InstructionMIRCompiler<'a> {
             instructions: self.instructions,
             num_virtual_registers: self.max_num_virtual_register,
             local_virtual_registers: self.local_virtual_registers.clone(),
-            need_zero_initialize_registers: self.local_virtual_registers.clone()
+            need_zero_initialize_registers: self.local_virtual_registers.clone(),
+            instructions_operand_types: self.instructions_operand_types
         }
     }
 }

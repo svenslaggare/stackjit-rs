@@ -3,15 +3,15 @@ use std::iter::FromIterator;
 
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
+use crate::analysis::VirtualRegister;
 use crate::engine::binder::Binder;
 use crate::ir::branches;
 use crate::ir::mid::{InstructionMIR, RegisterMIR};
-use crate::ir::compiler::InstructionMIRCompiler;
+use crate::ir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::model::function::{Function, FunctionDefinition};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
-use crate::analysis::VirtualRegister;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct LiveInterval {
@@ -20,9 +20,17 @@ pub struct LiveInterval {
     pub register: VirtualRegister
 }
 
-pub fn compute_liveness(instructions: &Vec<InstructionMIR>,
+pub fn compute_liveness(compilation_result: &MIRCompilationResult,
                         basic_blocks: &Vec<BasicBlock>,
                         control_flow_graph: &ControlFlowGraph) -> Vec<LiveInterval> {
+    let instructions = &compilation_result.instructions;
+    let locals_references = HashSet::<u32>::from_iter(
+        compilation_result.local_virtual_registers
+            .iter()
+            .filter(|register| register.value_type.is_reference())
+            .map(|register| register.number)
+    );
+
     let mut live_intervals = Vec::new();
     let virtual_registers = get_virtual_registers(instructions, basic_blocks, control_flow_graph);
     let (use_sites, assign_sites) = get_register_usage(instructions, basic_blocks, control_flow_graph);
@@ -38,6 +46,11 @@ pub fn compute_liveness(instructions: &Vec<InstructionMIR>,
                 register_use_sites,
                 &mut alive_at
             );
+
+            if locals_references.contains(&register.number) {
+                alive_at.extend(0..instructions.len());
+            }
+
             live_intervals.push(get_live_interval(&register, &alive_at));
         } else {
             //This mean that the register is not used. Atm, we do not remove write-only virtual registers.
@@ -45,6 +58,10 @@ pub fn compute_liveness(instructions: &Vec<InstructionMIR>,
             let mut alive_at = HashSet::new();
             for assign_site in &assign_sites[&register] {
                 alive_at.insert(basic_blocks[assign_site.block_index].start_offset + assign_site.offset);
+            }
+
+            if locals_references.contains(&register.number) {
+                alive_at.extend(0..instructions.len());
             }
 
             live_intervals.push(get_live_interval(&register, &alive_at));
@@ -78,11 +95,11 @@ fn get_virtual_registers(instructions: &Vec<InstructionMIR>,
     for &block_index in &control_flow_graph.vertices {
         for &block_offset in &basic_blocks[block_index].instructions {
             let instruction = &instructions[block_offset];
-            if let Some(assign_register) = instruction.data.assign_hardware_register() {
+            if let Some(assign_register) = instruction.data.assign_virtual_register() {
                 registers.insert(assign_register);
             }
 
-            for register in instruction.data.use_hardware_registers() {
+            for register in instruction.data.use_virtual_registers() {
                 registers.insert(register);
             }
         }
@@ -130,8 +147,8 @@ fn compute_liveness_for_register_in_block(instructions: &Vec<InstructionMIR>,
     for i in (0..(start_offset + 1)).rev() {
         let instruction = &instructions[basic_blocks[block_index].instructions[i]];
 
-        if let Some(assign_register) = instruction.data.assign_hardware_register() {
-            if &assign_register == register && !instruction.data.use_hardware_registers().contains(&register) {
+        if let Some(assign_register) = instruction.data.assign_virtual_register() {
+            if &assign_register == register && !instruction.data.use_virtual_registers().contains(&register) {
                 alive_at.insert(basic_blocks[block_index].start_offset + i);
                 terminated = true;
                 break;
@@ -178,14 +195,14 @@ fn get_register_usage(instructions: &Vec<InstructionMIR>,
         for (block_offset, &instruction_index) in basic_blocks[block_index].instructions.iter().enumerate() {
             let instruction = &instructions[instruction_index];
 
-            if let Some(assign_register) = instruction.data.assign_hardware_register() {
+            if let Some(assign_register) = instruction.data.assign_virtual_register() {
                 assign_sites.entry(assign_register).or_insert_with(|| Vec::new()).push(UsageSite {
                     block_index,
                     offset: block_offset
                 });
             }
 
-            for use_register in instruction.data.use_hardware_registers() {
+            for use_register in instruction.data.use_virtual_registers() {
                 use_sites.entry(use_register).or_insert_with(|| Vec::new()).push(UsageSite {
                     block_index,
                     offset: block_offset
@@ -226,14 +243,15 @@ fn test_liveness1() {
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
-    let instructions = compiler.done().instructions;
+    let compilation_result = compiler.done();
+    let instructions = &compilation_result.instructions;
 
     let blocks = BasicBlock::create_blocks(&instructions);
     let branch_label_mapping = branches::create_label_mapping(&instructions);
 
     let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks, &branch_label_mapping);
 
-    let live_intervals = compute_liveness(&instructions, &blocks, &control_flow_graph);
+    let live_intervals = compute_liveness(&compilation_result, &blocks, &control_flow_graph);
 
     assert_eq!(2, live_intervals.len());
 
@@ -278,14 +296,15 @@ fn test_liveness2() {
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
-    let instructions = compiler.done().instructions;
+    let compilation_result = compiler.done();
+    let instructions = &compilation_result.instructions;
 
     let blocks = BasicBlock::create_blocks(&instructions);
     let branch_label_mapping = branches::create_label_mapping(&instructions);
 
     let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks, &branch_label_mapping);
 
-    let live_intervals = compute_liveness(&instructions, &blocks, &control_flow_graph);
+    let live_intervals = compute_liveness(&compilation_result, &blocks, &control_flow_graph);
 
     assert_eq!(3, live_intervals.len());
 
@@ -339,14 +358,15 @@ fn test_liveness3() {
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
-    let instructions = compiler.done().instructions;
+    let compilation_result = compiler.done();
+    let instructions = &compilation_result.instructions;
 
     let blocks = BasicBlock::create_blocks(&instructions);
     let branch_label_mapping = branches::create_label_mapping(&instructions);
 
     let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks, &branch_label_mapping);
 
-    let live_intervals = compute_liveness(&instructions, &blocks, &control_flow_graph);
+    let live_intervals = compute_liveness(&compilation_result, &blocks, &control_flow_graph);
 
     assert_eq!(3, live_intervals.len());
 

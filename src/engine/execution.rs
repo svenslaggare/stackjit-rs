@@ -45,6 +45,10 @@ impl ExecutionEngine {
         Ok(())
     }
 
+    pub fn get_function(&self, signature: &FunctionSignature) -> Option<&Function> {
+        self.functions.iter().find(|function| &function.definition().call_signature() == signature)
+    }
+
     pub fn create_execution(&mut self, type_storage: &mut TypeStorage) -> ExecutionEngineResult<Execution> {
         self.compile_functions(type_storage)?;
         self.compiler.resolve_calls_and_branches(&self.binder);
@@ -74,6 +78,10 @@ impl ExecutionEngine {
             .ok_or(ExecutionEngineError::NoMainFunction)?
             .address()
             .ok_or(ExecutionEngineError::NoMainFunctionCompiled)
+    }
+
+    pub fn compiler(&self) -> &JitCompiler {
+        &self.compiler
     }
 
     pub fn binder(&self) -> &Binder {
