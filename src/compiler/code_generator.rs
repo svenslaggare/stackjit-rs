@@ -514,7 +514,7 @@ impl<'a> CodeGenerator<'a> {
                 let reference_register = register_mapping::get(*reference_register, true);
                 let index_register = register_mapping::get(*index_register, true);
 
-                self.compute_array_element_address(element, Register::RAX, reference_register, index_register);
+                let memory_operand = self.compute_array_element_address(element, reference_register, index_register);
 
                 // Load the element
                 match element.size() {
@@ -527,14 +527,14 @@ impl<'a> CodeGenerator<'a> {
                                 self.encode_x86_instruction(X86Instruction::with_reg_mem(
                                     Code::Movss_xmm_xmmm32,
                                     destination_register,
-                                    MemoryOperand::with_base(Register::RAX),
+                                    memory_operand,
                                 ));
                             }
                             _ => {
                                 self.encode_x86_instruction(X86Instruction::with_reg_mem(
                                     Code::Mov_r32_rm32,
                                     destination_register,
-                                    MemoryOperand::with_base(Register::RAX),
+                                    memory_operand,
                                 ));
                             }
                         }
@@ -549,7 +549,7 @@ impl<'a> CodeGenerator<'a> {
                 let reference_register = register_mapping::get(*reference_register, true);
                 let index_register = register_mapping::get(*index_register, true);
 
-                self.compute_array_element_address(element, Register::RAX, reference_register, index_register);
+                let memory_operand = self.compute_array_element_address(element, reference_register, index_register);
 
                 //Store the element
                 match element.size() {
@@ -562,7 +562,7 @@ impl<'a> CodeGenerator<'a> {
                                 let value_register = register_mapping::get(*value_register, true);
                                 self.encode_x86_instruction(X86Instruction::with_mem_reg(
                                     Code::Movss_xmmm32_xmm,
-                                    MemoryOperand::with_base(Register::RAX),
+                                    memory_operand,
                                     value_register,
                                 ));
                             }
@@ -570,7 +570,7 @@ impl<'a> CodeGenerator<'a> {
                                 let value_register_32 = register_mapping::get(*value_register, false);
                                 self.encode_x86_instruction(X86Instruction::with_mem_reg(
                                     Code::Mov_rm32_r32,
-                                    MemoryOperand::with_base(Register::RAX),
+                                    memory_operand,
                                     value_register_32,
                                 ));
                             }
@@ -696,17 +696,12 @@ impl<'a> CodeGenerator<'a> {
 
     fn compute_array_element_address(&mut self,
                                      element: &Type,
-                                     address_register: Register,
                                      reference_register: Register,
-                                     index_register: Register) {
-        self.encode_x86_instruction(X86Instruction::with_reg_mem(
-            Code::Lea_r64_m,
-            address_register,
-            MemoryOperand::with_base_index_scale_displ_size(
-                reference_register,
-                index_register, element.size() as u32, array::LENGTH_SIZE as i32, 1
-            )
-        ));
+                                     index_register: Register) -> MemoryOperand {
+        MemoryOperand::with_base_index_scale_displ_size(
+            reference_register,
+            index_register, element.size() as u32, array::LENGTH_SIZE as i32, 1
+        )
     }
 
     fn set_jump_target(&mut self, branch_offset: usize, branch_instruction_size: usize) {
