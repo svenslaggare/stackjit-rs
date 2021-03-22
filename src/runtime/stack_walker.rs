@@ -259,6 +259,9 @@ impl<'a> std::fmt::Display for FrameValue<'a> {
             Type::Array(_) => {
                 write!(f, "0x{:0x}", self.value_u64())
             }
+            Type::Class(_) => {
+                write!(f, "0x{:0x}", self.value_u64())
+            }
         }
     }
 }

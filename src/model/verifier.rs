@@ -2,6 +2,7 @@ use crate::model::function::{Function, FunctionSignature, FunctionDefinition};
 use crate::model::typesystem::Type;
 use crate::model::instruction::Instruction;
 use crate::engine::binder::Binder;
+use crate::model::class::{ClassProvider, Class, Field};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct VerifyError {
@@ -40,7 +41,9 @@ pub enum VerifyErrorMessage {
     InvalidBranchTarget,
     BranchDifferentNumberOfOperands(usize, usize),
     ExpectedComparableType,
-    ExpectedArrayReference
+    ExpectedArrayReference,
+    ClassTypeNotDefined(String),
+    FieldNotDefined(String, String),
 }
 
 pub type VerifyResult<T> = Result<T, VerifyError>;
@@ -48,15 +51,19 @@ pub type VerifyResult<T> = Result<T, VerifyError>;
 pub struct Verifier<'a> {
     function: &'a mut Function,
     binder: &'a Binder,
+    class_provider: &'a ClassProvider,
     operand_stack: Vec<Type>,
     branches: Vec<(usize, usize, Vec<Type>)>
 }
 
 impl<'a> Verifier<'a> {
-    pub fn new(binder: &'a Binder, function: &'a mut Function) -> Verifier<'a> {
+    pub fn new(binder: &'a Binder,
+               class_provider: &'a ClassProvider,
+               function: &'a mut Function) -> Verifier<'a> {
         Verifier {
             function,
             binder,
+            class_provider,
             operand_stack: Vec::new(),
             branches: Vec::new()
         }
@@ -195,6 +202,36 @@ impl<'a> Verifier<'a> {
 
                     self.push_operand_stack(Type::Int32);
                 }
+                Instruction::NewObject(class_type) => {
+                    let class = self.class_provider.get(class_type)
+                        .ok_or_else(|| VerifyError::with_index(instruction_index, VerifyErrorMessage::ClassTypeNotDefined(class_type.clone())))?;
+
+                    self.push_operand_stack(Type::Class(class.name().to_owned()));
+                }
+                Instruction::LoadField(class_type, field_name) => {
+                    let class = self.class_provider.get(class_type)
+                        .ok_or_else(|| VerifyError::with_index(instruction_index, VerifyErrorMessage::ClassTypeNotDefined(class_type.clone())))?;
+
+                    let field = class.get_field(field_name)
+                        .ok_or_else(|| VerifyError::with_index(instruction_index, VerifyErrorMessage::FieldNotDefined(class_type.clone(), field_name.clone())))?;
+
+                    let class_reference = self.pop_operand_stack(instruction_index)?;
+                    self.same_type(instruction_index, &Type::Class(class.name().to_owned()), &class_reference)?;
+                    self.push_operand_stack(field.field_type().clone());
+                }
+                Instruction::StoreField(class_type, field_name) => {
+                    let class = self.class_provider.get(class_type)
+                        .ok_or_else(|| VerifyError::with_index(instruction_index, VerifyErrorMessage::ClassTypeNotDefined(class_type.clone())))?;
+
+                    let field = class.get_field(field_name)
+                        .ok_or_else(|| VerifyError::with_index(instruction_index, VerifyErrorMessage::FieldNotDefined(class_type.clone(), field_name.clone())))?;
+
+                    let value_type = self.pop_operand_stack(instruction_index)?;
+                    let class_reference = self.pop_operand_stack(instruction_index)?;
+
+                    self.same_type(instruction_index, &Type::Class(class.name().to_owned()), &class_reference)?;
+                    self.same_type(instruction_index, field.field_type(), &value_type)?;
+                }
                 Instruction::Branch(target) => {
                     if *target >= self.function.instructions().len() as u32 {
                         return Err(VerifyError::with_index(instruction_index, VerifyErrorMessage::InvalidBranchTarget));
@@ -310,7 +347,8 @@ fn test_simple1() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(Ok(()), verifier.verify());
 }
 
@@ -328,7 +366,8 @@ fn test_simple2() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(Ok(()), verifier.verify());
     assert_eq!(&vec![Type::Int32, Type::Int32], function.instruction_operand_types(2));
 }
@@ -347,7 +386,8 @@ fn test_simple3() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(Ok(()), verifier.verify());
     assert_eq!(&vec![Type::Float32, Type::Float32], function.instruction_operand_types(2));
 }
@@ -366,7 +406,8 @@ fn test_return1() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(Err(VerifyError::new(VerifyErrorMessage::NonEmptyOperandStackOnReturn)), verifier.verify());
 }
 
@@ -383,7 +424,8 @@ fn test_return2() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(Err(VerifyError::new(VerifyErrorMessage::NonEmptyOperandStackOnReturn)), verifier.verify());
 }
 
@@ -402,7 +444,8 @@ fn test_return3() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(
         Err(VerifyError::with_index(3, VerifyErrorMessage::WrongType(Type::Float32, Type::Int32))),
         verifier.verify()
@@ -424,7 +467,8 @@ fn test_local1() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(Ok(()), verifier.verify());
 }
 
@@ -442,7 +486,8 @@ fn test_local2() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(
         Err(VerifyError::with_index(1, VerifyErrorMessage::LocalIndexOutOfRange)),
         verifier.verify()
@@ -461,7 +506,8 @@ fn test_call1() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(Ok(()), verifier.verify());
     assert_eq!(&vec![Type::Int32], function.instruction_operand_types(1));
 }
@@ -483,9 +529,10 @@ fn test_call2() {
     );
 
     let mut binder = Binder::new();
+    let class_provider = ClassProvider::new();
     binder.define(FunctionDefinition::new_managed("test_call".to_owned(), vec![Type::Int32, Type::Int32, Type::Float32, Type::Int32, Type::Float32], Type::Int32));
 
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(Ok(()), verifier.verify());
 }
 
@@ -504,9 +551,10 @@ fn test_call3() {
     );
 
     let mut binder = Binder::new();
+    let class_provider = ClassProvider::new();
     binder.define(FunctionDefinition::new_managed("test_call".to_owned(), vec![Type::Int32, Type::Int32, Type::Float32, Type::Int32, Type::Float32], Type::Int32));
 
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(
         Err(VerifyError::with_index(3, VerifyErrorMessage::ExpectedNumberOfOperands(5))),
         verifier.verify()
@@ -530,9 +578,10 @@ fn test_call4() {
     );
 
     let mut binder = Binder::new();
+    let class_provider = ClassProvider::new();
     binder.define(FunctionDefinition::new_managed("test_call".to_owned(), vec![Type::Int32, Type::Int32, Type::Float32, Type::Int32, Type::Float32], Type::Int32));
 
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(
         Err(VerifyError::with_index(5, VerifyErrorMessage::WrongType(Type::Float32, Type::Int32))),
         verifier.verify()
@@ -554,7 +603,8 @@ fn test_array1() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(Ok(()), verifier.verify());
 }
 
@@ -574,7 +624,8 @@ fn test_array2() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(Ok(()), verifier.verify());
 }
 
@@ -594,7 +645,8 @@ fn test_array3() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(
         Err(VerifyError::with_index(4, VerifyErrorMessage::WrongType(Type::Array(Box::new(Type::Float32)), Type::Array(Box::new(Type::Int32))))),
         verifier.verify()
@@ -616,7 +668,8 @@ fn test_array4() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(
         Err(VerifyError::with_index(3, VerifyErrorMessage::WrongType(Type::Array(Box::new(Type::Int32)), Type::Int32))),
         verifier.verify()
@@ -637,7 +690,8 @@ fn test_array5() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(Ok(()), verifier.verify());
 }
 
@@ -657,7 +711,8 @@ fn test_branches1() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(Ok(()), verifier.verify());
 }
 
@@ -681,7 +736,8 @@ fn test_branches2() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(Ok(()), verifier.verify());
 }
 
@@ -702,7 +758,8 @@ fn test_branches3() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(
         Err(VerifyError::with_index(3, VerifyErrorMessage::BranchDifferentNumberOfOperands(1, 3))),
         verifier.verify()
@@ -725,7 +782,8 @@ fn test_branches4() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(
         Err(VerifyError::with_index(3, VerifyErrorMessage::BranchDifferentNumberOfOperands(1, 2))),
         verifier.verify()
@@ -752,7 +810,8 @@ fn test_branches5() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(Ok(()), verifier.verify());
 }
 
@@ -776,7 +835,8 @@ fn test_branches6() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(
         Err(VerifyError::with_index(2, VerifyErrorMessage::ExpectedComparableType)),
         verifier.verify()
@@ -797,7 +857,8 @@ fn test_null1() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(Ok(()), verifier.verify());
 
     assert!(function.instruction_operand_types(1)[0].is_reference());
@@ -817,7 +878,8 @@ fn test_null2() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(Ok(()), verifier.verify());
 
     assert!(function.instruction_operand_types(2)[0].is_reference());
@@ -839,8 +901,92 @@ fn test_null3() {
     );
 
     let binder = Binder::new();
-    let mut verifier = Verifier::new(&binder, &mut function);
+    let class_provider = ClassProvider::new();
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
     assert_eq!(Ok(()), verifier.verify());
 
     assert!(function.instruction_operand_types(3)[0].is_reference());
+}
+
+#[test]
+fn test_class1() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), Type::Int32),
+        Vec::new(),
+        vec![
+            Instruction::NewObject("Point".to_owned()),
+            Instruction::LoadField("Point".to_owned(), "x".to_owned()),
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let mut class_provider = ClassProvider::new();
+    class_provider.define(Class::new(
+        "Point".to_owned(),
+        vec![
+            Field::new("x".to_owned(), Type::Int32),
+            Field::new("y".to_owned(), Type::Int32)
+        ]
+    ));
+
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
+    assert_eq!(Ok(()), verifier.verify());
+}
+
+#[test]
+fn test_class2() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), Type::Int32),
+        Vec::new(),
+        vec![
+            Instruction::NewObject("Point".to_owned()),
+            Instruction::LoadInt32(1337),
+            Instruction::StoreField("Point".to_owned(), "x".to_owned()),
+            Instruction::LoadInt32(0),
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let mut class_provider = ClassProvider::new();
+    class_provider.define(Class::new(
+        "Point".to_owned(),
+        vec![
+            Field::new("x".to_owned(), Type::Int32),
+            Field::new("y".to_owned(), Type::Int32)
+        ]
+    ));
+
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
+    assert_eq!(Ok(()), verifier.verify());
+}
+
+#[test]
+fn test_class3() {
+    let mut function = Function::new(
+        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), Type::Int32),
+        Vec::new(),
+        vec![
+            Instruction::NewObject("Point".to_owned()),
+            Instruction::LoadField("Point".to_owned(), "z".to_owned()),
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let mut class_provider = ClassProvider::new();
+    class_provider.define(Class::new(
+        "Point".to_owned(),
+        vec![
+            Field::new("x".to_owned(), Type::Int32),
+            Field::new("y".to_owned(), Type::Int32)
+        ]
+    ));
+
+    let mut verifier = Verifier::new(&binder, &class_provider, &mut function);
+    assert_eq!(
+        Err(VerifyError::with_index(1, VerifyErrorMessage::FieldNotDefined("Point".to_owned(), "z".to_owned()))),
+        verifier.verify()
+    );
 }

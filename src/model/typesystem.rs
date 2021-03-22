@@ -6,7 +6,8 @@ pub enum Type {
     Void,
     Int32,
     Float32,
-    Array(Box<Type>)
+    Array(Box<Type>),
+    Class(String)
 }
 
 impl Type {
@@ -15,7 +16,8 @@ impl Type {
             Type::Void => 0,
             Type::Int32 => 4,
             Type::Float32 => 4,
-            Type::Array(_) => 8
+            Type::Array(_) => 8,
+            Type::Class(_) => 8
         }
     }
 
@@ -30,6 +32,7 @@ impl Type {
     pub fn is_reference(&self) -> bool {
         match self {
             Type::Array(_) => true,
+            Type::Class(_) => true,
             _ => false,
         }
     }
@@ -60,6 +63,9 @@ impl std::fmt::Display for Type {
             }
             Type::Array(element) => {
                 write!(f, "Ref.Array[{}]", element)
+            }
+            Type::Class(name) => {
+                write!(f, "Ref.{}", name)
             }
         }
     }

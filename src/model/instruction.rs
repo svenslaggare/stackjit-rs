@@ -19,6 +19,9 @@ pub enum Instruction {
     LoadElement(Type),
     StoreElement(Type),
     LoadArrayLength,
+    NewObject(String),
+    LoadField(String, String),
+    StoreField(String, String),
     Branch(BranchTarget),
     BranchEqual(BranchTarget),
     BranchNotEqual(BranchTarget),
@@ -86,6 +89,15 @@ impl std::fmt::Display for Instruction {
             }
             Instruction::StoreElement(element) => {
                 write!(f, "StoreElement {}", element)
+            }
+            Instruction::NewObject(class_type) => {
+                write!(f, "NewObject {}", class_type)
+            }
+            Instruction::LoadField(class_type, field) => {
+                write!(f, "LoadField {}::{}", class_type, field)
+            }
+            Instruction::StoreField(class_type, field) => {
+                write!(f, "StoreField {}::{}", class_type, field)
             }
             Instruction::LoadArrayLength => {
                 write!(f, "LoadArrayLength")

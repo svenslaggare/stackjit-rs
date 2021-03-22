@@ -11,6 +11,7 @@ use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
 use crate::analysis::null_check_elision::InstructionsRegisterNullStatus;
 use crate::analysis::VirtualRegister;
+use crate::model::class::ClassProvider;
 
 pub struct MIRCompilationResult {
     pub instructions: Vec<InstructionMIR>,
@@ -186,6 +187,15 @@ impl<'a> InstructionMIRCompiler<'a> {
                 let assign_reg = self.assign_stack_register(Type::Int32);
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadArrayLength(assign_reg, array_ref_reg)));
             }
+            Instruction::NewObject(_) => {
+
+            }
+            Instruction::LoadField(_, _) => {
+
+            }
+            Instruction::StoreField(_, _) => {
+
+            }
             Instruction::Branch(target) => {
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::Branch(self.branch_manager.get_label(*target).unwrap())));
             }
@@ -264,7 +274,8 @@ fn test_simple1() {
     );
 
     let binder = Binder::new();
-    Verifier::new(&binder, &mut function).verify().unwrap();
+    let class_provider = ClassProvider::new();
+    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -288,7 +299,8 @@ fn test_simple2() {
     );
 
     let binder = Binder::new();
-    Verifier::new(&binder, &mut function).verify().unwrap();
+    let class_provider = ClassProvider::new();
+    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -316,7 +328,8 @@ fn test_simple3() {
     );
 
     let binder = Binder::new();
-    Verifier::new(&binder, &mut function).verify().unwrap();
+    let class_provider = ClassProvider::new();
+    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -340,7 +353,8 @@ fn test_simple4() {
     );
 
     let binder = Binder::new();
-    Verifier::new(&binder, &mut function).verify().unwrap();
+    let class_provider = ClassProvider::new();
+    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -368,7 +382,8 @@ fn test_simple5() {
         Type::Int32
     ));
 
-    Verifier::new(&binder, &mut function).verify().unwrap();
+    let class_provider = ClassProvider::new();
+    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());

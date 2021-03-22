@@ -4,6 +4,7 @@ use crate::model::verifier::{Verifier, VerifyError};
 use crate::model::typesystem::TypeStorage;
 use crate::engine::binder::Binder;
 use crate::vm::Execution;
+use crate::model::class::ClassProvider;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ExecutionEngineError {
@@ -25,6 +26,7 @@ pub type ExecutionEngineResult<T> = Result<T, ExecutionEngineError>;
 pub struct ExecutionEngine {
     compiler: JitCompiler,
     binder: Binder,
+    class_provider: ClassProvider,
     functions: Vec<Function>,
     pub runtime_error: RuntimeErrorManager
 }
@@ -34,6 +36,7 @@ impl ExecutionEngine {
         ExecutionEngine {
             compiler: JitCompiler::new(),
             binder: Binder::new(),
+            class_provider: ClassProvider::new(),
             functions: Vec::new(),
             runtime_error: RuntimeErrorManager::new()
         }
@@ -64,7 +67,7 @@ impl ExecutionEngine {
 
     fn compile_functions(&mut self, type_storage: &mut TypeStorage) -> ExecutionEngineResult<()> {
         for function in &mut self.functions {
-            let mut verifier = Verifier::new(&self.binder, function);
+            let mut verifier = Verifier::new(&self.binder, &self.class_provider, function);
             verifier.verify().map_err(|err| ExecutionEngineError::Verify(err))?;
             self.compiler.compile_function(&mut self.binder, type_storage, function);
         }
