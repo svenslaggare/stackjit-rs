@@ -20,6 +20,14 @@ pub extern "C" fn new_array(type_id: i32, length: i32) -> *mut std::ffi::c_void 
     })
 }
 
+pub extern "C" fn new_class(type_id: i32) -> *mut std::ffi::c_void {
+    get_vm(|vm| {
+        let type_instance = vm.type_storage.get_type(TypeId(type_id)).unwrap();
+        let class = vm.engine.get_class(type_instance.class_name().unwrap()).unwrap();
+        vm.memory_manager.new_class(type_instance, class)
+    })
+}
+
 pub extern "C" fn null_error(result_ptr: *mut u64) {
     runtime_error(result_ptr, RuntimeError::NullReference)
 }

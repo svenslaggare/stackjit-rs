@@ -45,6 +45,31 @@ impl InstructionMIR {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum InstructionMIRData {
+    LoadInt32(RegisterMIR, i32),
+    LoadFloat32(RegisterMIR, f32),
+    Move(RegisterMIR, RegisterMIR),
+    AddInt32(RegisterMIR, RegisterMIR, RegisterMIR),
+    SubInt32(RegisterMIR, RegisterMIR, RegisterMIR),
+    AddFloat32(RegisterMIR, RegisterMIR, RegisterMIR),
+    SubFloat32(RegisterMIR, RegisterMIR, RegisterMIR),
+    Return(Option<RegisterMIR>),
+    Call(FunctionSignature, Option<RegisterMIR>, Vec<RegisterMIR>),
+    LoadArgument(u32, RegisterMIR),
+    LoadNull(RegisterMIR),
+    NewArray(Type, RegisterMIR, RegisterMIR),
+    LoadElement(Type, RegisterMIR, RegisterMIR, RegisterMIR),
+    StoreElement(Type, RegisterMIR, RegisterMIR, RegisterMIR),
+    LoadArrayLength(RegisterMIR, RegisterMIR),
+    NewObject(Type, RegisterMIR),
+    LoadField(Type, String, RegisterMIR, RegisterMIR),
+    StoreField(Type, String, RegisterMIR, RegisterMIR),
+    BranchLabel(BranchLabel),
+    Branch(BranchLabel),
+    BranchCondition(Condition, Type, BranchLabel, RegisterMIR, RegisterMIR)
+}
+
 impl InstructionMIRData {
     pub fn name(&self) -> String {
         match self {
@@ -63,6 +88,9 @@ impl InstructionMIRData {
             InstructionMIRData::LoadElement(_, _, _, _) => "LoadElement".to_owned(),
             InstructionMIRData::StoreElement(_, _, _, _) => "StoreElement".to_owned(),
             InstructionMIRData::LoadArrayLength(_, _) => "LoadArrayLength".to_owned(),
+            InstructionMIRData::NewObject(_, _) => "NewObject".to_owned(),
+            InstructionMIRData::LoadField(_, _, _, _) => "LoadField".to_owned(),
+            InstructionMIRData::StoreField(_, _, _, _) => "StoreField".to_owned(),
             InstructionMIRData::BranchLabel(_) => "BranchLabel".to_owned(),
             InstructionMIRData::Branch(_) => "Branch".to_owned(),
             InstructionMIRData::BranchCondition(_, _, _, _, _) => "BranchCondition".to_owned()
@@ -84,6 +112,9 @@ impl InstructionMIRData {
             InstructionMIRData::LoadNull(register) => Some(register.clone()),
             InstructionMIRData::NewArray(_, register, _) => Some(register.clone()),
             InstructionMIRData::LoadElement(_, register, _, _) => Some(register.clone()),
+            InstructionMIRData::NewObject(_, register) => Some(register.clone()),
+            InstructionMIRData::LoadField(_, _, register, _) => Some(register.clone()),
+            InstructionMIRData::StoreField(_, _, _, _) => None,
             InstructionMIRData::StoreElement(_, _, _, _) => None,
             InstructionMIRData::LoadArrayLength(_, register) => Some(register.clone()),
             InstructionMIRData::BranchLabel(_) => None,
@@ -113,6 +144,9 @@ impl InstructionMIRData {
             InstructionMIRData::LoadElement(_, _, op1, op2) => vec![op1.clone(), op2.clone()],
             InstructionMIRData::StoreElement(_, op1, op2, op3) => vec![op1.clone(), op2.clone(), op3.clone()],
             InstructionMIRData::LoadArrayLength(_, _) => Vec::new(),
+            InstructionMIRData::NewObject(_, _) => Vec::new(),
+            InstructionMIRData::LoadField(_, _, _, op) => vec![op.clone()],
+            InstructionMIRData::StoreField(_, _, op1, op2) => vec![op1.clone(), op2.clone()],
             InstructionMIRData::BranchLabel(_) => Vec::new(),
             InstructionMIRData::Branch(_) => Vec::new(),
             InstructionMIRData::BranchCondition(_, _, _, op1, op2) => vec![op1.clone(), op2.clone()]
@@ -122,26 +156,4 @@ impl InstructionMIRData {
     pub fn use_virtual_registers(&self) -> Vec<VirtualRegister> {
         self.use_registers().iter().map(|register| VirtualRegister::from(register)).collect()
     }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum InstructionMIRData {
-    LoadInt32(RegisterMIR, i32),
-    LoadFloat32(RegisterMIR, f32),
-    Move(RegisterMIR, RegisterMIR),
-    AddInt32(RegisterMIR, RegisterMIR, RegisterMIR),
-    SubInt32(RegisterMIR, RegisterMIR, RegisterMIR),
-    AddFloat32(RegisterMIR, RegisterMIR, RegisterMIR),
-    SubFloat32(RegisterMIR, RegisterMIR, RegisterMIR),
-    Return(Option<RegisterMIR>),
-    Call(FunctionSignature, Option<RegisterMIR>, Vec<RegisterMIR>),
-    LoadArgument(u32, RegisterMIR),
-    LoadNull(RegisterMIR),
-    NewArray(Type, RegisterMIR, RegisterMIR),
-    LoadElement(Type, RegisterMIR, RegisterMIR, RegisterMIR),
-    StoreElement(Type, RegisterMIR, RegisterMIR, RegisterMIR),
-    LoadArrayLength(RegisterMIR, RegisterMIR),
-    BranchLabel(BranchLabel),
-    Branch(BranchLabel),
-    BranchCondition(Condition, Type, BranchLabel, RegisterMIR, RegisterMIR)
 }

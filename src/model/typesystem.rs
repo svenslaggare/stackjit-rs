@@ -29,6 +29,14 @@ impl Type {
         }
     }
 
+    pub fn class_name(&self) -> Option<&str> {
+        if let Type::Class(class) = self {
+            Some(class)
+        } else {
+            None
+        }
+    }
+
     pub fn is_reference(&self) -> bool {
         match self {
             Type::Array(_) => true,

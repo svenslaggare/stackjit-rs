@@ -60,6 +60,10 @@ impl Class {
         self.fields.iter().find(|field| field.name == name)
     }
 
+    pub fn get_field_offset(&self, name: &str) -> Option<usize> {
+        self.field_offsets.get(name).cloned()
+    }
+
     pub fn memory_size(&self) -> usize {
         self.memory_size
     }

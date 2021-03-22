@@ -435,6 +435,15 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     self.instructions.push(InstructionIR::Pop(array_ref_register));
                 }
             }
+            InstructionMIRData::NewObject(class_type, class_reference) => {
+
+            }
+            InstructionMIRData::LoadField(class_type, field_name, destination, class_reference) => {
+
+            }
+            InstructionMIRData::StoreField(class_type, field_name, class_reference, value) => {
+
+            }
             InstructionMIRData::BranchLabel(label) => {
                 self.instructions.push(InstructionIR::BranchLabel(*label));
             }

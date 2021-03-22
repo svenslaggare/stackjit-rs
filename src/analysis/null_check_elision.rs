@@ -135,6 +135,15 @@ fn compute_null_check_elision_for_block_internal(function: &Function,
             }
             InstructionMIRData::StoreElement(_, _, _, _) => {}
             InstructionMIRData::LoadArrayLength(_, _) => {}
+            InstructionMIRData::NewObject(_, destination) => {
+                register_is_null.insert(destination.clone(), false);
+            }
+            InstructionMIRData::LoadField(_, _, destination, _) => {
+                if destination.value_type.is_reference() {
+                    register_is_null.insert(destination.clone(), true);
+                }
+            }
+            InstructionMIRData::StoreField(_, _, _, _) => {}
             InstructionMIRData::BranchLabel(_) => {}
             InstructionMIRData::Branch(_) => {}
             InstructionMIRData::BranchCondition(_, _, _, _, _) => {}

@@ -1,6 +1,7 @@
 use crate::runtime::heap::Heap;
 use crate::model::typesystem::Type;
 use crate::runtime::array;
+use crate::model::class::Class;
 
 pub struct MemoryManager {
     heap: Heap
@@ -28,6 +29,13 @@ impl MemoryManager {
         }
 
         println!("Allocated array (type: {}, length: {}, size: {}): 0x{:x}", type_instance, length, array_size, obj_ptr as u64);
+        obj_ptr
+    }
+
+    pub fn new_class(&mut self, type_instance: &Type, class: &Class) -> *mut std::ffi::c_void {
+        let obj_size = class.memory_size();
+        let obj_ptr = self.new_object(obj_size);
+        println!("Allocated class (type: {}, size: {}): 0x{:x}", type_instance, obj_size, obj_ptr as u64);
         obj_ptr
     }
 

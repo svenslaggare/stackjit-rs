@@ -4,7 +4,7 @@ use crate::model::verifier::{Verifier, VerifyError};
 use crate::model::typesystem::TypeStorage;
 use crate::engine::binder::Binder;
 use crate::vm::Execution;
-use crate::model::class::ClassProvider;
+use crate::model::class::{ClassProvider, Class};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ExecutionEngineError {
@@ -52,6 +52,15 @@ impl ExecutionEngine {
         self.functions.iter().find(|function| &function.definition().call_signature() == signature)
     }
 
+    pub fn add_class(&mut self, class: Class) -> ExecutionEngineResult<()> {
+        self.class_provider.define(class);
+        Ok(())
+    }
+
+    pub fn get_class(&self, name: &str) -> Option<&Class> {
+        self.class_provider.get(name)
+    }
+
     pub fn create_execution(&mut self, type_storage: &mut TypeStorage) -> ExecutionEngineResult<Execution> {
         self.compile_functions(type_storage)?;
         self.compiler.resolve_calls_and_branches(&self.binder);
@@ -69,7 +78,7 @@ impl ExecutionEngine {
         for function in &mut self.functions {
             let mut verifier = Verifier::new(&self.binder, &self.class_provider, function);
             verifier.verify().map_err(|err| ExecutionEngineError::Verify(err))?;
-            self.compiler.compile_function(&mut self.binder, type_storage, function);
+            self.compiler.compile_function(&mut self.binder, &self.class_provider, type_storage, function);
         }
 
         Ok(())

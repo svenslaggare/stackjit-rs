@@ -10,9 +10,11 @@ use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
 use crate::model::verifier::Verifier;
 use crate::analysis::AnalysisResult;
+use crate::model::class::ClassProvider;
 
 pub struct InstructionIRCompiler<'a> {
     binder: &'a Binder,
+    class_provider: &'a ClassProvider,
     function: &'a Function,
     compilation_result: &'a MIRCompilationResult,
     analysis_result: &'a AnalysisResult,
@@ -21,11 +23,13 @@ pub struct InstructionIRCompiler<'a> {
 
 impl<'a> InstructionIRCompiler<'a> {
     pub fn new(binder: &'a Binder,
+               class_provider: &'a ClassProvider,
                function: &'a Function,
                compilation_result: &'a MIRCompilationResult,
                analysis_result: &'a AnalysisResult) -> InstructionIRCompiler<'a> {
         InstructionIRCompiler {
             binder,
+            class_provider,
             function,
             compilation_result,
             analysis_result,
@@ -208,6 +212,67 @@ impl<'a> InstructionIRCompiler<'a> {
                     self.get_register_stack_offset(destination),
                     HardwareRegister::IntSpill
                 ));
+            }
+            InstructionMIRData::NewObject(class_type, destination) => {
+                self.instructions.push(InstructionIR::PrintStackFrame(instruction_index));
+
+                self.instructions.push(InstructionIR::NewObject(class_type.clone()));
+                self.instructions.push(InstructionIR::StoreFrameMemoryExplicit(
+                    self.get_register_stack_offset(destination),
+                    HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)
+                ));
+            }
+            InstructionMIRData::LoadField(class_type, field_name, destination, class_reference) => {
+                let class = self.class_provider.get(class_type.class_name().unwrap()).unwrap();
+                let field = class.get_field(field_name).unwrap();
+                let field_offset = class.get_field_offset(field_name).unwrap();
+
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(class_reference)));
+
+                if self.can_be_null(instruction_index, class_reference) {
+                    self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+                }
+
+                let return_value = match field.field_type() {
+                    Type::Float32 => HardwareRegister::Float(1),
+                    _ => HardwareRegister::Int(1)
+                };
+
+                self.instructions.push(InstructionIR::LoadField(
+                    return_value,
+                    HardwareRegister::Int(0),
+                    field.field_type().clone(),
+                    field_offset
+                ));
+
+                self.instructions.push(InstructionIR::StoreFrameMemory(
+                    self.get_register_stack_offset(destination),
+                    return_value
+                ));
+            }
+            InstructionMIRData::StoreField(class_type, field_name, class_reference, value) => {
+                let class = self.class_provider.get(class_type.class_name().unwrap()).unwrap();
+                let field = class.get_field(field_name).unwrap();
+                let field_offset = class.get_field_offset(field_name).unwrap();
+
+                let value_register = match field.field_type() {
+                    Type::Float32 => HardwareRegister::Float(1),
+                    _ => HardwareRegister::Int(1)
+                };
+
+                self.instructions.push(InstructionIR::LoadFrameMemory(value_register, self.get_register_stack_offset(value)));
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(class_reference)));
+
+                if self.can_be_null(instruction_index, class_reference) {
+                    self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+                }
+
+                self.instructions.push(InstructionIR::StoreField(
+                    HardwareRegister::Int(0),
+                    value_register,
+                    field.field_type().clone(),
+                    field_offset)
+                );
             }
             InstructionMIRData::BranchLabel(label) => {
                 self.instructions.push(InstructionIR::BranchLabel(*label));

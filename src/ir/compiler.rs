@@ -187,14 +187,22 @@ impl<'a> InstructionMIRCompiler<'a> {
                 let assign_reg = self.assign_stack_register(Type::Int32);
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadArrayLength(assign_reg, array_ref_reg)));
             }
-            Instruction::NewObject(_) => {
-
+            Instruction::NewObject(class_type) => {
+                let class_type = Type::Class(class_type.clone());
+                let assign_reg = self.assign_stack_register(class_type.clone());
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::NewObject(class_type, assign_reg)));
             }
-            Instruction::LoadField(_, _) => {
-
+            Instruction::LoadField(class_type, field_name) => {
+                let class_type = Type::Class(class_type.clone());
+                let class_ref_reg = self.use_stack_register(class_type.clone());
+                let assign_reg = self.assign_stack_register(class_type.clone());
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadField(class_type, field_name.clone(), assign_reg, class_ref_reg)));
             }
-            Instruction::StoreField(_, _) => {
-
+            Instruction::StoreField(class_type, field_name) => {
+                let class_type = Type::Class(class_type.clone());
+                let value_reg = self.use_stack_register(class_type.clone());
+                let class_ref_reg = self.use_stack_register(class_type.clone());
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::StoreField(class_type, field_name.clone(), class_ref_reg, value_reg)));
             }
             Instruction::Branch(target) => {
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::Branch(self.branch_manager.get_label(*target).unwrap())));
