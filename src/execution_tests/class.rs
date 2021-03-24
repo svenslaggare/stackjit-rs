@@ -24,6 +24,14 @@ extern "C" fn set_point_x(ptr: u64, value: i32) {
     }
 }
 
+extern "C" fn print_array_element(ptr: u64, index: u64) {
+    CLASS_RESULT.with(|result| {
+        let class_ptr = unsafe { *((ptr + array::LENGTH_SIZE as u64) as *const u64).offset(index as isize) };
+        println!("0x{:x}", class_ptr);
+        *result.borrow_mut() = class_ptr;
+    });
+}
+
 #[test]
 fn test_create1() {
     CLASS_RESULT.with(|result| {
@@ -136,4 +144,60 @@ fn test_store1() {
 
     let execution_result = vm.execute().unwrap();
     assert_eq!(4711, execution_result);
+}
+
+#[test]
+fn test_array1() {
+    CLASS_RESULT.with(|result| {
+        *result.borrow_mut() = 0;
+    });
+
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.binder_mut().define(
+        FunctionDefinition::new_external(
+            "print_array_element".to_owned(), vec![Type::Array(Box::new(Type::Class("Point".to_owned()))), Type::Int32], Type::Void,
+            print_array_element as *mut std::ffi::c_void
+        )
+    );
+
+    vm.engine.add_class(Class::new(
+        "Point".to_owned(),
+        vec![
+            Field::new("x".to_owned(), Type::Int32),
+            Field::new("y".to_owned(), Type::Int32),
+        ]
+    )).unwrap();
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![Type::Array(Box::new(Type::Class("Point".to_owned())))],
+        vec![
+            Instruction::LoadInt32(10),
+            Instruction::NewArray(Type::Class("Point".to_owned())),
+            Instruction::StoreLocal(0),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(0),
+            Instruction::NewObject("Point".to_owned()),
+            Instruction::StoreElement(Type::Class("Point".to_owned())),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(0),
+            Instruction::Call(FunctionSignature {
+                name: "print_array_element".to_string(),
+                parameters: vec![Type::Array(Box::new(Type::Class("Point".to_owned()))), Type::Int32]
+            }),
+
+            Instruction::LoadInt32(0),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(0, execution_result);
+
+    get_vm(|vm| {
+        assert!(vm.memory_manager.is_owned(CLASS_RESULT.with(|result| *result.borrow()) as *const std::ffi::c_void));
+    });
 }

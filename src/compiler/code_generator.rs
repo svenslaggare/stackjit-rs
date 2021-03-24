@@ -510,7 +510,6 @@ impl<'a> CodeGenerator<'a> {
                 }
             }
             InstructionIR::LoadElement(element, destination_register, reference_register, index_register) => {
-                let destination_register = register_mapping::get(*destination_register, false);
                 let reference_register = register_mapping::get(*reference_register, true);
                 let index_register = register_mapping::get(*index_register, true);
 
@@ -519,9 +518,17 @@ impl<'a> CodeGenerator<'a> {
                 // Load the element
                 match element.size() {
                     8 => {
-                        unimplemented!();
+                        let destination_register = register_mapping::get(*destination_register, true);
+
+                        self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                            Code::Mov_r64_rm64,
+                            destination_register,
+                            memory_operand,
+                        ));
                     }
                     4 => {
+                        let destination_register = register_mapping::get(*destination_register, false);
+
                         match element {
                             Type::Float32 => {
                                 self.encode_x86_instruction(X86Instruction::with_reg_mem(
@@ -554,7 +561,12 @@ impl<'a> CodeGenerator<'a> {
                 //Store the element
                 match element.size() {
                     8 => {
-                        unimplemented!();
+                        let value_register = register_mapping::get(*value_register, true);
+                        self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                            Code::Mov_rm64_r64,
+                            memory_operand,
+                            value_register,
+                        ));
                     }
                     4 => {
                         match element {
@@ -602,7 +614,6 @@ impl<'a> CodeGenerator<'a> {
                 );
             },
             InstructionIR::LoadField(field_type, field_offset, destination_register, reference_register) => {
-                let destination_register = register_mapping::get(*destination_register, false);
                 let reference_register = register_mapping::get(*reference_register, true);
 
                 let memory_operand = MemoryOperand::with_base_displ(reference_register, *field_offset as i32);
@@ -610,9 +621,17 @@ impl<'a> CodeGenerator<'a> {
                 // Load the element
                 match field_type.size() {
                     8 => {
-                        unimplemented!();
+                        let destination_register = register_mapping::get(*destination_register, true);
+
+                        self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                            Code::Mov_r64_rm64,
+                            destination_register,
+                            memory_operand,
+                        ));
                     }
                     4 => {
+                        let destination_register = register_mapping::get(*destination_register, false);
+
                         match field_type {
                             Type::Float32 => {
                                 self.encode_x86_instruction(X86Instruction::with_reg_mem(
@@ -644,7 +663,12 @@ impl<'a> CodeGenerator<'a> {
                 //Store the element
                 match field_type.size() {
                     8 => {
-                        unimplemented!();
+                        let value_register = register_mapping::get(*value_register, false);
+                        self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                            Code::Mov_rm64_r64,
+                            memory_operand,
+                            value_register,
+                        ));
                     }
                     4 => {
                         match field_type {
