@@ -618,7 +618,7 @@ impl<'a> CodeGenerator<'a> {
 
                 let memory_operand = MemoryOperand::with_base_displ(reference_register, *field_offset as i32);
 
-                // Load the element
+                // Load the field
                 match field_type.size() {
                     8 => {
                         let destination_register = register_mapping::get(*destination_register, true);
@@ -660,7 +660,7 @@ impl<'a> CodeGenerator<'a> {
 
                 let memory_operand = MemoryOperand::with_base_displ(reference_register, *field_offset as i32);
 
-                //Store the element
+                //Store the field
                 match field_type.size() {
                     8 => {
                         let value_register = register_mapping::get(*value_register, false);
