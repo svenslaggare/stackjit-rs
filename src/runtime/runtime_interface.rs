@@ -1,5 +1,5 @@
 use crate::vm::get_vm;
-use crate::model::typesystem::{TypeId, Type};
+use crate::model::typesystem::{Type, TypeHolder};
 use crate::engine::execution::RuntimeError;
 use crate::model::function::{FunctionSignature, Function};
 use crate::compiler::stack_layout;
@@ -13,18 +13,18 @@ pub extern "C" fn set_error_return(return_address: u64, base_pointer: u64, stack
     })
 }
 
-pub extern "C" fn new_array(type_id: i32, length: i32) -> *mut std::ffi::c_void {
+pub extern "C" fn new_array(type_ptr: u64, length: i32) -> *mut std::ffi::c_void {
     get_vm(|vm| {
-        let type_instance = vm.type_storage.get_type(TypeId(type_id)).unwrap();
-        vm.memory_manager.new_array(TypeId(type_id), type_instance, length)
+        let type_holder = unsafe { (type_ptr as *const std::ffi::c_void as *const TypeHolder).as_ref() }.unwrap();
+        vm.memory_manager.new_array(type_holder, length)
     })
 }
 
-pub extern "C" fn new_class(type_id: i32) -> *mut std::ffi::c_void {
+pub extern "C" fn new_class(type_ptr: u64) -> *mut std::ffi::c_void {
     get_vm(|vm| {
-        let type_instance = vm.type_storage.get_type(TypeId(type_id)).unwrap();
-        let class = vm.engine.get_class(type_instance.class_name().unwrap()).unwrap();
-        vm.memory_manager.new_class(TypeId(type_id), type_instance, class)
+        let type_holder = unsafe { (type_ptr as *const std::ffi::c_void as *const TypeHolder).as_ref() }.unwrap();
+        let class = vm.engine.get_class(type_holder.instance.class_name().unwrap()).unwrap();
+        vm.memory_manager.new_class(type_holder, class)
     })
 }
 
@@ -100,10 +100,7 @@ pub extern "C" fn garbage_collect(base_pointer: u64, function_ptr: u64, instruct
 
         println!();
         println!("Heap objects:");
-        vm.memory_manager.print_objects(
-            &vm.type_storage,
-            &vm.engine.class_provider()
-        );
+        vm.memory_manager.print_objects();
 
         println!("--------------------------------------------");
     });

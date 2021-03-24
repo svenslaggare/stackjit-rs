@@ -7,7 +7,7 @@ use crate::compiler::error_handling::ErrorHandling;
 use crate::engine::binder::Binder;
 use crate::ir::{HardwareRegisterExplicit, InstructionIR, Condition};
 use crate::model::function::{Function, FunctionType};
-use crate::model::typesystem::{Type, TypeStorage};
+use crate::model::typesystem::{Type, TypeStorage, TypeHolder};
 use crate::runtime::{array, runtime_interface};
 
 pub struct CodeGeneratorResult {
@@ -105,8 +105,8 @@ impl<'a> CodeGenerator<'a> {
                 }
 
                 // Indicate which function that is being executed
-                let function_address = function as *const _ as *const u64 as i64;
-                self.encode_x86_instruction(X86Instruction::try_with_reg_i64(Code::Mov_r64_imm64, Register::RAX, function_address).unwrap());
+                let function_address = function as *const _ as *const u64 as u64;
+                self.encode_x86_instruction(X86Instruction::try_with_reg_u64(Code::Mov_r64_imm64, Register::RAX, function_address).unwrap());
                 self.encode_x86_instruction(X86Instruction::with_mem_reg(
                     Code::Mov_rm64_r64,
                     MemoryOperand::with_base_displ(Register::RBP, -(stack_layout::STACK_OFFSET as i32) * stack_layout::STACK_ENTRY_SIZE),
@@ -483,7 +483,9 @@ impl<'a> CodeGenerator<'a> {
                 }
 
                 let array_type = Type::Array(Box::new(element.clone()));
-                let array_type_id = self.type_storage.add_or_get_type(array_type);
+                let array_type_holder = self.type_storage.add_or_get_type(array_type);
+                let array_type_holder = array_type_holder as *const TypeHolder as *const u64 as u64;
+                println!("0x{:0x}", array_type_holder);
 
                 let size_register = register_mapping::get(*size_register, true);
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_r64_rm64, register_call_arguments::ARG1, size_register));
@@ -498,7 +500,11 @@ impl<'a> CodeGenerator<'a> {
                     self.error_handling.array_create_check_handler as usize
                 );
 
-                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Mov_rm64_imm32, register_call_arguments::ARG0, array_type_id.0).unwrap());
+                self.encode_x86_instruction(X86Instruction::try_with_reg_u64(
+                    Code::Mov_r64_imm64,
+                    register_call_arguments::ARG0,
+                    array_type_holder
+                ).unwrap());
 
                 call_direct(
                     |instruction| self.encode_x86_instruction(instruction),
@@ -604,9 +610,15 @@ impl<'a> CodeGenerator<'a> {
                 ));
             },
             InstructionIR::NewObject(class_type) => {
-                let class_type_id = self.type_storage.add_or_get_type(class_type.clone());
+                let class_type = self.type_storage.add_or_get_type(class_type.clone());
+                let class_type_holder = class_type as *const TypeHolder as *const u64 as u64;
+                println!("0x{:0x}", class_type_holder);
 
-                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Mov_rm64_imm32, register_call_arguments::ARG0, class_type_id.0).unwrap());
+                self.encode_x86_instruction(X86Instruction::try_with_reg_u64(
+                    Code::Mov_r64_imm64,
+                    register_call_arguments::ARG0,
+                    class_type_holder
+                ).unwrap());
 
                 call_direct(
                     |instruction| self.encode_x86_instruction(instruction),
@@ -779,7 +791,7 @@ impl<'a> CodeGenerator<'a> {
             }
             InstructionIR::PrintStackFrame(instruction_index) => {
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_r64_rm64, register_call_arguments::ARG0, Register::RBP));
-                self.encode_x86_instruction(X86Instruction::try_with_reg_i64(Code::Mov_r64_imm64, register_call_arguments::ARG1, function as *const _ as i64).unwrap());
+                self.encode_x86_instruction(X86Instruction::try_with_reg_u64(Code::Mov_r64_imm64, register_call_arguments::ARG1, function as *const _ as u64).unwrap());
                 self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Mov_rm64_imm32, register_call_arguments::ARG2, *instruction_index as i32).unwrap());
 
                 call_direct(
@@ -789,7 +801,7 @@ impl<'a> CodeGenerator<'a> {
             }
             InstructionIR::GarbageCollect(instruction_index) => {
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_r64_rm64, register_call_arguments::ARG0, Register::RBP));
-                self.encode_x86_instruction(X86Instruction::try_with_reg_i64(Code::Mov_r64_imm64, register_call_arguments::ARG1, function as *const _ as i64).unwrap());
+                self.encode_x86_instruction(X86Instruction::try_with_reg_u64(Code::Mov_r64_imm64, register_call_arguments::ARG1, function as *const _ as u64).unwrap());
                 self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Mov_rm64_imm32, register_call_arguments::ARG2, *instruction_index as i32).unwrap());
 
                 call_direct(

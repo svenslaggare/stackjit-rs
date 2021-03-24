@@ -7,16 +7,14 @@ use crate::runtime::memory::MemoryManager;
 
 pub struct VirtualMachine {
     pub engine: ExecutionEngine,
-    pub memory_manager: MemoryManager,
-    pub type_storage: TypeStorage,
+    pub memory_manager: MemoryManager
 }
 
 impl VirtualMachine {
     pub fn new() -> VirtualMachine {
         VirtualMachine {
             engine: ExecutionEngine::new(),
-            memory_manager: MemoryManager::new(),
-            type_storage: TypeStorage::new()
+            memory_manager: MemoryManager::new()
         }
     }
 
@@ -25,7 +23,7 @@ impl VirtualMachine {
     }
 
     pub fn create_execution(&mut self) -> ExecutionEngineResult<Execution> {
-        self.engine.create_execution(&mut self.type_storage)
+        self.engine.create_execution()
     }
 }
 

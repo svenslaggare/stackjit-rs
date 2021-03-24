@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::ops::Deref;
+use crate::model::class::Class;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Type {
@@ -79,41 +80,43 @@ impl std::fmt::Display for Type {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct TypeId(pub i32);
+pub struct TypeHolder {
+    pub instance: Type,
+    pub class_size: Option<usize>
+}
 
 pub struct TypeStorage {
-    types: Vec<Type>,
-    type_to_id: HashMap<Type, TypeId>
+    types: HashMap<Type, Box<TypeHolder>>,
 }
 
 impl TypeStorage {
     pub fn new() -> TypeStorage {
-        let mut type_storage = TypeStorage {
-            types: Vec::new(),
-            type_to_id: HashMap::new(),
-        };
-
-        type_storage.add_or_get_type(Type::Void);
-        type_storage.add_or_get_type(Type::Int32);
-        type_storage.add_or_get_type(Type::Float32);
-
-        type_storage
-    }
-
-    pub fn add_or_get_type(&mut self, type_instance: Type) -> TypeId {
-        match self.type_to_id.get(&type_instance) {
-            Some(type_id) => *type_id,
-            None => {
-                let id = TypeId(self.types.len() as i32);
-                self.types.push(type_instance.clone());
-                self.type_to_id.insert(type_instance, id);
-                id
-            }
+        TypeStorage {
+            types: HashMap::new()
         }
     }
 
-    pub fn get_type(&self, type_id: TypeId) -> Option<&Type> {
-        self.types.get(type_id.0 as usize)
+    pub fn add_class(&mut self, class: &Class) {
+        let type_instance = Type::Class(class.name().to_owned());
+
+        self.types.entry(type_instance.clone()).or_insert_with(|| {
+            let type_holder = TypeHolder {
+                instance: type_instance,
+                class_size: Some(class.memory_size())
+            };
+
+            Box::new(type_holder)
+        });
+    }
+
+    pub fn add_or_get_type(&mut self, type_instance: Type) -> &TypeHolder {
+        self.types.entry(type_instance.clone()).or_insert_with(|| {
+            let type_holder = TypeHolder {
+                instance: type_instance,
+                class_size: None
+            };
+
+            Box::new(type_holder)
+        })
     }
 }

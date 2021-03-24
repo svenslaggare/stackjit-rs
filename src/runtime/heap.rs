@@ -1,5 +1,5 @@
 use crate::runtime::{object, array};
-use crate::model::typesystem::{TypeStorage, TypeId, Type};
+use crate::model::typesystem::{TypeStorage, Type};
 use crate::model::class::ClassProvider;
 
 pub struct Heap {

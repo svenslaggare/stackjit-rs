@@ -26,8 +26,9 @@ pub type ExecutionEngineResult<T> = Result<T, ExecutionEngineError>;
 pub struct ExecutionEngine {
     compiler: JitCompiler,
     binder: Binder,
+    type_storage: TypeStorage,
     class_provider: ClassProvider,
-    functions: Vec<Function>,
+    functions: Vec<Box<Function>>,
     pub runtime_error: RuntimeErrorManager
 }
 
@@ -36,6 +37,7 @@ impl ExecutionEngine {
         ExecutionEngine {
             compiler: JitCompiler::new(),
             binder: Binder::new(),
+            type_storage: TypeStorage::new(),
             class_provider: ClassProvider::new(),
             functions: Vec::new(),
             runtime_error: RuntimeErrorManager::new()
@@ -44,15 +46,18 @@ impl ExecutionEngine {
 
     pub fn add_function(&mut self, function: Function) -> ExecutionEngineResult<()> {
         self.binder.define(function.definition().clone());
-        self.functions.push(function);
+        self.functions.push(Box::new(function));
         Ok(())
     }
 
     pub fn get_function(&self, signature: &FunctionSignature) -> Option<&Function> {
-        self.functions.iter().find(|function| &function.definition().call_signature() == signature)
+        self.functions.iter()
+            .find(|function| &function.definition().call_signature() == signature)
+            .map(|function| function.as_ref())
     }
 
     pub fn add_class(&mut self, class: Class) -> ExecutionEngineResult<()> {
+        self.type_storage.add_class(&class);
         self.class_provider.define(class);
         Ok(())
     }
@@ -65,8 +70,8 @@ impl ExecutionEngine {
         &self.class_provider
     }
 
-    pub fn create_execution(&mut self, type_storage: &mut TypeStorage) -> ExecutionEngineResult<Execution> {
-        self.compile_functions(type_storage)?;
+    pub fn create_execution(&mut self) -> ExecutionEngineResult<Execution> {
+        self.compile_functions()?;
         self.compiler.resolve_calls_and_branches(&self.binder);
 
         let address = self.get_entrypoint()?;
@@ -78,11 +83,11 @@ impl ExecutionEngine {
         self.runtime_error.has_error.take()
     }
 
-    fn compile_functions(&mut self, type_storage: &mut TypeStorage) -> ExecutionEngineResult<()> {
+    fn compile_functions(&mut self) -> ExecutionEngineResult<()> {
         for function in &mut self.functions {
             let mut verifier = Verifier::new(&self.binder, &self.class_provider, function);
             verifier.verify().map_err(|err| ExecutionEngineError::Verify(err))?;
-            self.compiler.compile_function(&mut self.binder, &self.class_provider, type_storage, function);
+            self.compiler.compile_function(&mut self.binder, &self.class_provider, &mut self.type_storage, function);
         }
 
         Ok(())
