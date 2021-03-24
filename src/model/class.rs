@@ -1,17 +1,20 @@
 use std::collections::HashMap;
 
 use crate::model::typesystem::Type;
+use std::iter::FromIterator;
 
 pub struct Field {
     name: String,
-    field_type: Type
+    field_type: Type,
+    offset: usize
 }
 
 impl Field {
     pub fn new(name: String, field_type: Type) -> Field {
         Field {
             name,
-            field_type
+            field_type,
+            offset: 0
         }
     }
 
@@ -22,28 +25,35 @@ impl Field {
     pub fn field_type(&self) -> &Type {
         &self.field_type
     }
+
+    pub fn offset(&self) -> usize {
+        self.offset
+    }
 }
 
 pub struct Class {
     name: String,
     fields: Vec<Field>,
-    field_offsets: HashMap<String, usize>,
+    fields_mapping: HashMap<String, usize>,
     memory_size: usize
 }
 
 impl Class {
-    pub fn new(name: String, fields: Vec<Field>) -> Class {
-        let mut field_offsets = HashMap::new();
+    pub fn new(name: String, mut fields: Vec<Field>) -> Class {
         let mut offset = 0;
-        for field in &fields {
-            field_offsets.insert(field.name.clone(), offset);
+        for field in &mut fields {
+            field.offset = offset;
             offset += field.field_type.size();
         }
+
+        let fields_mapping = HashMap::from_iter(
+            fields.iter().enumerate().map(|(index, field)| (field.name.clone(), index))
+        );
 
         Class {
             name,
             fields,
-            field_offsets,
+            fields_mapping,
             memory_size: offset
         }
     }
@@ -57,11 +67,8 @@ impl Class {
     }
 
     pub fn get_field(&self, name: &str) -> Option<&Field> {
-        self.fields.iter().find(|field| field.name == name)
-    }
-
-    pub fn get_field_offset(&self, name: &str) -> Option<usize> {
-        self.field_offsets.get(name).cloned()
+        let field_index = self.fields_mapping.get(name)?;
+        self.fields.get(*field_index)
     }
 
     pub fn memory_size(&self) -> usize {

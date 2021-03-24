@@ -21,9 +21,11 @@ use crate::optimization::register_allocation;
 use crate::optimization::register_allocation::linear_scan::Settings;
 use crate::optimization::register_allocation::{RegisterAllocation, AllocatedRegister};
 use crate::compiler::code_generator::register_mapping;
+use crate::model::class::ClassProvider;
 
 pub struct AllocatedInstructionIRCompiler<'a> {
     binder: &'a Binder,
+    class_provider: &'a ClassProvider,
     function: &'a Function,
     compilation_result: &'a MIRCompilationResult,
     analysis_result: &'a AnalysisResult,
@@ -33,11 +35,13 @@ pub struct AllocatedInstructionIRCompiler<'a> {
 
 impl<'a> AllocatedInstructionIRCompiler<'a> {
     pub fn new(binder: &'a Binder,
+               class_provider: &'a ClassProvider,
                function: &'a Function,
                compilation_result: &'a MIRCompilationResult,
                analysis_result: &'a AnalysisResult) -> AllocatedInstructionIRCompiler<'a> {
         AllocatedInstructionIRCompiler {
             binder,
+            class_provider,
             function,
             instructions: Vec::new(),
             compilation_result,
@@ -435,14 +439,113 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     self.instructions.push(InstructionIR::Pop(array_ref_register));
                 }
             }
-            InstructionMIRData::NewObject(class_type, class_reference) => {
+            InstructionMIRData::NewObject(class_type, destination) => {
+                self.print_stack_frame(instruction_index);
 
+                let alive_registers = self.push_alive_registers(instruction_index);
+
+                self.instructions.push(InstructionIR::NewObject(class_type.clone()));
+
+                let destination_register = match self.register_allocation.get_register(destination).hardware_register() {
+                    Some(register) => {
+                        self.instructions.push(InstructionIR::MoveExplicitToImplicit(
+                            register.clone(),
+                            HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)
+                        ));
+
+                        Some(register)
+                    }
+                    None => {
+                        self.instructions.push(InstructionIR::StoreFrameMemoryExplicit(
+                            self.get_register_stack_offset(destination),
+                            HardwareRegisterExplicit(register_call_arguments::RETURN_VALUE)
+                        ));
+
+                        None
+                    }
+                };
+
+                self.pop_alive_registers(&alive_registers, destination_register);
             }
-            InstructionMIRData::LoadField(class_type, field_name, destination, class_reference) => {
+            InstructionMIRData::LoadField(class_type, field_name, destination, class_ref) => {
+                let class = self.class_provider.get(class_type.class_name().unwrap()).unwrap();
+                let field = class.get_field(field_name).unwrap();
 
+                let alive_hardware_registers = self.register_allocation.alive_hardware_registers_at(instruction_index);
+
+                let mut temp_registers = TempRegisters::new(&self.register_allocation);
+                temp_registers.try_remove(class_ref);
+
+                let (class_ref_is_stack, class_ref_register) = temp_registers.get_register(class_ref);
+                let class_ref_alive = self.push_if_alive(&alive_hardware_registers, class_ref, &class_ref_register, class_ref_is_stack);
+
+                if self.can_be_null(instruction_index, class_ref) {
+                    self.instructions.push(InstructionIR::NullReferenceCheck(class_ref_register));
+                }
+
+                let return_value = match self.register_allocation.get_register(destination).hardware_register() {
+                    Some(register) => register,
+                    None => {
+                        match field.field_type() {
+                            Type::Float32 => HardwareRegister::FloatSpill,
+                            _ => HardwareRegister::IntSpill
+                        }
+                    }
+                };
+
+                self.instructions.push(InstructionIR::LoadField(
+                    field.field_type().clone(),
+                    field.offset(),
+                    return_value,
+                    class_ref_register,
+                ));
+
+
+                if self.register_allocation.get_register(destination).is_stack() {
+                    self.instructions.push(InstructionIR::StoreFrameMemory(
+                        self.get_register_stack_offset(destination),
+                        return_value
+                    ));
+                }
+
+                if class_ref_alive {
+                    self.instructions.push(InstructionIR::Pop(class_ref_register));
+                }
             }
-            InstructionMIRData::StoreField(class_type, field_name, class_reference, value) => {
+            InstructionMIRData::StoreField(class_type, field_name, class_ref, value) => {
+                let class = self.class_provider.get(class_type.class_name().unwrap()).unwrap();
+                let field = class.get_field(field_name).unwrap();
 
+                let alive_hardware_registers = self.register_allocation.alive_hardware_registers_at(instruction_index);
+
+                let mut temp_registers = TempRegisters::new(&self.register_allocation);
+                temp_registers.try_remove(class_ref);
+                temp_registers.try_remove(value);
+
+                let (class_ref_is_stack, class_ref_register) = temp_registers.get_register(class_ref);
+                let (value_is_stack, value_register) = temp_registers.get_register(value);
+
+                let class_ref_alive = self.push_if_alive(&alive_hardware_registers, class_ref, &class_ref_register, class_ref_is_stack);
+                let value_alive = self.push_if_alive(&alive_hardware_registers, value, &value_register, value_is_stack);
+
+                if self.can_be_null(instruction_index, class_ref) {
+                    self.instructions.push(InstructionIR::NullReferenceCheck(class_ref_register));
+                }
+
+                self.instructions.push(InstructionIR::StoreField(
+                    field.field_type().clone(),
+                    field.offset(),
+                    class_ref_register,
+                    value_register,
+                ));
+
+                if value_alive {
+                    self.instructions.push(InstructionIR::Pop(value_register));
+                }
+
+                if class_ref_alive {
+                    self.instructions.push(InstructionIR::Pop(class_ref_register));
+                }
             }
             InstructionMIRData::BranchLabel(label) => {
                 self.instructions.push(InstructionIR::BranchLabel(*label));

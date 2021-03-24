@@ -225,7 +225,6 @@ impl<'a> InstructionIRCompiler<'a> {
             InstructionMIRData::LoadField(class_type, field_name, destination, class_reference) => {
                 let class = self.class_provider.get(class_type.class_name().unwrap()).unwrap();
                 let field = class.get_field(field_name).unwrap();
-                let field_offset = class.get_field_offset(field_name).unwrap();
 
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(class_reference)));
 
@@ -239,10 +238,10 @@ impl<'a> InstructionIRCompiler<'a> {
                 };
 
                 self.instructions.push(InstructionIR::LoadField(
-                    return_value,
-                    HardwareRegister::Int(0),
                     field.field_type().clone(),
-                    field_offset
+                    field.offset(),
+                    return_value,
+                    HardwareRegister::Int(0)
                 ));
 
                 self.instructions.push(InstructionIR::StoreFrameMemory(
@@ -253,7 +252,6 @@ impl<'a> InstructionIRCompiler<'a> {
             InstructionMIRData::StoreField(class_type, field_name, class_reference, value) => {
                 let class = self.class_provider.get(class_type.class_name().unwrap()).unwrap();
                 let field = class.get_field(field_name).unwrap();
-                let field_offset = class.get_field_offset(field_name).unwrap();
 
                 let value_register = match field.field_type() {
                     Type::Float32 => HardwareRegister::Float(1),
@@ -268,11 +266,11 @@ impl<'a> InstructionIRCompiler<'a> {
                 }
 
                 self.instructions.push(InstructionIR::StoreField(
+                    field.field_type().clone(),
+                    field.offset(),
                     HardwareRegister::Int(0),
                     value_register,
-                    field.field_type().clone(),
-                    field_offset)
-                );
+                ));
             }
             InstructionMIRData::BranchLabel(label) => {
                 self.instructions.push(InstructionIR::BranchLabel(*label));

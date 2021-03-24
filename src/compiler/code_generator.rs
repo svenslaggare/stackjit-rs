@@ -601,7 +601,7 @@ impl<'a> CodeGenerator<'a> {
                     runtime_interface::new_class as u64
                 );
             },
-            InstructionIR::LoadField(destination_register, reference_register, field_type, field_offset) => {
+            InstructionIR::LoadField(field_type, field_offset, destination_register, reference_register) => {
                 let destination_register = register_mapping::get(*destination_register, false);
                 let reference_register = register_mapping::get(*reference_register, true);
 
@@ -636,7 +636,7 @@ impl<'a> CodeGenerator<'a> {
                     _ => { panic!("unexpected."); }
                 }
             }
-            InstructionIR::StoreField(reference_register, value_register, field_type, field_offset) => {
+            InstructionIR::StoreField(field_type, field_offset, reference_register, value_register) => {
                 let reference_register = register_mapping::get(*reference_register, true);
 
                 let memory_operand = MemoryOperand::with_base_displ(reference_register, *field_offset as i32);

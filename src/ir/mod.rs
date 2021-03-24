@@ -100,8 +100,8 @@ pub enum InstructionIR {
     LoadArrayLength(HardwareRegister, HardwareRegister),
 
     NewObject(Type),
-    LoadField(HardwareRegister, HardwareRegister, Type, usize),
-    StoreField(HardwareRegister, HardwareRegister, Type, usize),
+    LoadField(Type, usize, HardwareRegister, HardwareRegister),
+    StoreField(Type, usize, HardwareRegister, HardwareRegister),
 
     Compare(Type, HardwareRegister, HardwareRegister),
     CompareFromFrameMemory(Type, HardwareRegister, i32),
