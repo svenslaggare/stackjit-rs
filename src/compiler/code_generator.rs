@@ -787,6 +787,16 @@ impl<'a> CodeGenerator<'a> {
                     runtime_interface::print_stack_frame as u64
                 );
             }
+            InstructionIR::GarbageCollect(instruction_index) => {
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_r64_rm64, register_call_arguments::ARG0, Register::RBP));
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i64(Code::Mov_r64_imm64, register_call_arguments::ARG1, function as *const _ as i64).unwrap());
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Mov_rm64_imm32, register_call_arguments::ARG2, *instruction_index as i32).unwrap());
+
+                call_direct(
+                    |instruction| self.encode_x86_instruction(instruction),
+                    runtime_interface::garbage_collect as u64
+                );
+            }
         }
     }
 

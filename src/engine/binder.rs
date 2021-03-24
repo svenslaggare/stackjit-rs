@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::model::function::{FunctionDefinition, FunctionAddress, FunctionSignature};
+use crate::model::typesystem::Type;
 
 pub struct Binder {
     functions: HashMap<FunctionSignature, FunctionDefinition>
@@ -8,9 +9,18 @@ pub struct Binder {
 
 impl Binder {
     pub fn new() -> Binder {
-        Binder {
+        let mut binder = Binder {
             functions: HashMap::new()
-        }
+        };
+
+        binder.define(FunctionDefinition::new_external(
+            "std.gc.collect".to_owned(),
+            Vec::new(),
+            Type::Void,
+            std::ptr::null_mut()
+        ));
+
+        binder
     }
 
     pub fn define(&mut self, definition: FunctionDefinition) {

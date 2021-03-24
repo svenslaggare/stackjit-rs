@@ -65,6 +65,7 @@ pub enum InstructionMIRData {
     NewObject(Type, RegisterMIR),
     LoadField(Type, String, RegisterMIR, RegisterMIR),
     StoreField(Type, String, RegisterMIR, RegisterMIR),
+    GarbageCollect,
     BranchLabel(BranchLabel),
     Branch(BranchLabel),
     BranchCondition(Condition, Type, BranchLabel, RegisterMIR, RegisterMIR)
@@ -89,6 +90,7 @@ impl InstructionMIRData {
             InstructionMIRData::StoreElement(_, _, _, _) => "StoreElement".to_owned(),
             InstructionMIRData::LoadArrayLength(_, _) => "LoadArrayLength".to_owned(),
             InstructionMIRData::NewObject(_, _) => "NewObject".to_owned(),
+            InstructionMIRData::GarbageCollect => "GarbageCollect".to_owned(),
             InstructionMIRData::LoadField(_, _, _, _) => "LoadField".to_owned(),
             InstructionMIRData::StoreField(_, _, _, _) => "StoreField".to_owned(),
             InstructionMIRData::BranchLabel(_) => "BranchLabel".to_owned(),
@@ -113,6 +115,7 @@ impl InstructionMIRData {
             InstructionMIRData::NewArray(_, register, _) => Some(register.clone()),
             InstructionMIRData::LoadElement(_, register, _, _) => Some(register.clone()),
             InstructionMIRData::NewObject(_, register) => Some(register.clone()),
+            InstructionMIRData::GarbageCollect => None,
             InstructionMIRData::LoadField(_, _, register, _) => Some(register.clone()),
             InstructionMIRData::StoreField(_, _, _, _) => None,
             InstructionMIRData::StoreElement(_, _, _, _) => None,
@@ -147,6 +150,7 @@ impl InstructionMIRData {
             InstructionMIRData::NewObject(_, _) => Vec::new(),
             InstructionMIRData::LoadField(_, _, _, op) => vec![op.clone()],
             InstructionMIRData::StoreField(_, _, op1, op2) => vec![op1.clone(), op2.clone()],
+            InstructionMIRData::GarbageCollect => Vec::new(),
             InstructionMIRData::BranchLabel(_) => Vec::new(),
             InstructionMIRData::Branch(_) => Vec::new(),
             InstructionMIRData::BranchCondition(_, _, _, op1, op2) => vec![op1.clone(), op2.clone()]

@@ -16,7 +16,7 @@ pub extern "C" fn set_error_return(return_address: u64, base_pointer: u64, stack
 pub extern "C" fn new_array(type_id: i32, length: i32) -> *mut std::ffi::c_void {
     get_vm(|vm| {
         let type_instance = vm.type_storage.get_type(TypeId(type_id)).unwrap();
-        vm.memory_manager.new_array(type_instance, length)
+        vm.memory_manager.new_array(TypeId(type_id), type_instance, length)
     })
 }
 
@@ -24,7 +24,7 @@ pub extern "C" fn new_class(type_id: i32) -> *mut std::ffi::c_void {
     get_vm(|vm| {
         let type_instance = vm.type_storage.get_type(TypeId(type_id)).unwrap();
         let class = vm.engine.get_class(type_instance.class_name().unwrap()).unwrap();
-        vm.memory_manager.new_class(type_instance, class)
+        vm.memory_manager.new_class(TypeId(type_id), type_instance, class)
     })
 }
 
@@ -71,6 +71,38 @@ pub extern "C" fn print_stack_frame(base_pointer: u64, function_ptr: u64, instru
                 frame.print_frame();
                 println!();
             }
+        );
+
+        println!("--------------------------------------------");
+    });
+}
+
+pub extern "C" fn garbage_collect(base_pointer: u64, function_ptr: u64, instruction_index: usize) {
+    get_vm(|vm| {
+        let function = unsafe { (function_ptr as *const Function).as_ref().unwrap() };
+
+        let compiled_function = vm.engine.compiler()
+            .get_compiled_function(&function.definition().call_signature())
+            .unwrap();
+
+        println!("--------------------------------------------");
+
+        let stack_frame = StackFrame::new(base_pointer, instruction_index, function, compiled_function);
+
+        stack_frame.walk(
+            vm.engine.compiler(),
+            vm.engine.binder(),
+            |frame| {
+                frame.print_frame();
+                println!();
+            }
+        );
+
+        println!();
+        println!("Heap objects:");
+        vm.memory_manager.print_objects(
+            &vm.type_storage,
+            &vm.engine.class_provider()
         );
 
         println!("--------------------------------------------");

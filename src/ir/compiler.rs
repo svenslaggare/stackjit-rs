@@ -141,21 +141,34 @@ impl<'a> InstructionMIRCompiler<'a> {
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::Return(return_value)));
             }
             Instruction::Call(signature) => {
-                let func_to_call = self.binder.get(signature).unwrap();
+                match signature.name.as_str() {
+                    "std.gc.collect" => {
+                        self.instructions.push(InstructionMIR::new(
+                            instruction_index,
+                            InstructionMIRData::GarbageCollect
+                        ));
+                    }
+                    _ => {
+                        let func_to_call = self.binder.get(signature).unwrap();
 
-                let mut arguments_regs = func_to_call.parameters()
-                    .iter().rev()
-                    .map(|parameter| self.use_stack_register(parameter.clone()))
-                    .collect::<Vec<_>>();
-                arguments_regs.reverse();
+                        let mut arguments_regs = func_to_call.parameters()
+                            .iter().rev()
+                            .map(|parameter| self.use_stack_register(parameter.clone()))
+                            .collect::<Vec<_>>();
+                        arguments_regs.reverse();
 
-                let return_value_reg = if func_to_call.return_type() != &Type::Void {
-                    Some(self.assign_stack_register(func_to_call.return_type().clone()))
-                } else {
-                    None
-                };
+                        let return_value_reg = if func_to_call.return_type() != &Type::Void {
+                            Some(self.assign_stack_register(func_to_call.return_type().clone()))
+                        } else {
+                            None
+                        };
 
-                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::Call(func_to_call.call_signature(), return_value_reg, arguments_regs)));
+                        self.instructions.push(InstructionMIR::new(
+                            instruction_index,
+                            InstructionMIRData::Call(func_to_call.call_signature(), return_value_reg, arguments_regs)
+                        ));
+                    }
+                }
             }
             Instruction::LoadArgument(argument_index) => {
                 let assign_reg = self.assign_stack_register(self.function.definition().parameters()[*argument_index as usize].clone());
@@ -168,19 +181,28 @@ impl<'a> InstructionMIRCompiler<'a> {
             Instruction::NewArray(element) => {
                 let size_reg = self.use_stack_register(Type::Int32);
                 let assign_reg = self.assign_stack_register(Type::Array(Box::new(element.clone())));
-                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::NewArray(element.clone(), assign_reg, size_reg)));
+                self.instructions.push(InstructionMIR::new(
+                    instruction_index,
+                    InstructionMIRData::NewArray(element.clone(), assign_reg, size_reg)
+                ));
             }
             Instruction::LoadElement(element) => {
                 let index_reg = self.use_stack_register(Type::Int32);
                 let array_ref_reg = self.use_stack_register(Type::Array(Box::new(element.clone())));
                 let assign_reg = self.assign_stack_register(element.clone());
-                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadElement(element.clone(), assign_reg, array_ref_reg, index_reg)));
+                self.instructions.push(InstructionMIR::new(
+                    instruction_index,
+                    InstructionMIRData::LoadElement(element.clone(), assign_reg, array_ref_reg, index_reg)
+                ));
             }
             Instruction::StoreElement(element) => {
                 let value_ref = self.use_stack_register(element.clone());
                 let index_reg = self.use_stack_register(Type::Int32);
                 let array_ref_reg = self.use_stack_register(Type::Array(Box::new(element.clone())));
-                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::StoreElement(element.clone(), array_ref_reg, index_reg, value_ref)));
+                self.instructions.push(InstructionMIR::new(
+                    instruction_index,
+                    InstructionMIRData::StoreElement(element.clone(), array_ref_reg, index_reg, value_ref)
+                ));
             }
             Instruction::LoadArrayLength => {
                 let array_ref_reg = self.use_stack_register(operand_types[0].clone());
@@ -196,13 +218,19 @@ impl<'a> InstructionMIRCompiler<'a> {
                 let class_type = Type::Class(class_type.clone());
                 let class_ref_reg = self.use_stack_register(class_type.clone());
                 let assign_reg = self.assign_stack_register(class_type.clone());
-                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadField(class_type, field_name.clone(), assign_reg, class_ref_reg)));
+                self.instructions.push(InstructionMIR::new(
+                    instruction_index,
+                    InstructionMIRData::LoadField(class_type, field_name.clone(), assign_reg, class_ref_reg)
+                ));
             }
             Instruction::StoreField(class_type, field_name) => {
                 let class_type = Type::Class(class_type.clone());
                 let value_reg = self.use_stack_register(class_type.clone());
                 let class_ref_reg = self.use_stack_register(class_type.clone());
-                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::StoreField(class_type, field_name.clone(), class_ref_reg, value_reg)));
+                self.instructions.push(InstructionMIR::new(
+                    instruction_index,
+                    InstructionMIRData::StoreField(class_type, field_name.clone(), class_ref_reg, value_reg)
+                ));
             }
             Instruction::Branch(target) => {
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::Branch(self.branch_manager.get_label(*target).unwrap())));

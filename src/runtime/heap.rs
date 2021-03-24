@@ -1,3 +1,7 @@
+use crate::runtime::{object, array};
+use crate::model::typesystem::{TypeStorage, TypeId, Type};
+use crate::model::class::ClassProvider;
+
 pub struct Heap {
     data: Vec<u8>,
     offset: usize
@@ -9,6 +13,14 @@ impl Heap {
             data: vec![0; size],
             offset: 0
         }
+    }
+
+    pub fn data(&self) -> &Vec<u8> {
+        &self.data
+    }
+
+    pub fn offset(&self) -> usize {
+        self.offset
     }
 
     pub fn allocate(&mut self, size: usize) -> Option<*mut std::ffi::c_void> {

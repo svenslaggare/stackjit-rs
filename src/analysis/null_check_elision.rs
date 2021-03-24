@@ -144,6 +144,7 @@ fn compute_null_check_elision_for_block_internal(function: &Function,
                 }
             }
             InstructionMIRData::StoreField(_, _, _, _) => {}
+            InstructionMIRData::GarbageCollect => {}
             InstructionMIRData::BranchLabel(_) => {}
             InstructionMIRData::Branch(_) => {}
             InstructionMIRData::BranchCondition(_, _, _, _, _) => {}

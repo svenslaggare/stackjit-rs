@@ -2,6 +2,7 @@ use crate::model::function::{FunctionDefinition, Function, FunctionSignature};
 use crate::vm::VirtualMachine;
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::Type;
+use crate::model::class::{Class, Field};
 
 #[test]
 fn test_stack_frame1() {
@@ -49,4 +50,41 @@ fn test_stack_frame1() {
 
     let execution_result = vm.execute().unwrap();
     assert_eq!(1000, execution_result);
+}
+
+#[test]
+fn test_collect1() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_class(Class::new(
+        "Point".to_owned(),
+        vec![
+            Field::new("x".to_owned(), Type::Int32),
+            Field::new("y".to_owned(), Type::Int32),
+        ]
+    )).unwrap();
+
+    vm.engine.add_function(Function::new(
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        vec![Type::Array(Box::new(Type::Int32)), Type::Class("Point".to_owned())],
+        vec![
+            Instruction::LoadInt32(4711),
+            Instruction::NewArray(Type::Int32),
+            Instruction::StoreLocal(0),
+
+            Instruction::LoadNull(Type::Array(Box::new(Type::Int32))),
+            Instruction::StoreLocal(0),
+
+            Instruction::NewObject("Point".to_owned()),
+            Instruction::StoreLocal(1),
+
+            Instruction::Call(FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] }),
+
+            Instruction::LoadInt32(0),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(0, execution_result);
 }

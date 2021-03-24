@@ -547,6 +547,11 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     self.instructions.push(InstructionIR::Pop(class_ref_register));
                 }
             }
+            InstructionMIRData::GarbageCollect => {
+                let alive_registers = self.push_alive_registers(instruction_index);
+                self.instructions.push(InstructionIR::GarbageCollect(instruction_index));
+                self.pop_alive_registers(&alive_registers, None);
+            }
             InstructionMIRData::BranchLabel(label) => {
                 self.instructions.push(InstructionIR::BranchLabel(*label));
             }

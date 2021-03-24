@@ -61,6 +61,10 @@ impl ExecutionEngine {
         self.class_provider.get(name)
     }
 
+    pub fn class_provider(&self) -> &ClassProvider {
+        &self.class_provider
+    }
+
     pub fn create_execution(&mut self, type_storage: &mut TypeStorage) -> ExecutionEngineResult<Execution> {
         self.compile_functions(type_storage)?;
         self.compiler.resolve_calls_and_branches(&self.binder);

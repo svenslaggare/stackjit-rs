@@ -111,7 +111,8 @@ pub enum InstructionIR {
     Branch(BranchLabel),
     BranchCondition(Condition, bool, BranchLabel),
 
-    PrintStackFrame(usize)
+    PrintStackFrame(usize),
+    GarbageCollect(usize)
 }
 
 #[derive(Debug)]

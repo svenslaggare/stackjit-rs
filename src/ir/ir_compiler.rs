@@ -272,6 +272,9 @@ impl<'a> InstructionIRCompiler<'a> {
                     value_register,
                 ));
             }
+            InstructionMIRData::GarbageCollect => {
+                self.instructions.push(InstructionIR::GarbageCollect(instruction_index));
+            }
             InstructionMIRData::BranchLabel(label) => {
                 self.instructions.push(InstructionIR::BranchLabel(*label));
             }
