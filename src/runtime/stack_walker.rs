@@ -79,6 +79,20 @@ impl<'a> StackFrame<'a> {
         StackFrameOperandsIterator::new(self)
     }
 
+    pub fn visit_values<F: FnMut(FrameValue)>(&self, mut apply: F) {
+        for argument in self.arguments() {
+            apply(argument);
+        }
+
+        for local in self.locals() {
+            apply(local);
+        }
+
+        for operand in self.operands() {
+            apply(operand);
+        }
+    }
+
     pub fn print_frame(&self) {
         println!("{} @ {}", self.function.definition().signature(), self.instruction_index);
 

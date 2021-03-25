@@ -85,23 +85,13 @@ pub extern "C" fn garbage_collect(base_pointer: u64, function_ptr: u64, instruct
             .get_compiled_function(&function.definition().call_signature())
             .unwrap();
 
-        println!("--------------------------------------------");
-
         let stack_frame = StackFrame::new(base_pointer, instruction_index, function, compiled_function);
-
-        stack_frame.walk(
+        vm.memory_manager.garbage_collector.collect(
             vm.engine.compiler(),
             vm.engine.binder(),
-            |frame| {
-                frame.print_frame();
-                println!();
-            }
+            vm.engine.class_provider(),
+            &vm.memory_manager.heap,
+            stack_frame
         );
-
-        println!();
-        println!("Heap objects:");
-        vm.memory_manager.print_objects();
-
-        println!("--------------------------------------------");
     });
 }

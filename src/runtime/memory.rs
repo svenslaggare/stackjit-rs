@@ -2,18 +2,21 @@ use crate::runtime::heap::Heap;
 use crate::model::typesystem::{Type, TypeStorage, TypeHolder};
 use crate::runtime::{array, object};
 use crate::model::class::{Class, ClassProvider};
-use crate::runtime::object::ObjectReference;
+use crate::runtime::object::{ObjectReference, ObjectHeader};
+use crate::runtime::gc::GarbageCollector;
 
 pub type ObjectPointer = *mut std::ffi::c_void;
 
 pub struct MemoryManager {
-    heap: Heap
+    pub heap: Heap,
+    pub garbage_collector: GarbageCollector
 }
 
 impl MemoryManager {
     pub fn new() -> MemoryManager {
         MemoryManager {
-            heap: Heap::new(8 * 1024 * 1024)
+            heap: Heap::new(8 * 1024 * 1024),
+            garbage_collector: GarbageCollector::new()
         }
     }
 
@@ -51,7 +54,7 @@ impl MemoryManager {
                 *obj_ptr.offset(i) = 0;
             }
 
-            *(obj_ptr as *mut u64) = type_holder as *const TypeHolder as *const u64 as u64
+            (*(obj_ptr as *mut ObjectHeader)).object_type = type_holder as *const TypeHolder;
         }
 
         // The header is skipped to make usage of objects easier & faster in code generator
@@ -59,15 +62,46 @@ impl MemoryManager {
     }
 
     pub fn print_objects(&self) {
-        let heap = &self.heap;
-
-        let data_ptr = heap.data().as_ptr();
-        let mut current_object_offset = 0;
-        while current_object_offset < heap.offset() {
-            let object_ref = ObjectReference::from_ptr(unsafe { data_ptr.add(current_object_offset) });
-
+        for object_ref in HeapObjectsIterator::new(&self.heap) {
             println!("0x{:0x} - type: {}, size: {}", object_ref.ptr() as u64, object_ref.object_type().instance, object_ref.size());
-            current_object_offset += object_ref.full_size();
         }
+    }
+}
+
+pub struct HeapObjectsIterator<'a> {
+    heap: &'a Heap,
+    current_object_offset: usize
+}
+
+impl<'a> HeapObjectsIterator<'a> {
+    pub fn new(heap: &'a Heap) -> HeapObjectsIterator<'a> {
+        HeapObjectsIterator {
+            heap,
+            current_object_offset: 0
+        }
+    }
+}
+
+impl<'a> Iterator for HeapObjectsIterator<'a> {
+    type Item = ObjectReference<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current_object_offset >= self.heap.offset() {
+            return None;
+        }
+
+        while self.current_object_offset < self.heap.offset() {
+            match ObjectReference::from_full_ptr(unsafe { self.heap.data().as_ptr().add(self.current_object_offset) }) {
+                Ok(object_ref) => {
+                    self.current_object_offset += object_ref.full_size();
+                    return Some(object_ref)
+                }
+                Err(deleted_size) => {
+                    self.current_object_offset += deleted_size;
+                }
+            }
+        }
+
+        return None;
     }
 }
