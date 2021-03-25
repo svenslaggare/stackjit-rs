@@ -90,7 +90,7 @@ pub extern "C" fn garbage_collect(base_pointer: u64, function_ptr: u64, instruct
             vm.engine.compiler(),
             vm.engine.binder(),
             vm.engine.class_provider(),
-            &vm.memory_manager.heap,
+            &mut vm.memory_manager.heap,
             stack_frame
         );
     });

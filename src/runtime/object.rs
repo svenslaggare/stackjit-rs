@@ -1,5 +1,5 @@
 use crate::model::typesystem::{TypeStorage, Type, TypeHolder};
-use crate::runtime::memory::ObjectPointer;
+use crate::runtime::memory::manager::ObjectPointer;
 use crate::model::class::ClassProvider;
 use crate::runtime::array;
 

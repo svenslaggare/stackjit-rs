@@ -1,9 +1,10 @@
-use crate::runtime::heap::Heap;
-use crate::model::typesystem::{Type, TypeStorage, TypeHolder};
-use crate::runtime::{array, object};
 use crate::model::class::{Class, ClassProvider};
-use crate::runtime::object::{ObjectReference, ObjectHeader};
-use crate::runtime::gc::GarbageCollector;
+use crate::model::typesystem::{Type, TypeHolder, TypeStorage};
+use crate::runtime::array;
+use crate::runtime::memory::gc::GarbageCollector;
+use crate::runtime::memory::heap::Heap;
+use crate::runtime::object::{ObjectHeader, ObjectReference};
+use crate::runtime::object;
 
 pub type ObjectPointer = *mut std::ffi::c_void;
 
@@ -59,49 +60,5 @@ impl MemoryManager {
 
         // The header is skipped to make usage of objects easier & faster in code generator
         unsafe { obj_ptr.add(object::HEADER_SIZE) }
-    }
-
-    pub fn print_objects(&self) {
-        for object_ref in HeapObjectsIterator::new(&self.heap) {
-            println!("0x{:0x} - type: {}, size: {}", object_ref.ptr() as u64, object_ref.object_type().instance, object_ref.size());
-        }
-    }
-}
-
-pub struct HeapObjectsIterator<'a> {
-    heap: &'a Heap,
-    current_object_offset: usize
-}
-
-impl<'a> HeapObjectsIterator<'a> {
-    pub fn new(heap: &'a Heap) -> HeapObjectsIterator<'a> {
-        HeapObjectsIterator {
-            heap,
-            current_object_offset: 0
-        }
-    }
-}
-
-impl<'a> Iterator for HeapObjectsIterator<'a> {
-    type Item = ObjectReference<'a>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.current_object_offset >= self.heap.offset() {
-            return None;
-        }
-
-        while self.current_object_offset < self.heap.offset() {
-            match ObjectReference::from_full_ptr(unsafe { self.heap.data().as_ptr().add(self.current_object_offset) }) {
-                Ok(object_ref) => {
-                    self.current_object_offset += object_ref.full_size();
-                    return Some(object_ref)
-                }
-                Err(deleted_size) => {
-                    self.current_object_offset += deleted_size;
-                }
-            }
-        }
-
-        return None;
     }
 }

@@ -1,6 +1,5 @@
-use crate::runtime::heap::Heap;
+use crate::runtime::memory::heap::{Heap, HeapObjectsIterator};
 use crate::runtime::stack_walker::{StackFrame, FrameValue};
-use crate::runtime::memory::HeapObjectsIterator;
 use crate::compiler::jit::JitCompiler;
 use crate::engine::binder::Binder;
 use crate::model::typesystem::Type;
@@ -27,7 +26,7 @@ impl GarbageCollector {
                    compiler: &JitCompiler,
                    binder: &Binder,
                    class_provider: &ClassProvider,
-                   heap: &Heap,
+                   heap: &mut Heap,
                    stack_frame: StackFrame) {
         let print_objects = || {
             for object_ref in HeapObjectsIterator::new(&heap) {
@@ -97,7 +96,7 @@ impl GarbageCollector {
                         Type::Array(element) => {
                             if element.is_reference() {
                                 let array_length = array::get_length(object_ref.ptr());
-                                let elements_ptr = array::get_element::<u64>(object_ref.ptr());
+                                let elements_ptr = array::get_elements::<u64>(object_ref.ptr());
 
                                 for index in 0..array_length {
                                     self.mark_value(

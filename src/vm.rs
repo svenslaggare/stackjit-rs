@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use crate::engine::ExecutionEngine;
 use crate::model::typesystem::{TypeStorage};
 use crate::engine::execution::{ExecutionEngineResult, ExecutionEngineError};
-use crate::runtime::memory::MemoryManager;
+use crate::runtime::memory::manager::MemoryManager;
 
 pub struct VirtualMachine {
     pub engine: ExecutionEngine,
