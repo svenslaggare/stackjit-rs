@@ -76,16 +76,16 @@ impl<'a> ObjectReference<'a> {
             }
         }
 
-        let type_holder = unsafe { (*object_header).object_type.as_ref() }.unwrap();
+        let type_metadata = unsafe { (*object_header).object_type.as_ref() }.unwrap();
 
         let object_ptr = unsafe { ptr.add(HEADER_SIZE) };
 
-        let object_size = match &type_holder.instance {
+        let object_size = match &type_metadata.instance {
             Type::Array(element) => {
                 array::LENGTH_SIZE + element.size() * array::get_length(object_ptr as ObjectPointer)
             }
             Type::Class(_) => {
-                type_holder.class.as_ref().unwrap().memory_size()
+                type_metadata.class.as_ref().unwrap().memory_size()
             }
             _ => 0
         };
@@ -93,7 +93,7 @@ impl<'a> ObjectReference<'a> {
         Ok(
             ObjectReference {
                 ptr: object_ptr as ObjectPointer,
-                object_type: type_holder,
+                object_type: type_metadata,
                 size: object_size
             }
         )

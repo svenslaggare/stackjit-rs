@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::ops::Deref;
+
 use crate::model::class::Class;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
