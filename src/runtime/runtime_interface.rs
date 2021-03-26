@@ -4,6 +4,7 @@ use crate::engine::execution::RuntimeError;
 use crate::model::function::{FunctionSignature, Function};
 use crate::compiler::stack_layout;
 use crate::runtime::stack_walker::StackFrame;
+use crate::runtime::memory::manager::ObjectPointer;
 
 pub extern "C" fn set_error_return(return_address: u64, base_pointer: u64, stack_pointer: u64) {
     get_vm(|vm| {
@@ -13,17 +14,17 @@ pub extern "C" fn set_error_return(return_address: u64, base_pointer: u64, stack
     })
 }
 
-pub extern "C" fn new_array(type_ptr: u64, length: i32) -> *mut std::ffi::c_void {
+pub extern "C" fn new_array(type_ptr: *const TypeMetadata, length: i32) -> ObjectPointer {
     get_vm(|vm| {
-        let type_holder = unsafe { (type_ptr as *const std::ffi::c_void as *const TypeMetadata).as_ref() }.unwrap();
-        vm.memory_manager.new_array(type_holder, length)
+        let type_metadata = unsafe { type_ptr.as_ref() }.unwrap();
+        vm.memory_manager.new_array(type_metadata, length)
     })
 }
 
-pub extern "C" fn new_class(type_ptr: u64) -> *mut std::ffi::c_void {
+pub extern "C" fn new_class(type_ptr: *const TypeMetadata) -> ObjectPointer {
     get_vm(|vm| {
-        let type_holder = unsafe { (type_ptr as *const std::ffi::c_void as *const TypeMetadata).as_ref() }.unwrap();
-        vm.memory_manager.new_class(type_holder)
+        let type_metadata = unsafe { type_ptr.as_ref() }.unwrap();
+        vm.memory_manager.new_class(type_metadata)
     })
 }
 
@@ -51,10 +52,9 @@ fn runtime_error(result_ptr: *mut u64, runtime_error: RuntimeError) {
     });
 }
 
-pub extern "C" fn print_stack_frame(base_pointer: u64, function_ptr: u64, instruction_index: usize) {
+pub extern "C" fn print_stack_frame(base_pointer: u64, function_ptr: *const Function, instruction_index: usize) {
     get_vm(|vm| {
-        let function = unsafe { (function_ptr as *const Function).as_ref().unwrap() };
-
+        let function = unsafe { function_ptr.as_ref().unwrap() };
         let compilation_data = vm.engine.compiler()
             .get_compilation_data(&function.definition().call_signature())
             .unwrap();
@@ -76,10 +76,9 @@ pub extern "C" fn print_stack_frame(base_pointer: u64, function_ptr: u64, instru
     });
 }
 
-pub extern "C" fn garbage_collect(base_pointer: u64, function_ptr: u64, instruction_index: usize) {
+pub extern "C" fn garbage_collect(base_pointer: u64, function_ptr: *const Function, instruction_index: usize) {
     get_vm(|vm| {
-        let function = unsafe { (function_ptr as *const Function).as_ref().unwrap() };
-
+        let function = unsafe { function_ptr.as_ref().unwrap() };
         let compilation_data = vm.engine.compiler()
             .get_compilation_data(&function.definition().call_signature())
             .unwrap();
