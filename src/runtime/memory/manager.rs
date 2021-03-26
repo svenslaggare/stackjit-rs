@@ -39,8 +39,8 @@ impl MemoryManager {
         obj_ptr
     }
 
-    pub fn new_class(&mut self, type_holder: &TypeMetadata, class: &Class) -> ObjectPointer {
-        let obj_size = class.memory_size();
+    pub fn new_class(&mut self, type_holder: &TypeMetadata) -> ObjectPointer {
+        let obj_size = type_holder.class.as_ref().unwrap().memory_size();
         let obj_ptr = self.new_object(type_holder, obj_size);
         println!("Allocated class (type: {}, size: {}): 0x{:x}", type_holder.instance, obj_size, obj_ptr as u64);
         obj_ptr

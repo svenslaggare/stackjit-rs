@@ -23,7 +23,7 @@ pub extern "C" fn new_array(type_ptr: u64, length: i32) -> *mut std::ffi::c_void
 pub extern "C" fn new_class(type_ptr: u64) -> *mut std::ffi::c_void {
     get_vm(|vm| {
         let type_holder = unsafe { (type_ptr as *const std::ffi::c_void as *const TypeMetadata).as_ref() }.unwrap();
-        vm.memory_manager.new_class(type_holder, type_holder.class.as_ref().unwrap())
+        vm.memory_manager.new_class(type_holder)
     })
 }
 
