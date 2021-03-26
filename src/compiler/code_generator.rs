@@ -7,7 +7,7 @@ use crate::compiler::error_handling::ErrorHandling;
 use crate::engine::binder::Binder;
 use crate::ir::{HardwareRegisterExplicit, InstructionIR, Condition};
 use crate::model::function::{Function, FunctionType};
-use crate::model::typesystem::{Type, TypeStorage, TypeHolder};
+use crate::model::typesystem::{Type, TypeStorage, TypeMetadata};
 use crate::runtime::{array, runtime_interface};
 
 pub struct CodeGeneratorResult {
@@ -484,7 +484,7 @@ impl<'a> CodeGenerator<'a> {
 
                 let array_type = Type::Array(Box::new(element.clone()));
                 let array_type_holder = self.type_storage.entry(array_type);
-                let array_type_holder = array_type_holder as *const TypeHolder as *const u64 as u64;
+                let array_type_holder = array_type_holder as *const TypeMetadata as *const u64 as u64;
                 println!("0x{:0x}", array_type_holder);
 
                 let size_register = register_mapping::get(*size_register, true);
@@ -611,7 +611,7 @@ impl<'a> CodeGenerator<'a> {
             },
             InstructionIR::NewObject(class_type) => {
                 let class_type = self.type_storage.entry(class_type.clone());
-                let class_type_holder = class_type as *const TypeHolder as *const u64 as u64;
+                let class_type_holder = class_type as *const TypeMetadata as *const u64 as u64;
                 println!("0x{:0x}", class_type_holder);
 
                 self.encode_x86_instruction(X86Instruction::try_with_reg_u64(

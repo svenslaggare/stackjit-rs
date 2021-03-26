@@ -1,11 +1,11 @@
-use crate::model::typesystem::{TypeStorage, Type, TypeHolder};
+use crate::model::typesystem::{TypeStorage, Type, TypeMetadata};
 use crate::runtime::memory::manager::ObjectPointer;
 use crate::runtime::array;
 
 #[repr(packed, C)]
 #[derive(Copy, Clone)]
 pub struct ObjectHeader {
-    pub object_type: *const TypeHolder,
+    pub object_type: *const TypeMetadata,
     pub gc_info: u8
 }
 
@@ -62,7 +62,7 @@ pub const HEADER_SIZE: usize = std::mem::size_of::<ObjectHeader>();
 
 pub struct ObjectReference<'a> {
     ptr: ObjectPointer,
-    object_type: &'a TypeHolder,
+    object_type: &'a TypeMetadata,
     size: usize
 }
 
@@ -111,7 +111,7 @@ impl<'a> ObjectReference<'a> {
         unsafe { self.ptr.sub(HEADER_SIZE) }
     }
 
-    pub fn object_type(&self) -> &TypeHolder {
+    pub fn object_type(&self) -> &TypeMetadata {
         &self.object_type
     }
 
@@ -160,7 +160,7 @@ fn test_gc_info2() {
 
 #[test]
 fn test_delete1() {
-    let mut header = ObjectHeader { object_type: 0x13374711 as *const TypeHolder, gc_info: 0 };
+    let mut header = ObjectHeader { object_type: 0x13374711 as *const TypeMetadata, gc_info: 0 };
     assert!(!header.is_deleted());
     assert_eq!(0x13374711, header.deleted_size());
 

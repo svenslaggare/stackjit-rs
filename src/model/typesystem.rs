@@ -87,13 +87,13 @@ impl std::fmt::Display for Type {
     }
 }
 
-pub struct TypeHolder {
+pub struct TypeMetadata {
     pub instance: Type,
     pub class: Option<Class>
 }
 
 pub struct TypeStorage {
-    types: HashMap<Type, Box<TypeHolder>>,
+    types: HashMap<Type, Box<TypeMetadata>>,
 }
 
 impl TypeStorage {
@@ -107,29 +107,29 @@ impl TypeStorage {
         let type_instance = Type::Class(class.name().to_owned());
 
         self.types.entry(type_instance.clone()).or_insert_with(|| {
-            let type_holder = TypeHolder {
-                instance: type_instance,
-                class: Some(class)
-            };
-
-            Box::new(type_holder)
+            Box::new(
+                TypeMetadata {
+                    instance: type_instance,
+                    class: Some(class)
+                }
+            )
         });
     }
 
-    pub fn get(&self, type_instance: &Type) -> Option<&TypeHolder> {
+    pub fn get(&self, type_instance: &Type) -> Option<&TypeMetadata> {
         self.types.get(type_instance).map(|t| t.as_ref())
     }
 
-    pub fn entry(&mut self, type_instance: Type) -> &TypeHolder {
+    pub fn entry(&mut self, type_instance: Type) -> &TypeMetadata {
         self.types.entry(type_instance.clone()).or_insert_with(|| {
             assert!(!type_instance.is_class());
 
-            let type_holder = TypeHolder {
-                instance: type_instance,
-                class: None
-            };
-
-            Box::new(type_holder)
+            Box::new(
+                TypeMetadata {
+                    instance: type_instance,
+                    class: None
+                }
+            )
         })
     }
 }

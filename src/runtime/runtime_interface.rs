@@ -1,5 +1,5 @@
 use crate::vm::get_vm;
-use crate::model::typesystem::{Type, TypeHolder};
+use crate::model::typesystem::{Type, TypeMetadata};
 use crate::engine::execution::RuntimeError;
 use crate::model::function::{FunctionSignature, Function};
 use crate::compiler::stack_layout;
@@ -15,14 +15,14 @@ pub extern "C" fn set_error_return(return_address: u64, base_pointer: u64, stack
 
 pub extern "C" fn new_array(type_ptr: u64, length: i32) -> *mut std::ffi::c_void {
     get_vm(|vm| {
-        let type_holder = unsafe { (type_ptr as *const std::ffi::c_void as *const TypeHolder).as_ref() }.unwrap();
+        let type_holder = unsafe { (type_ptr as *const std::ffi::c_void as *const TypeMetadata).as_ref() }.unwrap();
         vm.memory_manager.new_array(type_holder, length)
     })
 }
 
 pub extern "C" fn new_class(type_ptr: u64) -> *mut std::ffi::c_void {
     get_vm(|vm| {
-        let type_holder = unsafe { (type_ptr as *const std::ffi::c_void as *const TypeHolder).as_ref() }.unwrap();
+        let type_holder = unsafe { (type_ptr as *const std::ffi::c_void as *const TypeMetadata).as_ref() }.unwrap();
         vm.memory_manager.new_class(type_holder, type_holder.class.as_ref().unwrap())
     })
 }

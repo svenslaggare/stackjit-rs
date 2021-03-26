@@ -1,5 +1,5 @@
 use crate::model::class::{Class};
-use crate::model::typesystem::{Type, TypeHolder, TypeStorage};
+use crate::model::typesystem::{Type, TypeMetadata, TypeStorage};
 use crate::runtime::array;
 use crate::runtime::memory::gc::GarbageCollector;
 use crate::runtime::memory::heap::Heap;
@@ -25,7 +25,7 @@ impl MemoryManager {
         self.heap.inside(address)
     }
 
-    pub fn new_array(&mut self, type_holder: &TypeHolder, length: i32) -> ObjectPointer {
+    pub fn new_array(&mut self, type_holder: &TypeMetadata, length: i32) -> ObjectPointer {
         let element_type = type_holder.instance.element_type().expect("unexpected type");
 
         let array_size = array::LENGTH_SIZE + length as usize * element_type.size();
@@ -39,14 +39,14 @@ impl MemoryManager {
         obj_ptr
     }
 
-    pub fn new_class(&mut self, type_holder: &TypeHolder, class: &Class) -> ObjectPointer {
+    pub fn new_class(&mut self, type_holder: &TypeMetadata, class: &Class) -> ObjectPointer {
         let obj_size = class.memory_size();
         let obj_ptr = self.new_object(type_holder, obj_size);
         println!("Allocated class (type: {}, size: {}): 0x{:x}", type_holder.instance, obj_size, obj_ptr as u64);
         obj_ptr
     }
 
-    fn new_object(&mut self, type_holder: &TypeHolder, size: usize) -> ObjectPointer {
+    fn new_object(&mut self, type_holder: &TypeMetadata, size: usize) -> ObjectPointer {
         let obj_ptr = self.heap.allocate(size + object::HEADER_SIZE).unwrap();
 
         unsafe {
@@ -55,7 +55,7 @@ impl MemoryManager {
                 *obj_ptr.offset(i) = 0;
             }
 
-            (*(obj_ptr as *mut ObjectHeader)).object_type = type_holder as *const TypeHolder;
+            (*(obj_ptr as *mut ObjectHeader)).object_type = type_holder as *const TypeMetadata;
         }
 
         // The header is skipped to make usage of objects easier & faster in code generator
