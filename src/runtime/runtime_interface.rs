@@ -55,13 +55,13 @@ pub extern "C" fn print_stack_frame(base_pointer: u64, function_ptr: u64, instru
     get_vm(|vm| {
         let function = unsafe { (function_ptr as *const Function).as_ref().unwrap() };
 
-        let compiled_function = vm.engine.compiler()
-            .get_compiled_function(&function.definition().call_signature())
+        let compilation_data = vm.engine.compiler()
+            .get_compilation_data(&function.definition().call_signature())
             .unwrap();
 
         println!("--------------------------------------------");
 
-        let stack_frame = StackFrame::new(base_pointer, instruction_index, function, compiled_function);
+        let stack_frame = StackFrame::new(base_pointer, instruction_index, function, compilation_data);
 
         stack_frame.walk(
             vm.engine.compiler(),
@@ -80,11 +80,11 @@ pub extern "C" fn garbage_collect(base_pointer: u64, function_ptr: u64, instruct
     get_vm(|vm| {
         let function = unsafe { (function_ptr as *const Function).as_ref().unwrap() };
 
-        let compiled_function = vm.engine.compiler()
-            .get_compiled_function(&function.definition().call_signature())
+        let compilation_data = vm.engine.compiler()
+            .get_compilation_data(&function.definition().call_signature())
             .unwrap();
 
-        let stack_frame = StackFrame::new(base_pointer, instruction_index, function, compiled_function);
+        let stack_frame = StackFrame::new(base_pointer, instruction_index, function, compilation_data);
         vm.memory_manager.garbage_collector.collect(
             vm.engine.compiler(),
             vm.engine.binder(),

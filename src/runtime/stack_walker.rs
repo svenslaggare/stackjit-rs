@@ -9,19 +9,19 @@ pub struct StackFrame<'a> {
     base_pointer: u64,
     instruction_index: usize,
     function: &'a Function,
-    compiled_function: &'a FunctionCompilationData
+    compilation_data: &'a FunctionCompilationData
 }
 
 impl<'a> StackFrame<'a> {
     pub fn new(base_pointer: u64,
                instruction_index: usize,
                function: &'a Function,
-               compiled_function: &'a FunctionCompilationData) -> StackFrame<'a> {
+               compilation_data: &'a FunctionCompilationData) -> StackFrame<'a> {
         StackFrame {
             base_pointer,
             instruction_index,
             function,
-            compiled_function
+            compilation_data
         }
     }
 
@@ -34,22 +34,22 @@ impl<'a> StackFrame<'a> {
         let parent_function_address = unsafe { *((parent_base_pointer as isize - 8) as *const u64) };
         let parent_function = unsafe { (parent_function_address as *const Function).as_ref() }.unwrap();
         let parent_signature = parent_function.definition().call_signature();
-        let parent_compiled_function = compiler
-            .get_compiled_function(&parent_signature)
+        let parent_compilation_data = compiler
+            .get_compilation_data(&parent_signature)
             .unwrap();
 
         let parent_function_code_ptr = binder.get(&parent_signature).unwrap().address().unwrap();
 
         let parent_call_point_address = unsafe { *((self.base_pointer as isize + 8) as *const u64) } as isize;
         let parent_call_offset = (parent_call_point_address - parent_function_code_ptr as isize) as usize;
-        let parent_call_instruction_index = instruction_index_from_offset(parent_compiled_function, parent_call_offset)?;
+        let parent_call_instruction_index = instruction_index_from_offset(parent_compilation_data, parent_call_offset)?;
 
         Some(
             StackFrame::new(
                 parent_base_pointer,
                 parent_call_instruction_index,
                 parent_function,
-                parent_compiled_function
+                parent_compilation_data
             )
         )
     }
@@ -166,7 +166,7 @@ impl<'a> StackFrameLocalsIterator<'a> {
     }
 
     fn locals(&self) -> &'a Vec<RegisterMIR> {
-        &self.stack_frame.compiled_function.mir_compilation_result.local_virtual_registers
+        &self.stack_frame.compilation_data.mir_compilation_result.local_virtual_registers
     }
 }
 
@@ -201,7 +201,7 @@ impl<'a> StackFrameOperandsIterator<'a> {
     }
 
     fn operand_registers(&self) -> &'a Vec<RegisterMIR> {
-        &self.stack_frame.compiled_function.mir_compilation_result.instructions_operand_types[self.stack_frame.instruction_index]
+        &self.stack_frame.compilation_data.mir_compilation_result.instructions_operand_types[self.stack_frame.instruction_index]
     }
 }
 
@@ -280,11 +280,11 @@ impl<'a> std::fmt::Display for FrameValue<'a> {
     }
 }
 
-fn instruction_index_from_offset(compiled_function: &FunctionCompilationData, offset: usize) -> Option<usize> {
-    for index in 0..compiled_function.instructions_offsets.len() {
-        if index + 1 < compiled_function.instructions_offsets.len() {
-            if offset >= compiled_function.instructions_offsets[index].1 && offset <= compiled_function.instructions_offsets[index + 1].1 {
-                return Some(compiled_function.instructions_offsets[index].0);
+fn instruction_index_from_offset(compilation_data: &FunctionCompilationData, offset: usize) -> Option<usize> {
+    for index in 0..compilation_data.instructions_offsets.len() {
+        if index + 1 < compilation_data.instructions_offsets.len() {
+            if offset >= compilation_data.instructions_offsets[index].1 && offset <= compilation_data.instructions_offsets[index + 1].1 {
+                return Some(compilation_data.instructions_offsets[index].0);
             }
         }
     }

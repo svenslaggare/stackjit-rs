@@ -20,7 +20,7 @@ use crate::analysis::control_flow_graph::ControlFlowGraph;
 pub struct JitCompiler {
     memory_allocator: ExecutableMemoryAllocator,
     error_handling: ErrorHandling,
-    compiled_functions: HashMap<FunctionSignature, FunctionCompilationData>,
+    functions_compilation_data: HashMap<FunctionSignature, FunctionCompilationData>,
 }
 
 impl JitCompiler {
@@ -31,7 +31,7 @@ impl JitCompiler {
         JitCompiler {
             memory_allocator,
             error_handling,
-            compiled_functions: HashMap::new(),
+            functions_compilation_data: HashMap::new(),
         }
     }
 
@@ -64,35 +64,35 @@ impl JitCompiler {
             );
         }
 
-        self.compiled_functions.insert(function.definition().call_signature(), compilation_data);
+        self.functions_compilation_data.insert(function.definition().call_signature(), compilation_data);
 
         binder.set_address(&function.definition().call_signature(), function_code_ptr);
     }
 
-    pub fn get_compiled_function(&self, signature: &FunctionSignature) -> Option<&FunctionCompilationData> {
-        self.compiled_functions.get(signature)
+    pub fn get_compilation_data(&self, signature: &FunctionSignature) -> Option<&FunctionCompilationData> {
+        self.functions_compilation_data.get(signature)
     }
 
     pub fn resolve_calls_and_branches(&mut self, binder: &Binder) {
-        for (signature, compiled_function) in &mut self.compiled_functions {
-            if !compiled_function.unresolved_function_calls.is_empty() {
-                JitCompiler::resolve_calls(binder, binder.get(signature).unwrap(), compiled_function);
+        for (signature, compilation_data) in &mut self.functions_compilation_data {
+            if !compilation_data.unresolved_function_calls.is_empty() {
+                JitCompiler::resolve_calls(binder, binder.get(signature).unwrap(), compilation_data);
             }
 
-            if !compiled_function.unresolved_branches.is_empty() {
-                JitCompiler::resolve_branches(binder.get(signature).unwrap(), compiled_function);
+            if !compilation_data.unresolved_branches.is_empty() {
+                JitCompiler::resolve_branches(binder.get(signature).unwrap(), compilation_data);
             }
 
-            if !compiled_function.unresolved_native_branches.is_empty() {
-                JitCompiler::resolve_native_branches(binder.get(signature).unwrap(), compiled_function);
+            if !compilation_data.unresolved_native_branches.is_empty() {
+                JitCompiler::resolve_native_branches(binder.get(signature).unwrap(), compilation_data);
             }
         }
     }
 
     fn resolve_calls(binder: &Binder,
                      function: &FunctionDefinition,
-                     compiled_function: &mut FunctionCompilationData) {
-        for unresolved_function_call in &compiled_function.unresolved_function_calls {
+                     compilation_data: &mut FunctionCompilationData) {
+        for unresolved_function_call in &compilation_data.unresolved_function_calls {
             let function_to_call = binder.get(&unresolved_function_call.signature).unwrap();
 
             match unresolved_function_call.call_type {
@@ -111,12 +111,12 @@ impl JitCompiler {
             }
         }
 
-        compiled_function.unresolved_function_calls.clear();
+        compilation_data.unresolved_function_calls.clear();
     }
 
-    fn resolve_branches(function: &FunctionDefinition, compiled_function: &mut FunctionCompilationData) {
-        for (&branch_source, &(branch_target_label, branch_instruction_size)) in &compiled_function.unresolved_branches {
-            let branch_target = compiled_function.branch_targets[&branch_target_label];
+    fn resolve_branches(function: &FunctionDefinition, compilation_data: &mut FunctionCompilationData) {
+        for (&branch_source, &(branch_target_label, branch_instruction_size)) in &compilation_data.unresolved_branches {
+            let branch_target = compilation_data.branch_targets[&branch_target_label];
 
             let target = branch_target as i32 - branch_source as i32 - branch_instruction_size as i32;
             let source_offset = branch_source as i32 + branch_instruction_size as i32 - std::mem::size_of::<i32>() as i32;
@@ -127,12 +127,12 @@ impl JitCompiler {
             }
         }
 
-        compiled_function.unresolved_branches.clear();
+        compilation_data.unresolved_branches.clear();
     }
 
-    fn resolve_native_branches(function: &FunctionDefinition, compiled_function: &mut FunctionCompilationData) {
+    fn resolve_native_branches(function: &FunctionDefinition, compilation_data: &mut FunctionCompilationData) {
         let function_code_ptr = function.address().unwrap();
-        for (&source, &target) in &compiled_function.unresolved_native_branches {
+        for (&source, &target) in &compilation_data.unresolved_native_branches {
             let native_target = (target as isize - (function_code_ptr as u64 + source as u64) as isize - 6) as i32;
             let source_offset = source + 6 - std::mem::size_of::<i32>();
 
@@ -142,7 +142,7 @@ impl JitCompiler {
             }
         }
 
-        compiled_function.unresolved_native_branches.clear();
+        compilation_data.unresolved_native_branches.clear();
     }
 
     fn compile_ir(&self,
