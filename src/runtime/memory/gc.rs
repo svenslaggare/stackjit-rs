@@ -84,42 +84,44 @@ impl GarbageCollector {
     fn mark_value(&mut self, value: FrameValue) {
         if value.value_type.is_reference() {
             if value.value_u64() != 0 {
-                let mut object_ref = ObjectReference::from_ptr(value.value_u64() as *const u8).unwrap();
+                self.mark_object(ObjectReference::from_ptr(value.value_u64() as *const u8).unwrap());
+            }
+        }
+    }
 
-                if !object_ref.header().is_marked() {
-                    object_ref.header_mut().mark();
+    fn mark_object(&mut self, mut object_ref: ObjectReference) {
+        if !object_ref.header().is_marked() {
+            object_ref.header_mut().mark();
 
-                    match value.value_type {
-                        Type::Array(element) => {
-                            if element.is_reference() {
-                                let array_length = array::get_length(object_ref.ptr());
-                                let elements_ptr = array::get_elements::<u64>(object_ref.ptr());
+            match &object_ref.object_type().instance {
+                Type::Array(element) => {
+                    if element.is_reference() {
+                        let array_length = array::get_length(object_ref.ptr());
+                        let elements_ptr = array::get_elements::<u64>(object_ref.ptr());
 
-                                for index in 0..array_length {
-                                    self.mark_value(
-                                        FrameValue::new_value(
-                                            element,
-                                            unsafe { elements_ptr.add(index) as *const u8 }
-                                        )
-                                    );
-                                }
-                            }
+                        for index in 0..array_length {
+                            self.mark_value(
+                                FrameValue::new_value(
+                                    element.as_ref(),
+                                    unsafe { elements_ptr.add(index) as *const u8 }
+                                )
+                            );
                         }
-                        Type::Class(_) => {
-                            for field in object_ref.object_type().class.as_ref().unwrap().fields() {
-                                if field.field_type().is_reference() {
-                                    self.mark_value(
-                                        FrameValue::new_value(
-                                            field.field_type(),
-                                            unsafe { object_ref.ptr().add(field.offset()) as *const u8 }
-                                        )
-                                    );
-                                }
-                            }
-                        }
-                        _ => {}
                     }
                 }
+                Type::Class(_) => {
+                    for field in object_ref.object_type().class.as_ref().unwrap().fields() {
+                        if field.field_type().is_reference() {
+                            self.mark_value(
+                                FrameValue::new_value(
+                                    field.field_type(),
+                                    unsafe { object_ref.ptr().add(field.offset()) as *const u8 }
+                                )
+                            );
+                        }
+                    }
+                }
+                _ => {}
             }
         }
     }
