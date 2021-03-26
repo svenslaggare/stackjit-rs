@@ -5,6 +5,7 @@ use crate::engine::binder::Binder;
 use crate::model::typesystem::Type;
 use crate::runtime::object::ObjectReference;
 use crate::runtime::array;
+use crate::runtime::array::ArrayReference;
 
 pub struct GarbageCollector {
     deleted_objects: Vec<(u64, Type)>
@@ -96,14 +97,12 @@ impl GarbageCollector {
             match &object_ref.object_type().instance {
                 Type::Array(element) => {
                     if element.is_reference() {
-                        let array_length = array::get_length(object_ref.ptr());
-                        let elements_ptr = array::get_elements::<u64>(object_ref.ptr());
-
-                        for index in 0..array_length {
+                        let array_ref = ArrayReference::<u64>::new(object_ref.ptr());
+                        for index in 0..array_ref.length() {
                             self.mark_value(
                                 FrameValue::new_value(
                                     element.as_ref(),
-                                    unsafe { elements_ptr.add(index) as *const u8 }
+                                    array_ref.get_raw(index)
                                 )
                             );
                         }
