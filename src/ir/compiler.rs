@@ -28,12 +28,13 @@ pub struct InstructionMIRCompiler<'a> {
     local_virtual_registers: Vec<RegisterMIR>,
     next_operand_virtual_register: u32,
     max_num_virtual_register: usize,
-    instructions_operand_types: Vec<Vec<RegisterMIR>>
+    instructions_operand_types: Vec<Vec<RegisterMIR>>,
+    macros: HashMap<FunctionSignature, Box<dyn Fn(&mut Vec<InstructionMIR>, usize, &Instruction) + 'a>>
 }
 
 impl<'a> InstructionMIRCompiler<'a> {
     pub fn new(binder: &'a Binder, function: &'a Function) -> InstructionMIRCompiler<'a> {
-        InstructionMIRCompiler {
+        let mut compiler = InstructionMIRCompiler {
             binder,
             function,
             branch_manager: BranchManager::new(),
@@ -41,8 +42,25 @@ impl<'a> InstructionMIRCompiler<'a> {
             local_virtual_registers: Vec::new(),
             next_operand_virtual_register: 0,
             max_num_virtual_register: 0,
-            instructions_operand_types: Vec::new()
-        }
+            instructions_operand_types: Vec::new(),
+            macros: HashMap::new()
+        };
+
+        compiler.make_macro(
+            FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] },
+            |instructions: &mut Vec<InstructionMIR>, instruction_index: usize, instruction: &Instruction| {
+                instructions.push(InstructionMIR::new(
+                    instruction_index,
+                    InstructionMIRData::GarbageCollect
+                ));
+            }
+        );
+
+        compiler
+    }
+
+    fn make_macro<F: Fn(&mut Vec<InstructionMIR>, usize, &Instruction) + 'a>(&mut self, signature: FunctionSignature, f: F) {
+        self.macros.insert(signature, Box::new(f));
     }
 
     pub fn compile(&mut self, instructions: &Vec<Instruction>) {
@@ -140,14 +158,11 @@ impl<'a> InstructionMIRCompiler<'a> {
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::Return(return_value)));
             }
             Instruction::Call(signature) => {
-                match signature.name.as_str() {
-                    "std.gc.collect" => {
-                        self.instructions.push(InstructionMIR::new(
-                            instruction_index,
-                            InstructionMIRData::GarbageCollect
-                        ));
+                match self.macros.get(signature) {
+                    Some(macro_fn) => {
+                        macro_fn(&mut self.instructions, instruction_index, instruction);
                     }
-                    _ => {
+                    None => {
                         let func_to_call = self.binder.get(signature).unwrap();
 
                         let mut arguments_regs = func_to_call.parameters()
