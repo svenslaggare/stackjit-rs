@@ -6,11 +6,10 @@ use crate::analysis::control_flow_graph::ControlFlowGraph;
 use crate::ir::compiler::{MIRCompilationResult, InstructionMIRCompiler};
 use crate::model::function::{Function, FunctionDefinition};
 use crate::model::instruction::Instruction;
-use crate::model::typesystem::Type;
+use crate::model::typesystem::{Type, TypeStorage};
 use crate::engine::binder::Binder;
 use crate::model::verifier::Verifier;
 use crate::ir::branches;
-use crate::model::class::ClassProvider;
 
 pub type RegisterNullStatus = HashMap<RegisterMIR, bool>;
 pub type InstructionsRegisterNullStatus = Vec<RegisterNullStatus>;
@@ -195,8 +194,8 @@ fn test_no_branches1() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -226,8 +225,8 @@ fn test_no_branches2() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -259,8 +258,8 @@ fn test_no_branches3() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -297,8 +296,8 @@ fn test_no_branches4() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -345,8 +344,8 @@ fn test_no_branches5() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -408,8 +407,8 @@ fn test_no_branches6() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -474,8 +473,8 @@ fn test_no_branches7() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -523,8 +522,8 @@ fn test_branches1() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -574,8 +573,8 @@ fn test_branches2() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());

@@ -1,4 +1,4 @@
-use crate::model::class::{Class, ClassProvider};
+use crate::model::class::{Class};
 use crate::model::typesystem::{Type, TypeHolder, TypeStorage};
 use crate::runtime::array;
 use crate::runtime::memory::gc::GarbageCollector;

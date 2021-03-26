@@ -5,7 +5,6 @@ use crate::engine::binder::Binder;
 use crate::model::typesystem::Type;
 use crate::runtime::object::ObjectReference;
 use crate::runtime::array;
-use crate::model::class::ClassProvider;
 
 pub struct GarbageCollector {
     deleted_objects: Vec<(u64, Type)>
@@ -25,7 +24,6 @@ impl GarbageCollector {
     pub fn collect(&mut self,
                    compiler: &JitCompiler,
                    binder: &Binder,
-                   class_provider: &ClassProvider,
                    heap: &mut Heap,
                    stack_frame: StackFrame) {
         let print_objects = || {
@@ -58,7 +56,7 @@ impl GarbageCollector {
         print_objects();
         println!();
 
-        self.mark_objects(compiler, binder, class_provider, &stack_frame);
+        self.mark_objects(compiler, binder, &stack_frame);
         self.sweep_objects(heap);
 
         println!();
@@ -71,20 +69,19 @@ impl GarbageCollector {
     fn mark_objects(&mut self,
                     compiler: &JitCompiler,
                     binder: &Binder,
-                    class_provider: &ClassProvider,
                     stack_frame: &StackFrame) {
         stack_frame.walk(
             compiler,
             binder,
             |frame| {
                 frame.visit_values(|value| {
-                    self.mark_value(class_provider, value);
+                    self.mark_value(value);
                 });
             }
         );
     }
 
-    fn mark_value(&mut self, class_provider: &ClassProvider, value: FrameValue) {
+    fn mark_value(&mut self, value: FrameValue) {
         if value.value_type.is_reference() {
             if value.value_u64() != 0 {
                 let mut object_ref = ObjectReference::from_ptr(value.value_u64() as *const u8).unwrap();
@@ -100,19 +97,22 @@ impl GarbageCollector {
 
                                 for index in 0..array_length {
                                     self.mark_value(
-                                        class_provider,
-                                        FrameValue::new_value(element, unsafe { elements_ptr.add(index) as *const u8 })
+                                        FrameValue::new_value(
+                                            element,
+                                            unsafe { elements_ptr.add(index) as *const u8 }
+                                        )
                                     );
                                 }
                             }
                         }
-                        Type::Class(class_name) => {
-                            let class = class_provider.get(class_name).unwrap();
-                            for field in class.fields() {
+                        Type::Class(_) => {
+                            for field in object_ref.object_type().class.as_ref().unwrap().fields() {
                                 if field.field_type().is_reference() {
                                     self.mark_value(
-                                        class_provider,
-                                        FrameValue::new_value(field.field_type(), unsafe { object_ref.ptr().add(field.offset()) as *const u8 })
+                                        FrameValue::new_value(
+                                            field.field_type(),
+                                            unsafe { object_ref.ptr().add(field.offset()) as *const u8 }
+                                        )
                                     );
                                 }
                             }

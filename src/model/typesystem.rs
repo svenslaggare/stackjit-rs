@@ -53,6 +53,13 @@ impl Type {
         }
     }
 
+    pub fn is_class(&self) -> bool {
+        match self {
+            Type::Class(_) => true,
+            _ => false,
+        }
+    }
+
     pub fn is_same_type(&self, other: &Type) -> bool {
         self == other
     }
@@ -82,7 +89,7 @@ impl std::fmt::Display for Type {
 
 pub struct TypeHolder {
     pub instance: Type,
-    pub class_size: Option<usize>
+    pub class: Option<Class>
 }
 
 pub struct TypeStorage {
@@ -96,24 +103,30 @@ impl TypeStorage {
         }
     }
 
-    pub fn add_class(&mut self, class: &Class) {
+    pub fn add_class(&mut self, class: Class) {
         let type_instance = Type::Class(class.name().to_owned());
 
         self.types.entry(type_instance.clone()).or_insert_with(|| {
             let type_holder = TypeHolder {
                 instance: type_instance,
-                class_size: Some(class.memory_size())
+                class: Some(class)
             };
 
             Box::new(type_holder)
         });
     }
 
-    pub fn add_or_get_type(&mut self, type_instance: Type) -> &TypeHolder {
+    pub fn get(&self, type_instance: &Type) -> Option<&TypeHolder> {
+        self.types.get(type_instance).map(|t| t.as_ref())
+    }
+
+    pub fn entry(&mut self, type_instance: Type) -> &TypeHolder {
         self.types.entry(type_instance.clone()).or_insert_with(|| {
+            assert!(!type_instance.is_class());
+
             let type_holder = TypeHolder {
                 instance: type_instance,
-                class_size: None
+                class: None
             };
 
             Box::new(type_holder)

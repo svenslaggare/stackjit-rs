@@ -16,7 +16,6 @@ use crate::model::typesystem::TypeStorage;
 use crate::analysis::{AnalysisResult, null_check_elision};
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
-use crate::model::class::ClassProvider;
 
 pub struct JitCompiler {
     memory_allocator: ExecutableMemoryAllocator,
@@ -38,13 +37,12 @@ impl JitCompiler {
 
     pub fn compile_function(&mut self,
                             binder: &mut Binder,
-                            class_provider: &ClassProvider,
                             type_storage: &mut TypeStorage,
                             function: &Function) {
         println!("{}", function.definition().signature());
         println!("{{");
 
-        let (compilation_result, instructions_ir) = self.compile_ir(binder, class_provider, function);
+        let (compilation_result, instructions_ir) = self.compile_ir(binder, type_storage, function);
         let mut compilation_data = FunctionCompilationData::new(compilation_result);
         let generator_result = self.generate_code(
             binder,
@@ -149,7 +147,7 @@ impl JitCompiler {
 
     fn compile_ir(&self,
                   binder: &Binder,
-                  class_provider: &ClassProvider,
+                  type_storage: &TypeStorage,
                   function: &Function) -> (MIRCompilationResult, Vec<InstructionIR>) {
         let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
         mir_compiler.compile(function.instructions());
@@ -171,8 +169,8 @@ impl JitCompiler {
             )
         };
 
-        // let mut ir_compiler = InstructionIRCompiler::new(&binder, &class_provider, &function, &compilation_result, &analysis_result);
-        let mut ir_compiler = AllocatedInstructionIRCompiler::new(&binder, &class_provider, &function, &compilation_result, &analysis_result);
+        // let mut ir_compiler = InstructionIRCompiler::new(&binder, &type_storage, &function, &compilation_result, &analysis_result);
+        let mut ir_compiler = AllocatedInstructionIRCompiler::new(&binder, &type_storage, &function, &compilation_result, &analysis_result);
         ir_compiler.compile();
         let instructions_ir = ir_compiler.done();
         (compilation_result, instructions_ir)

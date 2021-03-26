@@ -1,8 +1,9 @@
 use std::collections::HashMap;
-
-use crate::model::typesystem::Type;
 use std::iter::FromIterator;
 
+use crate::model::typesystem::Type;
+
+#[derive(Clone)]
 pub struct Field {
     name: String,
     field_type: Type,
@@ -31,6 +32,7 @@ impl Field {
     }
 }
 
+#[derive(Clone)]
 pub struct Class {
     name: String,
     fields: Vec<Field>,
@@ -73,30 +75,5 @@ impl Class {
 
     pub fn memory_size(&self) -> usize {
         self.memory_size
-    }
-}
-
-pub struct ClassProvider {
-    classes: HashMap<String, Class>
-}
-
-impl ClassProvider {
-    pub fn new() -> ClassProvider {
-        ClassProvider {
-            classes: HashMap::new()
-        }
-    }
-
-    pub fn is_defined(&self, name: &str) -> bool {
-        self.classes.contains_key(name)
-    }
-
-    pub fn get(&self, name: &str) -> Option<&Class> {
-        self.classes.get(name)
-    }
-
-    pub fn define(&mut self, class: Class) {
-        let class_name = class.name.clone();
-        self.classes.insert(class_name, class);
     }
 }

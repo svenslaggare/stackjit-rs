@@ -11,11 +11,10 @@ use crate::ir::mid::{InstructionMIR, RegisterMIR};
 use crate::ir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
-use crate::model::typesystem::Type;
+use crate::model::typesystem::{Type, TypeStorage};
 use crate::model::verifier::Verifier;
 use crate::optimization::register_allocation::{AllocatedRegister, RegisterAllocation};
 use crate::analysis::{VirtualRegister, VirtualRegisterType};
-use crate::model::class::ClassProvider;
 
 pub struct Settings {
     pub num_int_registers: usize,
@@ -243,8 +242,8 @@ fn test_allocate1() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -284,8 +283,8 @@ fn test_allocate2() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -330,8 +329,8 @@ fn test_allocate3() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -371,8 +370,8 @@ fn test_allocate4() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -427,8 +426,8 @@ fn test_allocate5() {
         std::ptr::null_mut()
     ));
 
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -462,8 +461,8 @@ fn test_allocate6() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());

@@ -1,4 +1,3 @@
-use crate::model::class::ClassProvider;
 use crate::model::typesystem::{Type, TypeStorage};
 use crate::runtime::array;
 use crate::runtime::object;

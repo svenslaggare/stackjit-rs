@@ -1,6 +1,5 @@
 use crate::model::typesystem::{TypeStorage, Type, TypeHolder};
 use crate::runtime::memory::manager::ObjectPointer;
-use crate::model::class::ClassProvider;
 use crate::runtime::array;
 
 #[repr(packed, C)]
@@ -86,7 +85,7 @@ impl<'a> ObjectReference<'a> {
                 array::LENGTH_SIZE + element.size() * array::get_length(object_ptr as ObjectPointer)
             }
             Type::Class(_) => {
-                type_holder.class_size.unwrap()
+                type_holder.class.as_ref().unwrap().memory_size()
             }
             _ => 0
         };

@@ -483,7 +483,7 @@ impl<'a> CodeGenerator<'a> {
                 }
 
                 let array_type = Type::Array(Box::new(element.clone()));
-                let array_type_holder = self.type_storage.add_or_get_type(array_type);
+                let array_type_holder = self.type_storage.entry(array_type);
                 let array_type_holder = array_type_holder as *const TypeHolder as *const u64 as u64;
                 println!("0x{:0x}", array_type_holder);
 
@@ -610,7 +610,7 @@ impl<'a> CodeGenerator<'a> {
                 ));
             },
             InstructionIR::NewObject(class_type) => {
-                let class_type = self.type_storage.add_or_get_type(class_type.clone());
+                let class_type = self.type_storage.entry(class_type.clone());
                 let class_type_holder = class_type as *const TypeHolder as *const u64 as u64;
                 println!("0x{:0x}", class_type_holder);
 

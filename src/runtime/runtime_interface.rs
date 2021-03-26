@@ -23,8 +23,7 @@ pub extern "C" fn new_array(type_ptr: u64, length: i32) -> *mut std::ffi::c_void
 pub extern "C" fn new_class(type_ptr: u64) -> *mut std::ffi::c_void {
     get_vm(|vm| {
         let type_holder = unsafe { (type_ptr as *const std::ffi::c_void as *const TypeHolder).as_ref() }.unwrap();
-        let class = vm.engine.get_class(type_holder.instance.class_name().unwrap()).unwrap();
-        vm.memory_manager.new_class(type_holder, class)
+        vm.memory_manager.new_class(type_holder, type_holder.class.as_ref().unwrap())
     })
 }
 
@@ -89,7 +88,6 @@ pub extern "C" fn garbage_collect(base_pointer: u64, function_ptr: u64, instruct
         vm.memory_manager.garbage_collector.collect(
             vm.engine.compiler(),
             vm.engine.binder(),
-            vm.engine.class_provider(),
             &mut vm.memory_manager.heap,
             stack_frame
         );

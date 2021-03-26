@@ -12,7 +12,7 @@ use crate::ir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::ir::mid::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
-use crate::model::typesystem::Type;
+use crate::model::typesystem::{Type, TypeStorage};
 use crate::model::verifier::Verifier;
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
@@ -21,11 +21,10 @@ use crate::optimization::register_allocation;
 use crate::optimization::register_allocation::linear_scan::Settings;
 use crate::optimization::register_allocation::{RegisterAllocation, AllocatedRegister};
 use crate::compiler::code_generator::register_mapping;
-use crate::model::class::ClassProvider;
 
 pub struct AllocatedInstructionIRCompiler<'a> {
     binder: &'a Binder,
-    class_provider: &'a ClassProvider,
+    type_storage: &'a TypeStorage,
     function: &'a Function,
     compilation_result: &'a MIRCompilationResult,
     analysis_result: &'a AnalysisResult,
@@ -35,13 +34,13 @@ pub struct AllocatedInstructionIRCompiler<'a> {
 
 impl<'a> AllocatedInstructionIRCompiler<'a> {
     pub fn new(binder: &'a Binder,
-               class_provider: &'a ClassProvider,
+               type_storage: &'a TypeStorage,
                function: &'a Function,
                compilation_result: &'a MIRCompilationResult,
                analysis_result: &'a AnalysisResult) -> AllocatedInstructionIRCompiler<'a> {
         AllocatedInstructionIRCompiler {
             binder,
-            class_provider,
+            type_storage,
             function,
             instructions: Vec::new(),
             compilation_result,
@@ -468,7 +467,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 self.pop_alive_registers(&alive_registers, destination_register);
             }
             InstructionMIRData::LoadField(class_type, field_name, destination, class_ref) => {
-                let class = self.class_provider.get(class_type.class_name().unwrap()).unwrap();
+                let class = self.type_storage.get(class_type).unwrap().class.as_ref().unwrap();
                 let field = class.get_field(field_name).unwrap();
 
                 let alive_hardware_registers = self.register_allocation.alive_hardware_registers_at(instruction_index);
@@ -513,7 +512,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 }
             }
             InstructionMIRData::StoreField(class_type, field_name, class_ref, value) => {
-                let class = self.class_provider.get(class_type.class_name().unwrap()).unwrap();
+                let class = self.type_storage.get(class_type).unwrap().class.as_ref().unwrap();
                 let field = class.get_field(field_name).unwrap();
 
                 let alive_hardware_registers = self.register_allocation.alive_hardware_registers_at(instruction_index);

@@ -4,7 +4,7 @@ use crate::model::verifier::{Verifier, VerifyError};
 use crate::model::typesystem::TypeStorage;
 use crate::engine::binder::Binder;
 use crate::vm::Execution;
-use crate::model::class::{ClassProvider, Class};
+use crate::model::class::{Class};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ExecutionEngineError {
@@ -27,7 +27,6 @@ pub struct ExecutionEngine {
     compiler: JitCompiler,
     binder: Binder,
     type_storage: TypeStorage,
-    class_provider: ClassProvider,
     functions: Vec<Box<Function>>,
     pub runtime_error: RuntimeErrorManager
 }
@@ -38,7 +37,6 @@ impl ExecutionEngine {
             compiler: JitCompiler::new(),
             binder: Binder::new(),
             type_storage: TypeStorage::new(),
-            class_provider: ClassProvider::new(),
             functions: Vec::new(),
             runtime_error: RuntimeErrorManager::new()
         }
@@ -57,17 +55,8 @@ impl ExecutionEngine {
     }
 
     pub fn add_class(&mut self, class: Class) -> ExecutionEngineResult<()> {
-        self.type_storage.add_class(&class);
-        self.class_provider.define(class);
+        self.type_storage.add_class(class);
         Ok(())
-    }
-
-    pub fn get_class(&self, name: &str) -> Option<&Class> {
-        self.class_provider.get(name)
-    }
-
-    pub fn class_provider(&self) -> &ClassProvider {
-        &self.class_provider
     }
 
     pub fn create_execution(&mut self) -> ExecutionEngineResult<Execution> {
@@ -85,9 +74,9 @@ impl ExecutionEngine {
 
     fn compile_functions(&mut self) -> ExecutionEngineResult<()> {
         for function in &mut self.functions {
-            let mut verifier = Verifier::new(&self.binder, &self.class_provider, function);
+            let mut verifier = Verifier::new(&self.binder, &self.type_storage, function);
             verifier.verify().map_err(|err| ExecutionEngineError::Verify(err))?;
-            self.compiler.compile_function(&mut self.binder, &self.class_provider, &mut self.type_storage, function);
+            self.compiler.compile_function(&mut self.binder, &mut self.type_storage, function);
         }
 
         Ok(())

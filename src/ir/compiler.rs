@@ -7,11 +7,10 @@ use crate::ir::mid::{InstructionMIR, RegisterMIR};
 use crate::ir::mid::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
-use crate::model::typesystem::Type;
+use crate::model::typesystem::{Type, TypeStorage};
 use crate::model::verifier::Verifier;
 use crate::analysis::null_check_elision::InstructionsRegisterNullStatus;
 use crate::analysis::VirtualRegister;
-use crate::model::class::ClassProvider;
 
 pub struct MIRCompilationResult {
     pub instructions: Vec<InstructionMIR>,
@@ -310,8 +309,8 @@ fn test_simple1() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -335,8 +334,8 @@ fn test_simple2() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -364,8 +363,8 @@ fn test_simple3() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -389,8 +388,8 @@ fn test_simple4() {
     );
 
     let binder = Binder::new();
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());
@@ -418,8 +417,8 @@ fn test_simple5() {
         Type::Int32
     ));
 
-    let class_provider = ClassProvider::new();
-    Verifier::new(&binder, &class_provider, &mut function).verify().unwrap();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
     let mut compiler = InstructionMIRCompiler::new(&binder, &function);
     compiler.compile(function.instructions());

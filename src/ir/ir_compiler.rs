@@ -7,14 +7,13 @@ use crate::ir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::ir::mid::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
-use crate::model::typesystem::Type;
+use crate::model::typesystem::{Type, TypeStorage};
 use crate::model::verifier::Verifier;
 use crate::analysis::AnalysisResult;
-use crate::model::class::ClassProvider;
 
 pub struct InstructionIRCompiler<'a> {
     binder: &'a Binder,
-    class_provider: &'a ClassProvider,
+    type_storage: &'a TypeStorage,
     function: &'a Function,
     compilation_result: &'a MIRCompilationResult,
     analysis_result: &'a AnalysisResult,
@@ -23,13 +22,13 @@ pub struct InstructionIRCompiler<'a> {
 
 impl<'a> InstructionIRCompiler<'a> {
     pub fn new(binder: &'a Binder,
-               class_provider: &'a ClassProvider,
+               type_storage: &'a TypeStorage,
                function: &'a Function,
                compilation_result: &'a MIRCompilationResult,
                analysis_result: &'a AnalysisResult) -> InstructionIRCompiler<'a> {
         InstructionIRCompiler {
             binder,
-            class_provider,
+            type_storage,
             function,
             compilation_result,
             analysis_result,
@@ -223,7 +222,7 @@ impl<'a> InstructionIRCompiler<'a> {
                 ));
             }
             InstructionMIRData::LoadField(class_type, field_name, destination, class_reference) => {
-                let class = self.class_provider.get(class_type.class_name().unwrap()).unwrap();
+                let class = self.type_storage.get(class_type).unwrap().class.as_ref().unwrap();
                 let field = class.get_field(field_name).unwrap();
 
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(class_reference)));
@@ -250,7 +249,7 @@ impl<'a> InstructionIRCompiler<'a> {
                 ));
             }
             InstructionMIRData::StoreField(class_type, field_name, class_reference, value) => {
-                let class = self.class_provider.get(class_type.class_name().unwrap()).unwrap();
+                let class = self.type_storage.get(class_type).unwrap().class.as_ref().unwrap();
                 let field = class.get_field(field_name).unwrap();
 
                 let value_register = match field.field_type() {
