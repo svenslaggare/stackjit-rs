@@ -10,7 +10,7 @@ pub fn stack_size(function: &Function, compilation_result: &MIRCompilationResult
 }
 
 pub fn needed_stack_size(function: &Function, compilation_result: &MIRCompilationResult) -> i32 {
-    (1 + function.definition().parameters().len() + compilation_result.num_virtual_registers) as i32 * STACK_ENTRY_SIZE
+    (1 + function.declaration().parameters().len() + compilation_result.num_virtual_registers) as i32 * STACK_ENTRY_SIZE
 }
 
 pub fn align_size(size: i32) -> i32 {
@@ -22,5 +22,5 @@ pub fn argument_stack_offset(_function: &Function, index: u32) -> i32 {
 }
 
 pub fn virtual_register_stack_offset(function: &Function, number: u32) -> i32 {
-    -STACK_ENTRY_SIZE * (STACK_VALUE_OFFSET + function.definition().parameters().len() as u32 + number) as i32
+    -STACK_ENTRY_SIZE * (STACK_VALUE_OFFSET + function.declaration().parameters().len() as u32 + number) as i32
 }

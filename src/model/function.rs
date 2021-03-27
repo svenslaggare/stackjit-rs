@@ -10,7 +10,7 @@ pub enum FunctionType {
 }
 
 #[derive(Debug, Clone)]
-pub struct FunctionDefinition {
+pub struct FunctionDeclaration {
     function_type: FunctionType,
     name: String,
     parameters: Vec<TypeId>,
@@ -18,9 +18,9 @@ pub struct FunctionDefinition {
     address: Option<FunctionAddress>,
 }
 
-impl FunctionDefinition {
-    pub fn new_external(name: String, parameters: Vec<TypeId>, return_type: TypeId, address: FunctionAddress) -> FunctionDefinition {
-        FunctionDefinition {
+impl FunctionDeclaration {
+    pub fn new_external(name: String, parameters: Vec<TypeId>, return_type: TypeId, address: FunctionAddress) -> FunctionDeclaration {
+        FunctionDeclaration {
             function_type: FunctionType::External,
             name,
             parameters,
@@ -29,8 +29,8 @@ impl FunctionDefinition {
         }
     }
 
-    pub fn new_managed(name: String, parameters: Vec<TypeId>, return_type: TypeId) -> FunctionDefinition {
-        FunctionDefinition {
+    pub fn new_managed(name: String, parameters: Vec<TypeId>, return_type: TypeId) -> FunctionDeclaration {
+        FunctionDeclaration {
             function_type: FunctionType::Managed,
             name,
             parameters,
@@ -59,11 +59,7 @@ impl FunctionDefinition {
         self.address
     }
 
-    pub fn signature(&self) -> String {
-        format!("{} {}", self.call_signature(), self.return_type)
-    }
-
-    pub fn call_signature(&self) -> FunctionSignature {
+    pub fn signature(&self) -> FunctionSignature {
         FunctionSignature::new(self.name.clone(), self.parameters.clone())
     }
 
@@ -79,8 +75,14 @@ impl FunctionDefinition {
     }
 }
 
+impl std::fmt::Display for FunctionDeclaration {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.signature(), self.return_type)
+    }
+}
+
 pub struct Function {
-    definition: FunctionDefinition,
+    declaration: FunctionDeclaration,
     locals: Vec<TypeId>,
     instructions: Vec<Instruction>,
     instruction_operand_types: Vec<Vec<TypeId>>,
@@ -88,12 +90,12 @@ pub struct Function {
 }
 
 impl Function {
-    pub fn new(definition: FunctionDefinition,
+    pub fn new(declaration: FunctionDeclaration,
                locals: Vec<TypeId>,
                instructions: Vec<Instruction>) -> Function {
         let num_instructions = instructions.len();
         Function {
-            definition,
+            declaration,
             locals,
             instructions,
             instruction_operand_types: (0..num_instructions).map(|_| Vec::new()).collect(),
@@ -101,8 +103,8 @@ impl Function {
         }
     }
 
-    pub fn definition(&self) -> &FunctionDefinition {
-        &self.definition
+    pub fn declaration(&self) -> &FunctionDeclaration {
+        &self.declaration
     }
 
     pub fn locals(&self) -> &Vec<TypeId> {

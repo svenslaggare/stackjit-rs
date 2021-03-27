@@ -1,5 +1,5 @@
 use crate::vm::VirtualMachine;
-use crate::model::function::{Function, FunctionDefinition};
+use crate::model::function::{Function, FunctionDeclaration};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::TypeId;
 
@@ -10,7 +10,7 @@ fn test_sum1() {
     let n = 20000000;
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadLocal(0),

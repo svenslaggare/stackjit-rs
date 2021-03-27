@@ -1,7 +1,7 @@
 use crate::compiler::{FunctionCompilationData, stack_layout};
 use crate::model::function::Function;
 use crate::compiler::jit::JitCompiler;
-use crate::engine::binder::Binder;
+use crate::model::binder::Binder;
 use crate::mir::RegisterMIR;
 use crate::model::typesystem::TypeId;
 use crate::runtime::object::ObjectPointer;
@@ -27,14 +27,14 @@ impl<'a> StackFrame<'a> {
     }
 
     pub fn parent(&self, compiler: &'a JitCompiler, binder: &'a Binder) -> Option<StackFrame<'a>> {
-        if self.function.definition().name() == "main" {
+        if self.function.declaration().name() == "main" {
             return None;
         }
 
         let parent_base_pointer = unsafe { *(self.base_pointer as *const u64) };
         let parent_function_address = unsafe { *((parent_base_pointer as isize - 8) as *const u64) };
         let parent_function = unsafe { (parent_function_address as *const Function).as_ref() }.unwrap();
-        let parent_signature = parent_function.definition().call_signature();
+        let parent_signature = parent_function.declaration().signature();
         let parent_compilation_data = compiler
             .get_compilation_data(&parent_signature)
             .unwrap();
@@ -95,7 +95,7 @@ impl<'a> StackFrame<'a> {
     }
 
     pub fn print_frame(&self) {
-        println!("{} @ {}", self.function.definition().signature(), self.instruction_index);
+        println!("{} @ {}", self.function.declaration(), self.instruction_index);
 
         println!("\tArguments:");
         for value in self.arguments() {
@@ -132,7 +132,7 @@ impl<'a> StackFrameArgumentsIterator<'a> {
     }
 
     fn arguments(&self) -> &'a Vec<TypeId> {
-        &self.stack_frame.function.definition().parameters()
+        &self.stack_frame.function.declaration().parameters()
     }
 }
 

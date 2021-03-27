@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use crate::model::function::{FunctionDefinition, FunctionAddress, FunctionSignature};
+use crate::model::function::{FunctionDeclaration, FunctionAddress, FunctionSignature};
 use crate::model::typesystem::TypeId;
 
 pub struct Binder {
-    functions: HashMap<FunctionSignature, FunctionDefinition>
+    functions: HashMap<FunctionSignature, FunctionDeclaration>
 }
 
 impl Binder {
@@ -13,7 +13,7 @@ impl Binder {
             functions: HashMap::new()
         };
 
-        binder.define(FunctionDefinition::new_external(
+        binder.define(FunctionDeclaration::new_external(
             "std.gc.collect".to_owned(),
             Vec::new(),
             TypeId::Void,
@@ -23,11 +23,11 @@ impl Binder {
         binder
     }
 
-    pub fn define(&mut self, definition: FunctionDefinition) {
-        self.functions.insert(definition.call_signature(), definition);
+    pub fn define(&mut self, definition: FunctionDeclaration) {
+        self.functions.insert(definition.signature(), definition);
     }
 
-    pub fn get(&self, signature: &FunctionSignature) -> Option<&FunctionDefinition> {
+    pub fn get(&self, signature: &FunctionSignature) -> Option<&FunctionDeclaration> {
         self.functions.get(signature)
     }
 

@@ -1,12 +1,12 @@
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
 
-use crate::engine::binder::Binder;
+use crate::model::binder::Binder;
 use crate::mir::branches;
 use crate::mir::InstructionMIR;
 use crate::mir::compiler::InstructionMIRCompiler;
 use crate::mir::InstructionMIRData;
-use crate::model::function::{Function, FunctionDefinition};
+use crate::model::function::{Function, FunctionDeclaration};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::model::verifier::Verifier;
@@ -104,7 +104,7 @@ fn get_instructions(instructions: &Vec<InstructionMIR>, indices: &Vec<usize>) ->
 #[test]
 fn test_no_branches1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1),
@@ -133,7 +133,7 @@ fn test_no_branches1() {
 #[test]
 fn test_branches1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1),

@@ -3,7 +3,7 @@ use iced_x86::Register;
 use crate::compiler::ir::{HardwareRegister, HardwareRegisterExplicit, InstructionIR, Variable};
 use crate::compiler::stack_layout;
 use crate::compiler::stack_layout::{STACK_ENTRY_SIZE, STACK_OFFSET};
-use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
+use crate::model::function::{Function, FunctionDeclaration, FunctionSignature};
 use crate::model::typesystem::TypeId;
 
 pub struct CallingConventions {
@@ -65,13 +65,13 @@ impl CallingConventions {
     }
 
     pub fn move_arguments_to_stack(&self, function: &Function, instructions: &mut Vec<InstructionIR>) {
-        for argument_index in (0..function.definition().parameters().len()).rev() {
-            match function.definition().parameters()[argument_index] {
+        for argument_index in (0..function.declaration().parameters().len()).rev() {
+            match function.declaration().parameters()[argument_index] {
                 TypeId::Float32 => {
                     self.move_float_arguments_to_stack(
                         function,
                         argument_index,
-                        float_register_call_arguments::get_relative_index(function.definition().parameters(), argument_index),
+                        float_register_call_arguments::get_relative_index(function.declaration().parameters(), argument_index),
                         instructions
                     );
                 }
@@ -79,7 +79,7 @@ impl CallingConventions {
                     self.move_non_float_arguments_to_stack(
                         function,
                         argument_index,
-                        register_call_arguments::get_relative_index(function.definition().parameters(), argument_index),
+                        register_call_arguments::get_relative_index(function.declaration().parameters(), argument_index),
                         instructions
                     );
                 }
@@ -90,7 +90,7 @@ impl CallingConventions {
     pub fn handle_return_value(&self,
                                _function: &Function,
                                variable: &Variable,
-                               func_to_call: &FunctionDefinition,
+                               func_to_call: &FunctionDeclaration,
                                instructions: &mut Vec<InstructionIR>) {
         match func_to_call.return_type() {
             TypeId::Void => {}
@@ -113,7 +113,7 @@ impl CallingConventions {
                              function: &Function,
                              variable: &Variable,
                              instructions: &mut Vec<InstructionIR>) {
-        match function.definition().return_type() {
+        match function.declaration().return_type() {
             TypeId::Void => {}
             TypeId::Float32 => {
                 variable.move_to_explicit(
@@ -185,7 +185,7 @@ impl CallingConventions {
                                 argument_index: usize) -> usize {
         let mut stack_argument_index = 0;
 
-        let parameters = &function.definition().parameters();
+        let parameters = &function.declaration().parameters();
         for (index, parameter) in parameters.iter().enumerate() {
             if index == argument_index {
                 break;
@@ -229,12 +229,12 @@ impl CallingConventions {
         num_stack_arguments
     }
 
-    pub fn stack_alignment(&self, func_to_call: &FunctionDefinition, num_saved: usize) -> i32 {
+    pub fn stack_alignment(&self, func_to_call: &FunctionDeclaration, num_saved: usize) -> i32 {
         ((self.num_stack_arguments(func_to_call.parameters()) + num_saved) % 2) as i32 * stack_layout::STACK_ENTRY_SIZE
     }
 }
 
-pub fn get_call_register(func_to_call: &FunctionDefinition, index: usize, argument_type: &TypeId) -> Option<Register> {
+pub fn get_call_register(func_to_call: &FunctionDeclaration, index: usize, argument_type: &TypeId) -> Option<Register> {
     match argument_type {
         TypeId::Float32 => {
             let relative_index = float_register_call_arguments::get_relative_index(func_to_call.parameters(), index);

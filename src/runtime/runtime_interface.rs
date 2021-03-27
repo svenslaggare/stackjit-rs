@@ -56,7 +56,7 @@ pub extern "C" fn print_stack_frame(base_pointer: u64, function_ptr: *const Func
     get_vm(|vm| {
         let function = unsafe { function_ptr.as_ref().unwrap() };
         let compilation_data = vm.engine.compiler()
-            .get_compilation_data(&function.definition().call_signature())
+            .get_compilation_data(&function.declaration().signature())
             .unwrap();
 
         println!("--------------------------------------------");
@@ -80,7 +80,7 @@ pub extern "C" fn garbage_collect(base_pointer: u64, function_ptr: *const Functi
     get_vm(|vm| {
         let function = unsafe { function_ptr.as_ref().unwrap() };
         let compilation_data = vm.engine.compiler()
-            .get_compilation_data(&function.definition().call_signature())
+            .get_compilation_data(&function.declaration().signature())
             .unwrap();
 
         let stack_frame = StackFrame::new(base_pointer, instruction_index, function, compilation_data);

@@ -2,10 +2,10 @@ use std::collections::{HashMap, HashSet};
 
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
-use crate::engine::binder::Binder;
+use crate::model::binder::Binder;
 use crate::mir::{branches, InstructionMIR, InstructionMIRData, RegisterMIR};
 use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
-use crate::model::function::{Function, FunctionDefinition};
+use crate::model::function::{Function, FunctionDeclaration};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::model::verifier::Verifier;
@@ -116,7 +116,7 @@ fn compute_null_check_elision_for_block_internal(function: &Function,
                 }
             }
             InstructionMIRData::LoadArgument(index, destination) => {
-                if function.definition().parameters()[*index as usize].is_reference() {
+                if function.declaration().parameters()[*index as usize].is_reference() {
                     register_is_null.insert(destination.clone(), true);
                 }
             }
@@ -184,7 +184,7 @@ fn merge_results(mut potentials_instructions: Vec<InstructionsRegisterNullStatus
 #[test]
 fn test_no_branches1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Array(Box::new(TypeId::Int32))),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Array(Box::new(TypeId::Int32))),
         vec![],
         vec![
             Instruction::LoadNull(TypeId::Array(Box::new(TypeId::Int32))),
@@ -214,7 +214,7 @@ fn test_no_branches1() {
 #[test]
 fn test_no_branches2() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Array(Box::new(TypeId::Int32))),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Array(Box::new(TypeId::Int32))),
         vec![],
         vec![
             Instruction::LoadInt32(1000),
@@ -245,7 +245,7 @@ fn test_no_branches2() {
 #[test]
 fn test_no_branches3() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1000),
@@ -284,7 +284,7 @@ fn test_no_branches3() {
 #[test]
 fn test_no_branches4() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadLocal(0),
@@ -328,7 +328,7 @@ fn test_no_branches4() {
 #[test]
 fn test_no_branches5() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadInt32(1000),
@@ -387,7 +387,7 @@ fn test_no_branches5() {
 #[test]
 fn test_no_branches6() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadInt32(1000),
@@ -460,7 +460,7 @@ fn test_no_branches6() {
 #[test]
 fn test_no_branches7() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Array(Box::new(TypeId::Int32))),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Array(Box::new(TypeId::Int32))),
         vec![],
         vec![
             Instruction::LoadInt32(1000),
@@ -500,7 +500,7 @@ fn test_no_branches7() {
 #[test]
 fn test_branches1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Array(Box::new(TypeId::Int32))),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Array(Box::new(TypeId::Int32))),
         vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadInt32(0),
@@ -546,7 +546,7 @@ fn test_branches1() {
 #[test]
 fn test_branches2() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Array(Box::new(TypeId::Int32))),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Array(Box::new(TypeId::Int32))),
         vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadInt32(0),

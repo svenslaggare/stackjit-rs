@@ -4,10 +4,10 @@ use std::iter::FromIterator;
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
 use crate::analysis::VirtualRegister;
-use crate::engine::binder::Binder;
+use crate::model::binder::Binder;
 use crate::mir::{branches, InstructionMIR, RegisterMIR};
 use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
-use crate::model::function::{Function, FunctionDefinition};
+use crate::model::function::{Function, FunctionDeclaration};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::model::verifier::Verifier;
@@ -216,7 +216,7 @@ fn get_register_usage(instructions: &Vec<InstructionMIR>,
 #[test]
 fn test_liveness1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1),
@@ -276,7 +276,7 @@ fn test_liveness1() {
 #[test]
 fn test_liveness2() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1),
@@ -331,7 +331,7 @@ fn test_liveness2() {
 #[test]
 fn test_liveness3() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1),

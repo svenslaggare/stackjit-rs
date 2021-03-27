@@ -2,7 +2,7 @@ use crate::compiler::jit::{JitCompiler};
 use crate::model::function::{Function, FunctionSignature, FunctionAddress};
 use crate::model::verifier::{Verifier, VerifyError};
 use crate::model::typesystem::TypeStorage;
-use crate::engine::binder::Binder;
+use crate::model::binder::Binder;
 use crate::vm::Execution;
 use crate::model::class::{Class};
 
@@ -43,14 +43,14 @@ impl ExecutionEngine {
     }
 
     pub fn add_function(&mut self, function: Function) -> ExecutionEngineResult<()> {
-        self.binder.define(function.definition().clone());
+        self.binder.define(function.declaration().clone());
         self.functions.push(Box::new(function));
         Ok(())
     }
 
     pub fn get_function(&self, signature: &FunctionSignature) -> Option<&Function> {
         self.functions.iter()
-            .find(|function| &function.definition().call_signature() == signature)
+            .find(|function| &function.declaration().signature() == signature)
             .map(|function| function.as_ref())
     }
 

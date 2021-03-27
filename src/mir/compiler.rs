@@ -3,11 +3,11 @@ use std::collections::HashMap;
 use crate::analysis::null_check_elision::InstructionsRegisterNullStatus;
 use crate::analysis::VirtualRegister;
 use crate::compiler::ir::Condition;
-use crate::engine::binder::Binder;
+use crate::model::binder::Binder;
 use crate::mir::{InstructionMIR, RegisterMIR};
 use crate::mir::branches::BranchManager;
 use crate::mir::InstructionMIRData;
-use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
+use crate::model::function::{Function, FunctionDeclaration, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::model::verifier::Verifier;
@@ -149,8 +149,8 @@ impl<'a> InstructionMIRCompiler<'a> {
                 }
             }
             Instruction::Return => {
-                let return_value = if self.function.definition().return_type() != &TypeId::Void {
-                    Some(self.use_stack_register(self.function.definition().return_type().clone()))
+                let return_value = if self.function.declaration().return_type() != &TypeId::Void {
+                    Some(self.use_stack_register(self.function.declaration().return_type().clone()))
                 } else {
                     None
                 };
@@ -180,13 +180,13 @@ impl<'a> InstructionMIRCompiler<'a> {
 
                         self.instructions.push(InstructionMIR::new(
                             instruction_index,
-                            InstructionMIRData::Call(func_to_call.call_signature(), return_value_reg, arguments_regs)
+                            InstructionMIRData::Call(func_to_call.signature(), return_value_reg, arguments_regs)
                         ));
                     }
                 }
             }
             Instruction::LoadArgument(argument_index) => {
-                let assign_reg = self.assign_stack_register(self.function.definition().parameters()[*argument_index as usize].clone());
+                let assign_reg = self.assign_stack_register(self.function.declaration().parameters()[*argument_index as usize].clone());
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadArgument(*argument_index, assign_reg)));
             }
             Instruction::LoadNull(null_type) => {
@@ -312,7 +312,7 @@ impl<'a> InstructionMIRCompiler<'a> {
 #[test]
 fn test_simple1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1),
@@ -337,7 +337,7 @@ fn test_simple1() {
 #[test]
 fn test_simple2() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1),
@@ -362,7 +362,7 @@ fn test_simple2() {
 #[test]
 fn test_simple3() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32, TypeId::Int32],
         vec![
             Instruction::LoadInt32(1000),
@@ -391,7 +391,7 @@ fn test_simple3() {
 #[test]
 fn test_simple4() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1000),
@@ -416,7 +416,7 @@ fn test_simple4() {
 #[test]
 fn test_simple5() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1000),
@@ -427,7 +427,7 @@ fn test_simple5() {
     );
 
     let mut binder = Binder::new();
-    binder.define(FunctionDefinition::new_managed(
+    binder.define(FunctionDeclaration::new_managed(
         "add".to_owned(),
         vec![TypeId::Int32, TypeId::Float32],
         TypeId::Int32

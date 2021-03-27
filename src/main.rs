@@ -14,7 +14,7 @@ mod vm;
 mod execution_tests;
 
 use crate::model::instruction::Instruction;
-use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
+use crate::model::function::{Function, FunctionDeclaration, FunctionSignature};
 use crate::model::typesystem::TypeId;
 use crate::vm::VirtualMachine;
 
@@ -46,21 +46,21 @@ fn main() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.binder_mut().define(
-        FunctionDefinition::new_external(
+        FunctionDeclaration::new_external(
             "sum8".to_owned(), (0..8).map(|_| TypeId::Int32).collect(), TypeId::Int32,
             sum8 as *mut std::ffi::c_void
         )
     );
 
     vm.engine.binder_mut().define(
-        FunctionDefinition::new_external(
+        FunctionDeclaration::new_external(
             "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.binder_mut().define(
-        FunctionDefinition::new_external(
+        FunctionDeclaration::new_external(
             "print_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Int32))], TypeId::Void,
             print_array as *mut std::ffi::c_void
         )
@@ -79,7 +79,7 @@ fn main() {
     // )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("new_array".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("new_array".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadNull(TypeId::Array(Box::new(TypeId::Int32))),
@@ -90,7 +90,7 @@ fn main() {
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(2000),

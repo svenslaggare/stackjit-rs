@@ -10,11 +10,11 @@ use crate::compiler::calling_conventions::{CallingConventions, float_register_ca
 use crate::compiler::code_generator::register_mapping;
 use crate::compiler::ir::{HardwareRegister, HardwareRegisterExplicit, InstructionIR, Variable};
 use crate::compiler::stack_layout;
-use crate::engine::binder::Binder;
+use crate::model::binder::Binder;
 use crate::mir::{branches, InstructionMIR, RegisterMIR};
 use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::mir::InstructionMIRData;
-use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
+use crate::model::function::{Function, FunctionDeclaration, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::model::verifier::Verifier;
@@ -606,7 +606,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
         self.pop_alive_registers(&alive_registers, None);
     }
 
-    fn get_call_argument_sources(&self, func_to_call: &FunctionDefinition, arguments: &Vec<RegisterMIR>) -> Vec<Variable> {
+    fn get_call_argument_sources(&self, func_to_call: &FunctionDeclaration, arguments: &Vec<RegisterMIR>) -> Vec<Variable> {
         let mut variables = Vec::new();
 
         let mut overwritten = HashSet::new();

@@ -10,11 +10,11 @@ use crate::compiler::code_generator::{CodeGenerator, CodeGeneratorResult};
 use crate::compiler::error_handling::ErrorHandling;
 use crate::compiler::ir::InstructionIR;
 use crate::compiler::ir::compiler::InstructionIRCompiler;
-use crate::engine::binder::Binder;
+use crate::model::binder::Binder;
 use crate::mir;
 use crate::mir::branches;
 use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
-use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
+use crate::model::function::{Function, FunctionDeclaration, FunctionSignature};
 use crate::model::typesystem::TypeStorage;
 
 pub struct JitCompiler {
@@ -39,7 +39,7 @@ impl JitCompiler {
                             binder: &mut Binder,
                             type_storage: &mut TypeStorage,
                             function: &Function) {
-        println!("{}", function.definition().signature());
+        println!("{}", function.declaration());
         println!("{{");
 
         let (compilation_result, instructions_ir) = self.compile_ir(binder, type_storage, function);
@@ -64,9 +64,9 @@ impl JitCompiler {
             );
         }
 
-        self.functions_compilation_data.insert(function.definition().call_signature(), compilation_data);
+        self.functions_compilation_data.insert(function.declaration().signature(), compilation_data);
 
-        binder.set_address(&function.definition().call_signature(), function_code_ptr);
+        binder.set_address(&function.declaration().signature(), function_code_ptr);
     }
 
     pub fn get_compilation_data(&self, signature: &FunctionSignature) -> Option<&FunctionCompilationData> {
@@ -90,7 +90,7 @@ impl JitCompiler {
     }
 
     fn resolve_calls(binder: &Binder,
-                     function: &FunctionDefinition,
+                     function: &FunctionDeclaration,
                      compilation_data: &mut FunctionCompilationData) {
         for unresolved_function_call in &compilation_data.unresolved_function_calls {
             let function_to_call = binder.get(&unresolved_function_call.signature).unwrap();
@@ -114,7 +114,7 @@ impl JitCompiler {
         compilation_data.unresolved_function_calls.clear();
     }
 
-    fn resolve_branches(function: &FunctionDefinition, compilation_data: &mut FunctionCompilationData) {
+    fn resolve_branches(function: &FunctionDeclaration, compilation_data: &mut FunctionCompilationData) {
         for (&branch_source, &(branch_target_label, branch_instruction_size)) in &compilation_data.unresolved_branches {
             let branch_target = compilation_data.branch_targets[&branch_target_label];
 
@@ -130,7 +130,7 @@ impl JitCompiler {
         compilation_data.unresolved_branches.clear();
     }
 
-    fn resolve_native_branches(function: &FunctionDefinition, compilation_data: &mut FunctionCompilationData) {
+    fn resolve_native_branches(function: &FunctionDeclaration, compilation_data: &mut FunctionCompilationData) {
         let function_code_ptr = function.address().unwrap();
         for (&source, &target) in &compilation_data.unresolved_native_branches {
             let native_target = (target as isize - (function_code_ptr as u64 + source as u64) as isize - 6) as i32;

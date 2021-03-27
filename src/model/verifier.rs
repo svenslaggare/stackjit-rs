@@ -1,7 +1,7 @@
-use crate::model::function::{Function, FunctionSignature, FunctionDefinition};
+use crate::model::function::{Function, FunctionSignature, FunctionDeclaration};
 use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::model::instruction::Instruction;
-use crate::engine::binder::Binder;
+use crate::model::binder::Binder;
 use crate::model::class::{Class, Field};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -70,7 +70,7 @@ impl<'a> Verifier<'a> {
     }
 
     pub fn verify(&mut self) -> VerifyResult<()> {
-        for parameter in self.function.definition().parameters() {
+        for parameter in self.function.declaration().parameters() {
             if parameter == &TypeId::Void {
                 return Err(VerifyError::new(VerifyErrorMessage::ParameterCannotBeVoid));
             }
@@ -156,16 +156,16 @@ impl<'a> Verifier<'a> {
                     }
                 }
                 Instruction::LoadArgument(index) => {
-                    let argument_type = self.function.definition().parameters().get(*index as usize)
+                    let argument_type = self.function.declaration().parameters().get(*index as usize)
                         .ok_or(VerifyError::with_index(instruction_index, VerifyErrorMessage::ArgumentIndexOutOfRange))?
                         .clone();
 
                     self.push_operand_stack(argument_type);
                 }
                 Instruction::Return => {
-                    if self.function.definition().return_type() != &TypeId::Void {
+                    if self.function.declaration().return_type() != &TypeId::Void {
                         let operand = self.pop_operand_stack(instruction_index)?;
-                        self.same_type(instruction_index, self.function.definition().return_type(), &operand)?;
+                        self.same_type(instruction_index, self.function.declaration().return_type(), &operand)?;
                     }
                 }
                 Instruction::NewArray(element) => {
@@ -343,7 +343,7 @@ impl<'a> Verifier<'a> {
 #[test]
 fn test_simple1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -360,7 +360,7 @@ fn test_simple1() {
 #[test]
 fn test_simple2() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -380,7 +380,7 @@ fn test_simple2() {
 #[test]
 fn test_simple3() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Float32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Float32),
         Vec::new(),
         vec![
             Instruction::LoadFloat32(47.11),
@@ -400,7 +400,7 @@ fn test_simple3() {
 #[test]
 fn test_return1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Void),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Void),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -419,7 +419,7 @@ fn test_return1() {
 #[test]
 fn test_return2() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Void),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Void),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -438,7 +438,7 @@ fn test_return2() {
 #[test]
 fn test_return3() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Float32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Float32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -461,7 +461,7 @@ fn test_return3() {
 #[test]
 fn test_local1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(4711),
@@ -480,7 +480,7 @@ fn test_local1() {
 #[test]
 fn test_local2() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(4711),
@@ -502,7 +502,7 @@ fn test_local2() {
 #[test]
 fn test_call1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![TypeId::Int32], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![TypeId::Int32], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadArgument(0),
@@ -520,7 +520,7 @@ fn test_call1() {
 #[test]
 fn test_call2() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![TypeId::Int32], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![TypeId::Int32], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1),
@@ -535,7 +535,7 @@ fn test_call2() {
 
     let mut binder = Binder::new();
     let type_storage = TypeStorage::new();
-    binder.define(FunctionDefinition::new_managed("test_call".to_owned(), vec![TypeId::Int32, TypeId::Int32, TypeId::Float32, TypeId::Int32, TypeId::Float32], TypeId::Int32));
+    binder.define(FunctionDeclaration::new_managed("test_call".to_owned(), vec![TypeId::Int32, TypeId::Int32, TypeId::Float32, TypeId::Int32, TypeId::Float32], TypeId::Int32));
 
     let mut verifier = Verifier::new(&binder, &type_storage, &mut function);
     assert_eq!(Ok(()), verifier.verify());
@@ -544,7 +544,7 @@ fn test_call2() {
 #[test]
 fn test_call3() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![TypeId::Int32], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![TypeId::Int32], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1),
@@ -557,7 +557,7 @@ fn test_call3() {
 
     let mut binder = Binder::new();
     let type_storage = TypeStorage::new();
-    binder.define(FunctionDefinition::new_managed("test_call".to_owned(), vec![TypeId::Int32, TypeId::Int32, TypeId::Float32, TypeId::Int32, TypeId::Float32], TypeId::Int32));
+    binder.define(FunctionDeclaration::new_managed("test_call".to_owned(), vec![TypeId::Int32, TypeId::Int32, TypeId::Float32, TypeId::Int32, TypeId::Float32], TypeId::Int32));
 
     let mut verifier = Verifier::new(&binder, &type_storage, &mut function);
     assert_eq!(
@@ -569,7 +569,7 @@ fn test_call3() {
 #[test]
 fn test_call4() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![TypeId::Int32], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![TypeId::Int32], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1),
@@ -584,7 +584,7 @@ fn test_call4() {
 
     let mut binder = Binder::new();
     let type_storage = TypeStorage::new();
-    binder.define(FunctionDefinition::new_managed("test_call".to_owned(), vec![TypeId::Int32, TypeId::Int32, TypeId::Float32, TypeId::Int32, TypeId::Float32], TypeId::Int32));
+    binder.define(FunctionDeclaration::new_managed("test_call".to_owned(), vec![TypeId::Int32, TypeId::Int32, TypeId::Float32, TypeId::Int32, TypeId::Float32], TypeId::Int32));
 
     let mut verifier = Verifier::new(&binder, &type_storage, &mut function);
     assert_eq!(
@@ -596,7 +596,7 @@ fn test_call4() {
 #[test]
 fn test_array1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -616,7 +616,7 @@ fn test_array1() {
 #[test]
 fn test_array2() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Void),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Void),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -637,7 +637,7 @@ fn test_array2() {
 #[test]
 fn test_array3() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Void),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Void),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -661,7 +661,7 @@ fn test_array3() {
 #[test]
 fn test_array4() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -684,7 +684,7 @@ fn test_array4() {
 #[test]
 fn test_array5() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -703,7 +703,7 @@ fn test_array5() {
 #[test]
 fn test_branches1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Void),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Void),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1),
@@ -724,7 +724,7 @@ fn test_branches1() {
 #[test]
 fn test_branches2() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1),
@@ -749,7 +749,7 @@ fn test_branches2() {
 #[test]
 fn test_branches3() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Void),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Void),
         Vec::new(),
         vec![
             Instruction::LoadInt32(1),
@@ -774,7 +774,7 @@ fn test_branches3() {
 #[test]
 fn test_branches4() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Void),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Void),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1),
@@ -798,7 +798,7 @@ fn test_branches4() {
 #[test]
 fn test_branches5() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1),
@@ -823,7 +823,7 @@ fn test_branches5() {
 #[test]
 fn test_branches6() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadLocal(0),
@@ -851,7 +851,7 @@ fn test_branches6() {
 #[test]
 fn test_null1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadNull(TypeId::Array(Box::new(TypeId::Int32))),
@@ -872,7 +872,7 @@ fn test_null1() {
 #[test]
 fn test_null2() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadNull(TypeId::Array(Box::new(TypeId::Int32))),
@@ -893,7 +893,7 @@ fn test_null2() {
 #[test]
 fn test_null3() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadNull(TypeId::Array(Box::new(TypeId::Int32))),
@@ -916,7 +916,7 @@ fn test_null3() {
 #[test]
 fn test_class1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::NewObject("Point".to_owned()),
@@ -942,7 +942,7 @@ fn test_class1() {
 #[test]
 fn test_class2() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::NewObject("Point".to_owned()),
@@ -970,7 +970,7 @@ fn test_class2() {
 #[test]
 fn test_class3() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::NewObject("Point".to_owned()),

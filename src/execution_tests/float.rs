@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 
-use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
+use crate::model::function::{Function, FunctionDeclaration, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::TypeId;
 use crate::vm::VirtualMachine;
@@ -31,14 +31,14 @@ fn test1() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.binder_mut().define(
-        FunctionDefinition::new_external(
+        FunctionDeclaration::new_external(
             "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadFloat32(13.37),
@@ -64,21 +64,21 @@ fn test2() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.binder_mut().define(
-        FunctionDefinition::new_external(
+        FunctionDeclaration::new_external(
             "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.binder_mut().define(
-        FunctionDefinition::new_external(
+        FunctionDeclaration::new_external(
             "add".to_owned(), vec![TypeId::Float32, TypeId::Float32], TypeId::Float32,
             add as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadFloat32(13.37),
@@ -104,14 +104,14 @@ fn test3() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.binder_mut().define(
-        FunctionDefinition::new_external(
+        FunctionDeclaration::new_external(
             "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("sum8".to_owned(), (0..8).map(|_| TypeId::Float32).collect(), TypeId::Float32),
+        FunctionDeclaration::new_managed("sum8".to_owned(), (0..8).map(|_| TypeId::Float32).collect(), TypeId::Float32),
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),
@@ -134,7 +134,7 @@ fn test3() {
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadFloat32(1.1),
@@ -166,14 +166,14 @@ fn test4() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.binder_mut().define(
-        FunctionDefinition::new_external(
+        FunctionDeclaration::new_external(
             "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadFloat32(13.37),
@@ -199,14 +199,14 @@ fn test5() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.binder_mut().define(
-        FunctionDefinition::new_external(
+        FunctionDeclaration::new_external(
             "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Float32],
         vec![
             Instruction::LoadFloat32(1000.0),
@@ -237,14 +237,14 @@ fn test6() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.binder_mut().define(
-        FunctionDefinition::new_external(
+        FunctionDeclaration::new_external(
             "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Float32],
         vec![
             Instruction::LoadFloat32(1000.0),

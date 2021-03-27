@@ -5,7 +5,7 @@ use crate::compiler::{FunctionCallType, FunctionCompilationData, stack_layout, U
 use crate::compiler::calling_conventions::{CallingConventions, float_register_call_arguments, register_call_arguments};
 use crate::compiler::error_handling::ErrorHandling;
 use crate::compiler::ir::{Condition, HardwareRegisterExplicit, InstructionIR};
-use crate::engine::binder::Binder;
+use crate::model::binder::Binder;
 use crate::model::function::{Function, FunctionType};
 use crate::model::typesystem::{TypeId, Type, TypeStorage};
 use crate::runtime::{array, runtime_interface};
@@ -72,7 +72,7 @@ impl<'a> CodeGenerator<'a> {
                 self.instructions_offsets.push((*mir_instruction_index, self.encoder_offset));
             },
             InstructionIR::InitializeFunction => {
-                let is_entry_point = function.definition().is_entry_point();
+                let is_entry_point = function.declaration().is_entry_point();
                 if is_entry_point {
                     self.encode_x86_instruction(X86Instruction::with_reg_mem(
                         Code::Mov_r64_rm64,

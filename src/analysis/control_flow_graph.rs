@@ -2,13 +2,13 @@ use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
 use crate::analysis::basic_block::BasicBlock;
-use crate::engine::binder::Binder;
+use crate::model::binder::Binder;
 use crate::mir::branches;
 use crate::compiler::ir::BranchLabel;
 use crate::mir::InstructionMIR;
 use crate::mir::compiler::InstructionMIRCompiler;
 use crate::mir::InstructionMIRData;
-use crate::model::function::{Function, FunctionDefinition};
+use crate::model::function::{Function, FunctionDeclaration};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::model::verifier::Verifier;
@@ -99,7 +99,7 @@ impl ControlFlowGraph {
 #[test]
 fn test_branches1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1),

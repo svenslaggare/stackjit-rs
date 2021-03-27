@@ -1,7 +1,7 @@
 use crate::runtime::memory::heap::{Heap, HeapObjectsIterator};
 use crate::runtime::stack_walker::{StackFrame, FrameValue};
 use crate::compiler::jit::JitCompiler;
-use crate::engine::binder::Binder;
+use crate::model::binder::Binder;
 use crate::model::typesystem::TypeId;
 use crate::runtime::object::ObjectReference;
 use crate::runtime::array;
