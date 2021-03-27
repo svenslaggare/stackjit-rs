@@ -1,6 +1,6 @@
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
-use crate::model::typesystem::Type;
+use crate::model::typesystem::TypeId;
 use crate::vm::VirtualMachine;
 
 extern "C" fn sum(x: i32, y: i32) -> i32 {
@@ -25,18 +25,18 @@ fn test_external1() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "sum".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32,
+            "sum".to_owned(), vec![TypeId::Int32, TypeId::Int32], TypeId::Int32,
             sum as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
             Instruction::LoadInt32(1337),
-            Instruction::Call(FunctionSignature { name: "sum".to_owned(), parameters: vec![Type::Int32, Type::Int32] }),
+            Instruction::Call(FunctionSignature { name: "sum".to_owned(), parameters: vec![TypeId::Int32, TypeId::Int32] }),
             Instruction::Return,
         ]
     )).unwrap();
@@ -51,18 +51,18 @@ fn test_external2() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "sub".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32,
+            "sub".to_owned(), vec![TypeId::Int32, TypeId::Int32], TypeId::Int32,
             sub as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
             Instruction::LoadInt32(1337),
-            Instruction::Call(FunctionSignature { name: "sub".to_owned(), parameters: vec![Type::Int32, Type::Int32] }),
+            Instruction::Call(FunctionSignature { name: "sub".to_owned(), parameters: vec![TypeId::Int32, TypeId::Int32] }),
             Instruction::Return,
         ]
     )).unwrap();
@@ -77,13 +77,13 @@ fn test_external3() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "sum8".to_owned(), (0..8).map(|_| Type::Int32).collect(), Type::Int32,
+            "sum8".to_owned(), (0..8).map(|_| TypeId::Int32).collect(), TypeId::Int32,
             sum8 as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(1),
@@ -94,7 +94,7 @@ fn test_external3() {
             Instruction::LoadInt32(6),
             Instruction::LoadInt32(7),
             Instruction::LoadInt32(8),
-            Instruction::Call(FunctionSignature::new("sum8".to_owned(), (0..8).map(|_| Type::Int32).collect())),
+            Instruction::Call(FunctionSignature::new("sum8".to_owned(), (0..8).map(|_| TypeId::Int32).collect())),
             Instruction::Return,
         ]
     )).unwrap();
@@ -109,20 +109,20 @@ fn test_external4() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "sum".to_owned(), (0..2).map(|_| Type::Int32).collect(), Type::Int32,
+            "sum".to_owned(), (0..2).map(|_| TypeId::Int32).collect(), TypeId::Int32,
             sum as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Int32],
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1000),
             Instruction::StoreLocal(0),
             Instruction::LoadInt32(1),
             Instruction::LoadInt32(2),
-            Instruction::Call(FunctionSignature::new("sum".to_owned(), (0..2).map(|_| Type::Int32).collect())),
+            Instruction::Call(FunctionSignature::new("sum".to_owned(), (0..2).map(|_| TypeId::Int32).collect())),
             Instruction::LoadLocal(0),
             Instruction::Add,
             Instruction::Return,
@@ -139,13 +139,13 @@ fn test_external5() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "sum8_sub".to_owned(), (0..8).map(|_| Type::Int32).collect(), Type::Int32,
+            "sum8_sub".to_owned(), (0..8).map(|_| TypeId::Int32).collect(), TypeId::Int32,
             sum8_sub as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(1),
@@ -156,7 +156,7 @@ fn test_external5() {
             Instruction::LoadInt32(6),
             Instruction::LoadInt32(7),
             Instruction::LoadInt32(8),
-            Instruction::Call(FunctionSignature::new("sum8_sub".to_owned(), (0..8).map(|_| Type::Int32).collect())),
+            Instruction::Call(FunctionSignature::new("sum8_sub".to_owned(), (0..8).map(|_| TypeId::Int32).collect())),
             Instruction::Return,
         ]
     )).unwrap();
@@ -170,7 +170,7 @@ fn test_managed1() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("sum".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32),
+        FunctionDefinition::new_managed("sum".to_owned(), vec![TypeId::Int32, TypeId::Int32], TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),
@@ -181,12 +181,12 @@ fn test_managed1() {
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
             Instruction::LoadInt32(1337),
-            Instruction::Call(FunctionSignature { name: "sum".to_owned(), parameters: vec![Type::Int32, Type::Int32] }),
+            Instruction::Call(FunctionSignature { name: "sum".to_owned(), parameters: vec![TypeId::Int32, TypeId::Int32] }),
             Instruction::Return,
         ]
     )).unwrap();
@@ -200,8 +200,8 @@ fn test_managed2() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("sum".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32),
-        vec![Type::Int32],
+        FunctionDefinition::new_managed("sum".to_owned(), vec![TypeId::Int32, TypeId::Int32], TypeId::Int32),
+        vec![TypeId::Int32],
         vec![
             Instruction::LoadArgument(0),
             Instruction::StoreLocal(0),
@@ -213,12 +213,12 @@ fn test_managed2() {
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
             Instruction::LoadInt32(1337),
-            Instruction::Call(FunctionSignature { name: "sum".to_owned(), parameters: vec![Type::Int32, Type::Int32] }),
+            Instruction::Call(FunctionSignature { name: "sum".to_owned(), parameters: vec![TypeId::Int32, TypeId::Int32] }),
             Instruction::Return,
         ]
     )).unwrap();
@@ -232,7 +232,7 @@ fn test_managed3() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("sum8".to_owned(), (0..8).map(|_| Type::Int32).collect(), Type::Int32),
+        FunctionDefinition::new_managed("sum8".to_owned(), (0..8).map(|_| TypeId::Int32).collect(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),
@@ -255,7 +255,7 @@ fn test_managed3() {
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(1),
@@ -266,7 +266,7 @@ fn test_managed3() {
             Instruction::LoadInt32(6),
             Instruction::LoadInt32(7),
             Instruction::LoadInt32(8),
-            Instruction::Call(FunctionSignature::new("sum8".to_owned(), (0..8).map(|_| Type::Int32).collect())),
+            Instruction::Call(FunctionSignature::new("sum8".to_owned(), (0..8).map(|_| TypeId::Int32).collect())),
             Instruction::Return,
         ]
     )).unwrap();
@@ -280,7 +280,7 @@ fn test_managed4() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("sum7".to_owned(), (0..7).map(|_| Type::Int32).collect(), Type::Int32),
+        FunctionDefinition::new_managed("sum7".to_owned(), (0..7).map(|_| TypeId::Int32).collect(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),
@@ -301,7 +301,7 @@ fn test_managed4() {
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("sum9".to_owned(), (0..9).map(|_| Type::Int32).collect(), Type::Int32),
+        FunctionDefinition::new_managed("sum9".to_owned(), (0..9).map(|_| TypeId::Int32).collect(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),
@@ -326,7 +326,7 @@ fn test_managed4() {
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(1),
@@ -338,14 +338,14 @@ fn test_managed4() {
             Instruction::LoadInt32(7),
             Instruction::LoadInt32(8),
             Instruction::LoadInt32(9),
-            Instruction::Call(FunctionSignature::new("sum9".to_owned(), (0..9).map(|_| Type::Int32).collect())),
+            Instruction::Call(FunctionSignature::new("sum9".to_owned(), (0..9).map(|_| TypeId::Int32).collect())),
             Instruction::LoadInt32(11),
             Instruction::LoadInt32(12),
             Instruction::LoadInt32(13),
             Instruction::LoadInt32(14),
             Instruction::LoadInt32(15),
             Instruction::LoadInt32(16),
-            Instruction::Call(FunctionSignature::new("sum7".to_owned(), (0..7).map(|_| Type::Int32).collect())),
+            Instruction::Call(FunctionSignature::new("sum7".to_owned(), (0..7).map(|_| TypeId::Int32).collect())),
             Instruction::Return,
         ]
     )).unwrap();
@@ -359,18 +359,18 @@ fn test_managed5() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
             Instruction::LoadInt32(1337),
-            Instruction::Call(FunctionSignature { name: "sum".to_owned(), parameters: vec![Type::Int32, Type::Int32] }),
+            Instruction::Call(FunctionSignature { name: "sum".to_owned(), parameters: vec![TypeId::Int32, TypeId::Int32] }),
             Instruction::Return,
         ]
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("sum".to_owned(), vec![Type::Int32, Type::Int32], Type::Int32),
+        FunctionDefinition::new_managed("sum".to_owned(), vec![TypeId::Int32, TypeId::Int32], TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),

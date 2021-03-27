@@ -2,13 +2,13 @@ use crate::runtime::memory::heap::{Heap, HeapObjectsIterator};
 use crate::runtime::stack_walker::{StackFrame, FrameValue};
 use crate::compiler::jit::JitCompiler;
 use crate::engine::binder::Binder;
-use crate::model::typesystem::Type;
+use crate::model::typesystem::TypeId;
 use crate::runtime::object::ObjectReference;
 use crate::runtime::array;
 use crate::runtime::array::ArrayReference;
 
 pub struct GarbageCollector {
-    deleted_objects: Vec<(u64, Type)>
+    deleted_objects: Vec<(u64, TypeId)>
 }
 
 impl GarbageCollector {
@@ -18,7 +18,7 @@ impl GarbageCollector {
         }
     }
 
-    pub fn deleted_objects(&self) -> &Vec<(u64, Type)> {
+    pub fn deleted_objects(&self) -> &Vec<(u64, TypeId)> {
         &self.deleted_objects
     }
 
@@ -32,7 +32,7 @@ impl GarbageCollector {
                 println!(
                     "0x{:0x} - type: {}, size: {}, marked: {}, dead: {}",
                     object_ref.ptr() as u64,
-                    object_ref.object_type().instance,
+                    object_ref.object_type().id,
                     object_ref.size(),
                     object_ref.header().is_marked(),
                     object_ref.header().is_deleted()
@@ -94,8 +94,8 @@ impl GarbageCollector {
         if !object_ref.header().is_marked() {
             object_ref.header_mut().mark();
 
-            match &object_ref.object_type().instance {
-                Type::Array(element) => {
+            match &object_ref.object_type().id {
+                TypeId::Array(element) => {
                     if element.is_reference() {
                         let array_ref = ArrayReference::<u64>::new(object_ref.ptr());
                         for index in 0..array_ref.length() {
@@ -108,7 +108,7 @@ impl GarbageCollector {
                         }
                     }
                 }
-                Type::Class(_) => {
+                TypeId::Class(_) => {
                     for field in object_ref.object_type().class.as_ref().unwrap().fields() {
                         if field.field_type().is_reference() {
                             self.mark_value(
@@ -128,8 +128,8 @@ impl GarbageCollector {
     fn sweep_objects(&mut self, heap: &Heap) {
         for mut object_ref in HeapObjectsIterator::new(heap) {
             if !object_ref.header().is_marked() {
-                println!("Deleted object: 0x{:0x}, type: {}", object_ref.ptr() as u64, object_ref.object_type().instance);
-                self.deleted_objects.push((object_ref.ptr() as u64, object_ref.object_type().instance.clone()));
+                println!("Deleted object: 0x{:0x}, type: {}", object_ref.ptr() as u64, object_ref.object_type().id);
+                self.deleted_objects.push((object_ref.ptr() as u64, object_ref.object_type().id.clone()));
                 object_ref.delete();
             } else {
                 object_ref.header_mut().unmark();

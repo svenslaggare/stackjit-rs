@@ -7,7 +7,7 @@ use crate::mir::{branches, InstructionMIR, InstructionMIRData, RegisterMIR};
 use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::model::function::{Function, FunctionDefinition};
 use crate::model::instruction::Instruction;
-use crate::model::typesystem::{Type, TypeStorage};
+use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::model::verifier::Verifier;
 
 pub type RegisterNullStatus = HashMap<RegisterMIR, bool>;
@@ -184,10 +184,10 @@ fn merge_results(mut potentials_instructions: Vec<InstructionsRegisterNullStatus
 #[test]
 fn test_no_branches1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Array(Box::new(Type::Int32))),
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Array(Box::new(TypeId::Int32))),
         vec![],
         vec![
-            Instruction::LoadNull(Type::Array(Box::new(Type::Int32))),
+            Instruction::LoadNull(TypeId::Array(Box::new(TypeId::Int32))),
             Instruction::Return,
         ]
     );
@@ -208,17 +208,17 @@ fn test_no_branches1() {
     }
 
     assert_eq!(1, result[1].len());
-    assert_eq!(true, result[1][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[1][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
 }
 
 #[test]
 fn test_no_branches2() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Array(Box::new(Type::Int32))),
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Array(Box::new(TypeId::Int32))),
         vec![],
         vec![
             Instruction::LoadInt32(1000),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::Return,
         ]
     );
@@ -239,19 +239,19 @@ fn test_no_branches2() {
     }
 
     assert_eq!(1, result[2].len());
-    assert_eq!(false, result[2][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[2][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
 }
 
 #[test]
 fn test_no_branches3() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1000),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::LoadInt32(0),
-            Instruction::LoadElement(Type::Int32),
+            Instruction::LoadElement(TypeId::Int32),
             Instruction::Return,
         ]
     );
@@ -272,24 +272,24 @@ fn test_no_branches3() {
     }
 
     assert_eq!(1, result[2].len());
-    assert_eq!(false, result[2][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[2][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(1, result[3].len());
-    assert_eq!(false, result[3][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[3][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(1, result[4].len());
-    assert_eq!(false, result[4][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[4][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
 }
 
 #[test]
 fn test_no_branches4() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
-        vec![Type::Array(Box::new(Type::Int32))],
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
-            Instruction::LoadElement(Type::Int32),
+            Instruction::LoadElement(TypeId::Int32),
             Instruction::Return,
         ]
     );
@@ -310,34 +310,34 @@ fn test_no_branches4() {
     }
 
     assert_eq!(1, result[0].len());
-    assert_eq!(true, result[0][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[0][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(2, result[1].len());
-    assert_eq!(true, result[1][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(true, result[1][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[1][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
+    assert_eq!(true, result[1][&RegisterMIR::new(1, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(2, result[2].len());
-    assert_eq!(true, result[2][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(true, result[2][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[2][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
+    assert_eq!(true, result[2][&RegisterMIR::new(1, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(2, result[3].len());
-    assert_eq!(true, result[3][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(true, result[3][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[3][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
+    assert_eq!(true, result[3][&RegisterMIR::new(1, TypeId::Array(Box::new(TypeId::Int32)))]);
 }
 
 #[test]
 fn test_no_branches5() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
-        vec![Type::Array(Box::new(Type::Int32))],
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadInt32(1000),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::StoreLocal(0),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
-            Instruction::LoadElement(Type::Int32),
+            Instruction::LoadElement(TypeId::Int32),
             Instruction::Return,
         ]
     );
@@ -358,47 +358,47 @@ fn test_no_branches5() {
     }
 
     assert_eq!(1, result[0].len());
-    assert_eq!(true, result[0][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[0][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(1, result[1].len());
-    assert_eq!(true, result[1][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[1][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(2, result[2].len());
-    assert_eq!(true, result[2][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[2][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[2][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
+    assert_eq!(false, result[2][&RegisterMIR::new(1, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(2, result[3].len());
-    assert_eq!(false, result[3][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[3][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[3][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
+    assert_eq!(false, result[3][&RegisterMIR::new(1, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(2, result[4].len());
-    assert_eq!(false, result[4][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[4][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[4][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
+    assert_eq!(false, result[4][&RegisterMIR::new(1, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(2, result[5].len());
-    assert_eq!(false, result[5][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[5][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[5][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
+    assert_eq!(false, result[5][&RegisterMIR::new(1, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(2, result[6].len());
-    assert_eq!(false, result[6][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[6][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[6][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
+    assert_eq!(false, result[6][&RegisterMIR::new(1, TypeId::Array(Box::new(TypeId::Int32)))]);
 }
 
 #[test]
 fn test_no_branches6() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
-        vec![Type::Array(Box::new(Type::Int32))],
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadInt32(1000),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::StoreLocal(0),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
-            Instruction::LoadElement(Type::Int32),
+            Instruction::LoadElement(TypeId::Int32),
 
-            Instruction::LoadNull(Type::Array(Box::new(Type::Int32))),
+            Instruction::LoadNull(TypeId::Array(Box::new(TypeId::Int32))),
             Instruction::StoreLocal(0),
 
             Instruction::Return,
@@ -421,52 +421,52 @@ fn test_no_branches6() {
     }
 
     assert_eq!(1, result[0].len());
-    assert_eq!(true, result[0][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[0][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(1, result[1].len());
-    assert_eq!(true, result[1][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[1][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(2, result[2].len());
-    assert_eq!(true, result[2][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[2][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[2][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
+    assert_eq!(false, result[2][&RegisterMIR::new(1, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(2, result[3].len());
-    assert_eq!(false, result[3][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[3][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[3][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
+    assert_eq!(false, result[3][&RegisterMIR::new(1, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(2, result[4].len());
-    assert_eq!(false, result[4][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[4][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[4][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
+    assert_eq!(false, result[4][&RegisterMIR::new(1, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(2, result[5].len());
-    assert_eq!(false, result[5][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[5][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[5][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
+    assert_eq!(false, result[5][&RegisterMIR::new(1, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(2, result[6].len());
-    assert_eq!(false, result[6][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[6][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[6][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
+    assert_eq!(false, result[6][&RegisterMIR::new(1, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(3, result[7].len());
-    assert_eq!(false, result[7][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[7][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(true, result[7][&RegisterMIR::new(2, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[7][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
+    assert_eq!(false, result[7][&RegisterMIR::new(1, TypeId::Array(Box::new(TypeId::Int32)))]);
+    assert_eq!(true, result[7][&RegisterMIR::new(2, TypeId::Array(Box::new(TypeId::Int32)))]);
 
     assert_eq!(3, result[8].len());
-    assert_eq!(true, result[8][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(false, result[8][&RegisterMIR::new(1, Type::Array(Box::new(Type::Int32)))]);
-    assert_eq!(true, result[8][&RegisterMIR::new(2, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[8][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
+    assert_eq!(false, result[8][&RegisterMIR::new(1, TypeId::Array(Box::new(TypeId::Int32)))]);
+    assert_eq!(true, result[8][&RegisterMIR::new(2, TypeId::Array(Box::new(TypeId::Int32)))]);
 }
 
 #[test]
 fn test_no_branches7() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Array(Box::new(Type::Int32))),
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Array(Box::new(TypeId::Int32))),
         vec![],
         vec![
             Instruction::LoadInt32(1000),
-            Instruction::NewArray(Type::Array(Box::new(Type::Int32))),
+            Instruction::NewArray(TypeId::Array(Box::new(TypeId::Int32))),
             Instruction::LoadInt32(0),
-            Instruction::LoadElement(Type::Array(Box::new(Type::Int32))),
+            Instruction::LoadElement(TypeId::Array(Box::new(TypeId::Int32))),
             Instruction::Return,
         ]
     );
@@ -487,32 +487,32 @@ fn test_no_branches7() {
     }
 
     assert_eq!(1, result[2].len());
-    assert_eq!(false, result[2][&RegisterMIR::new(0, Type::Array(Box::new(Type::Array(Box::new(Type::Int32)))))]);
+    assert_eq!(false, result[2][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Array(Box::new(TypeId::Int32)))))]);
 
     assert_eq!(1, result[3].len());
-    assert_eq!(false, result[3][&RegisterMIR::new(0, Type::Array(Box::new(Type::Array(Box::new(Type::Int32)))))]);
+    assert_eq!(false, result[3][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Array(Box::new(TypeId::Int32)))))]);
 
     assert_eq!(2, result[4].len());
-    assert_eq!(false, result[4][&RegisterMIR::new(0, Type::Array(Box::new(Type::Array(Box::new(Type::Int32)))))]);
-    assert_eq!(true, result[4][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[4][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Array(Box::new(TypeId::Int32)))))]);
+    assert_eq!(true, result[4][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
 }
 
 #[test]
 fn test_branches1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Array(Box::new(Type::Int32))),
-        vec![Type::Array(Box::new(Type::Int32))],
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Array(Box::new(TypeId::Int32))),
+        vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadInt32(0),
             Instruction::LoadInt32(0),
             Instruction::BranchEqual(6),
 
-            Instruction::LoadNull(Type::Array(Box::new(Type::Int32))),
+            Instruction::LoadNull(TypeId::Array(Box::new(TypeId::Int32))),
             Instruction::StoreLocal(0),
             Instruction::Branch(9),
 
             Instruction::LoadInt32(1000),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::StoreLocal(0),
 
             Instruction::LoadLocal(0),
@@ -540,26 +540,26 @@ fn test_branches1() {
     }
 
     assert_eq!(2, result[12].len());
-    assert_eq!(true, result[12][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(true, result[12][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
 }
 
 #[test]
 fn test_branches2() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Array(Box::new(Type::Int32))),
-        vec![Type::Array(Box::new(Type::Int32))],
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Array(Box::new(TypeId::Int32))),
+        vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadInt32(0),
             Instruction::LoadInt32(0),
             Instruction::BranchEqual(7),
 
             Instruction::LoadInt32(1000),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::StoreLocal(0),
             Instruction::Branch(10),
 
             Instruction::LoadInt32(1000),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::StoreLocal(0),
 
             Instruction::LoadLocal(0),
@@ -587,5 +587,5 @@ fn test_branches2() {
     }
 
     assert_eq!(2, result[13].len());
-    assert_eq!(false, result[13][&RegisterMIR::new(0, Type::Array(Box::new(Type::Int32)))]);
+    assert_eq!(false, result[13][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
 }

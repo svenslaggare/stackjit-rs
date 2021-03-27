@@ -15,7 +15,7 @@ mod execution_tests;
 
 use crate::model::instruction::Instruction;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
-use crate::model::typesystem::Type;
+use crate::model::typesystem::TypeId;
 use crate::vm::VirtualMachine;
 
 extern "C" fn push() -> i32 {
@@ -47,21 +47,21 @@ fn main() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "sum8".to_owned(), (0..8).map(|_| Type::Int32).collect(), Type::Int32,
+            "sum8".to_owned(), (0..8).map(|_| TypeId::Int32).collect(), TypeId::Int32,
             sum8 as *mut std::ffi::c_void
         )
     );
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "print".to_owned(), vec![Type::Float32], Type::Void,
+            "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "print_array".to_owned(), vec![Type::Array(Box::new(Type::Int32))], Type::Void,
+            "print_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Int32))], TypeId::Void,
             print_array as *mut std::ffi::c_void
         )
     );
@@ -79,18 +79,18 @@ fn main() {
     // )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("new_array".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("new_array".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
-            Instruction::LoadNull(Type::Array(Box::new(Type::Int32))),
+            Instruction::LoadNull(TypeId::Array(Box::new(TypeId::Int32))),
             Instruction::LoadInt32(1000),
-            Instruction::LoadElement(Type::Int32),
+            Instruction::LoadElement(TypeId::Int32),
             Instruction::Return
         ]
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(2000),

@@ -9,7 +9,7 @@ use crate::mir::{branches, InstructionMIR, RegisterMIR};
 use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::model::function::{Function, FunctionDefinition};
 use crate::model::instruction::Instruction;
-use crate::model::typesystem::{Type, TypeStorage};
+use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::model::verifier::Verifier;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -216,7 +216,7 @@ fn get_register_usage(instructions: &Vec<InstructionMIR>,
 #[test]
 fn test_liveness1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1),
@@ -276,8 +276,8 @@ fn test_liveness1() {
 #[test]
 fn test_liveness2() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
-        vec![Type::Int32],
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1),
             Instruction::LoadInt32(2),
@@ -331,8 +331,8 @@ fn test_liveness2() {
 #[test]
 fn test_liveness3() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
-        vec![Type::Int32],
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1),
             Instruction::LoadInt32(2),

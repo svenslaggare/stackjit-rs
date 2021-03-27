@@ -3,7 +3,7 @@ use crate::model::function::Function;
 use crate::compiler::jit::JitCompiler;
 use crate::engine::binder::Binder;
 use crate::mir::RegisterMIR;
-use crate::model::typesystem::Type;
+use crate::model::typesystem::TypeId;
 
 pub struct StackFrame<'a> {
     base_pointer: u64,
@@ -130,7 +130,7 @@ impl<'a> StackFrameArgumentsIterator<'a> {
         }
     }
 
-    fn arguments(&self) -> &'a Vec<Type> {
+    fn arguments(&self) -> &'a Vec<TypeId> {
         &self.stack_frame.function.definition().parameters()
     }
 }
@@ -223,13 +223,13 @@ impl<'a> Iterator for StackFrameOperandsIterator<'a> {
 }
 
 pub struct FrameValue<'a> {
-    pub value_type: &'a Type,
+    pub value_type: &'a TypeId,
     pub register: Option<&'a RegisterMIR>,
     value_ptr: *const u8
 }
 
 impl<'a> FrameValue<'a> {
-    pub fn new_value(value_type: &'a Type, value_ptr: *const u8) -> FrameValue<'a> {
+    pub fn new_value(value_type: &'a TypeId, value_ptr: *const u8) -> FrameValue<'a> {
         FrameValue {
             register: None,
             value_type,
@@ -237,7 +237,7 @@ impl<'a> FrameValue<'a> {
         }
     }
 
-    pub fn new_register(value_type: &'a Type, register: &'a RegisterMIR, value_ptr: *const u8) -> FrameValue<'a> {
+    pub fn new_register(value_type: &'a TypeId, register: &'a RegisterMIR, value_ptr: *const u8) -> FrameValue<'a> {
         FrameValue {
             register: Some(register),
             value_type,
@@ -261,19 +261,19 @@ impl<'a> std::fmt::Display for FrameValue<'a> {
         write!(f, ": ")?;
 
         match self.value_type {
-            Type::Void => {
+            TypeId::Void => {
                 write!(f, "()")
             }
-            Type::Int32 => {
+            TypeId::Int32 => {
                 write!(f, "{}", self.value_u64())
             }
-            Type::Float32 => {
+            TypeId::Float32 => {
                 write!(f, "{}", self.value_u64())
             }
-            Type::Array(_) => {
+            TypeId::Array(_) => {
                 write!(f, "0x{:0x}", self.value_u64())
             }
-            Type::Class(_) => {
+            TypeId::Class(_) => {
                 write!(f, "0x{:0x}", self.value_u64())
             }
         }

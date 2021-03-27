@@ -1,5 +1,5 @@
 use crate::vm::get_vm;
-use crate::model::typesystem::{Type, TypeMetadata};
+use crate::model::typesystem::{TypeId, Type};
 use crate::engine::execution::RuntimeError;
 use crate::model::function::{FunctionSignature, Function};
 use crate::compiler::stack_layout;
@@ -14,14 +14,14 @@ pub extern "C" fn set_error_return(return_address: u64, base_pointer: u64, stack
     })
 }
 
-pub extern "C" fn new_array(type_ptr: *const TypeMetadata, length: i32) -> ObjectPointer {
+pub extern "C" fn new_array(type_ptr: *const Type, length: i32) -> ObjectPointer {
     get_vm(|vm| {
         let type_metadata = unsafe { type_ptr.as_ref() }.unwrap();
         vm.memory_manager.new_array(type_metadata, length)
     })
 }
 
-pub extern "C" fn new_class(type_ptr: *const TypeMetadata) -> ObjectPointer {
+pub extern "C" fn new_class(type_ptr: *const Type) -> ObjectPointer {
     get_vm(|vm| {
         let type_metadata = unsafe { type_ptr.as_ref() }.unwrap();
         vm.memory_manager.new_class(type_metadata)

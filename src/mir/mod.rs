@@ -6,12 +6,12 @@ pub mod branches;
 use crate::analysis::VirtualRegister;
 use crate::compiler::ir::{BranchLabel, Condition};
 use crate::model::function::FunctionSignature;
-use crate::model::typesystem::Type;
+use crate::model::typesystem::TypeId;
 
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct RegisterMIR {
     pub number: u32,
-    pub value_type: Type
+    pub value_type: TypeId
 }
 
 impl std::fmt::Debug for RegisterMIR {
@@ -21,7 +21,7 @@ impl std::fmt::Debug for RegisterMIR {
 }
 
 impl RegisterMIR {
-    pub fn new(number: u32, value_type: Type) -> RegisterMIR {
+    pub fn new(number: u32, value_type: TypeId) -> RegisterMIR {
         RegisterMIR {
             number,
             value_type
@@ -61,17 +61,17 @@ pub enum InstructionMIRData {
     Call(FunctionSignature, Option<RegisterMIR>, Vec<RegisterMIR>),
     LoadArgument(u32, RegisterMIR),
     LoadNull(RegisterMIR),
-    NewArray(Type, RegisterMIR, RegisterMIR),
-    LoadElement(Type, RegisterMIR, RegisterMIR, RegisterMIR),
-    StoreElement(Type, RegisterMIR, RegisterMIR, RegisterMIR),
+    NewArray(TypeId, RegisterMIR, RegisterMIR),
+    LoadElement(TypeId, RegisterMIR, RegisterMIR, RegisterMIR),
+    StoreElement(TypeId, RegisterMIR, RegisterMIR, RegisterMIR),
     LoadArrayLength(RegisterMIR, RegisterMIR),
-    NewObject(Type, RegisterMIR),
-    LoadField(Type, String, RegisterMIR, RegisterMIR),
-    StoreField(Type, String, RegisterMIR, RegisterMIR),
+    NewObject(TypeId, RegisterMIR),
+    LoadField(TypeId, String, RegisterMIR, RegisterMIR),
+    StoreField(TypeId, String, RegisterMIR, RegisterMIR),
     GarbageCollect,
     BranchLabel(BranchLabel),
     Branch(BranchLabel),
-    BranchCondition(Condition, Type, BranchLabel, RegisterMIR, RegisterMIR)
+    BranchCondition(Condition, TypeId, BranchLabel, RegisterMIR, RegisterMIR)
 }
 
 impl InstructionMIRData {

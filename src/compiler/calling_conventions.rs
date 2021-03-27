@@ -4,7 +4,7 @@ use crate::compiler::ir::{HardwareRegister, HardwareRegisterExplicit, Instructio
 use crate::compiler::stack_layout;
 use crate::compiler::stack_layout::{STACK_ENTRY_SIZE, STACK_OFFSET};
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
-use crate::model::typesystem::Type;
+use crate::model::typesystem::TypeId;
 
 pub struct CallingConventions {
 
@@ -39,7 +39,7 @@ impl CallingConventions {
         let argument_source = &arguments[argument_index];
 
         match &function_to_call.parameters[argument_index] {
-            Type::Float32 => {
+            TypeId::Float32 => {
                 let relative_index = float_register_call_arguments::get_relative_index(&function_to_call.parameters, argument_index);
                 if relative_index >= float_register_call_arguments::NUM_ARGUMENTS {
                     argument_source.move_to_stack(instructions);
@@ -67,7 +67,7 @@ impl CallingConventions {
     pub fn move_arguments_to_stack(&self, function: &Function, instructions: &mut Vec<InstructionIR>) {
         for argument_index in (0..function.definition().parameters().len()).rev() {
             match function.definition().parameters()[argument_index] {
-                Type::Float32 => {
+                TypeId::Float32 => {
                     self.move_float_arguments_to_stack(
                         function,
                         argument_index,
@@ -93,8 +93,8 @@ impl CallingConventions {
                                func_to_call: &FunctionDefinition,
                                instructions: &mut Vec<InstructionIR>) {
         match func_to_call.return_type() {
-            Type::Void => {}
-            Type::Float32 => {
+            TypeId::Void => {}
+            TypeId::Float32 => {
                 variable.move_from_explicit(
                     HardwareRegisterExplicit(float_register_call_arguments::RETURN_VALUE),
                     instructions
@@ -114,8 +114,8 @@ impl CallingConventions {
                              variable: &Variable,
                              instructions: &mut Vec<InstructionIR>) {
         match function.definition().return_type() {
-            Type::Void => {}
-            Type::Float32 => {
+            TypeId::Void => {}
+            TypeId::Float32 => {
                 variable.move_to_explicit(
                     HardwareRegisterExplicit(float_register_call_arguments::RETURN_VALUE),
                     instructions
@@ -192,7 +192,7 @@ impl CallingConventions {
             }
 
             match parameter {
-                Type::Float32 => {
+                TypeId::Float32 => {
                     if float_register_call_arguments::get_relative_index(parameters, index) >= float_register_call_arguments::NUM_ARGUMENTS {
                         stack_argument_index += 1;
                     }
@@ -208,12 +208,12 @@ impl CallingConventions {
         stack_argument_index
     }
 
-    pub fn num_stack_arguments(&self, parameters: &Vec<Type>) -> usize {
+    pub fn num_stack_arguments(&self, parameters: &Vec<TypeId>) -> usize {
         let mut num_stack_arguments = 0;
 
         for (parameter_index, parameter) in parameters.iter().enumerate() {
             match parameter {
-                Type::Float32 => {
+                TypeId::Float32 => {
                     if float_register_call_arguments::get_relative_index(parameters, parameter_index) >= float_register_call_arguments::NUM_ARGUMENTS {
                         num_stack_arguments += 1;
                     }
@@ -234,9 +234,9 @@ impl CallingConventions {
     }
 }
 
-pub fn get_call_register(func_to_call: &FunctionDefinition, index: usize, argument_type: &Type) -> Option<Register> {
+pub fn get_call_register(func_to_call: &FunctionDefinition, index: usize, argument_type: &TypeId) -> Option<Register> {
     match argument_type {
-        Type::Float32 => {
+        TypeId::Float32 => {
             let relative_index = float_register_call_arguments::get_relative_index(func_to_call.parameters(), index);
             if relative_index < float_register_call_arguments::NUM_ARGUMENTS {
                 return Some(float_register_call_arguments::get_argument(relative_index));
@@ -256,7 +256,7 @@ pub fn get_call_register(func_to_call: &FunctionDefinition, index: usize, argume
 pub mod register_call_arguments {
     use iced_x86::Register;
 
-    use crate::model::typesystem::Type;
+    use crate::model::typesystem::TypeId;
 
     pub const ARG0: Register = Register::RDI;
     pub const ARG1: Register = Register::RSI;
@@ -278,7 +278,7 @@ pub mod register_call_arguments {
         }
     }
 
-    pub fn get_relative_index(parameters: &Vec<Type>, argument_index: usize) -> usize {
+    pub fn get_relative_index(parameters: &Vec<TypeId>, argument_index: usize) -> usize {
         let mut relative_argument_index = 0;
         for (index, parameter) in parameters.iter().enumerate() {
             if index == argument_index {
@@ -286,7 +286,7 @@ pub mod register_call_arguments {
             }
 
             match parameter {
-                Type::Float32 => {},
+                TypeId::Float32 => {},
                 _ => {
                     relative_argument_index += 1;
                 }
@@ -303,7 +303,7 @@ pub mod register_call_arguments {
 pub mod float_register_call_arguments {
     use iced_x86::Register;
 
-    use crate::model::typesystem::Type;
+    use crate::model::typesystem::TypeId;
 
     pub const ARG0: Register = Register::XMM0;
     pub const ARG1: Register = Register::XMM1;
@@ -329,14 +329,14 @@ pub mod float_register_call_arguments {
         }
     }
 
-    pub fn get_relative_index(parameters: &Vec<Type>, argument_index: usize) -> usize {
+    pub fn get_relative_index(parameters: &Vec<TypeId>, argument_index: usize) -> usize {
         let mut float_argument_index = 0;
         for (index, parameter) in parameters.iter().enumerate() {
             if index == argument_index {
                 break;
             }
 
-            if let Type::Float32 = parameter {
+            if let TypeId::Float32 = parameter {
                 float_argument_index += 1;
             }
         }

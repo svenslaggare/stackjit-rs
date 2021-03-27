@@ -9,7 +9,7 @@ use crate::mir::branches::BranchManager;
 use crate::mir::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
-use crate::model::typesystem::{Type, TypeStorage};
+use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::model::verifier::Verifier;
 
 pub struct MIRCompilationResult {
@@ -99,11 +99,11 @@ impl<'a> InstructionMIRCompiler<'a> {
 
         match instruction {
             Instruction::LoadInt32(value) => {
-                let assign_reg = self.assign_stack_register(Type::Int32);
+                let assign_reg = self.assign_stack_register(TypeId::Int32);
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadInt32(assign_reg, *value)));
             }
             Instruction::LoadFloat32(value) => {
-                let assign_reg = self.assign_stack_register(Type::Float32);
+                let assign_reg = self.assign_stack_register(TypeId::Float32);
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadFloat32(assign_reg, *value)));
             }
             Instruction::LoadLocal(index) => {
@@ -123,10 +123,10 @@ impl<'a> InstructionMIRCompiler<'a> {
                 let assign_reg = self.assign_stack_register(value_type.clone());
 
                 match value_type {
-                    Type::Int32 => {
+                    TypeId::Int32 => {
                         self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::AddInt32(assign_reg, op1_reg, op2_reg)));
                     }
-                    Type::Float32 => {
+                    TypeId::Float32 => {
                         self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::AddFloat32(assign_reg, op1_reg, op2_reg)));
                     }
                     _ => { panic!("unexpected."); }
@@ -139,17 +139,17 @@ impl<'a> InstructionMIRCompiler<'a> {
                 let assign_reg = self.assign_stack_register(value_type.clone());
 
                 match value_type {
-                    Type::Int32 => {
+                    TypeId::Int32 => {
                         self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::SubInt32(assign_reg, op1_reg, op2_reg)));
                     }
-                    Type::Float32 => {
+                    TypeId::Float32 => {
                         self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::SubFloat32(assign_reg, op1_reg, op2_reg)));
                     }
                     _ => { panic!("unexpected."); }
                 }
             }
             Instruction::Return => {
-                let return_value = if self.function.definition().return_type() != &Type::Void {
+                let return_value = if self.function.definition().return_type() != &TypeId::Void {
                     Some(self.use_stack_register(self.function.definition().return_type().clone()))
                 } else {
                     None
@@ -171,7 +171,7 @@ impl<'a> InstructionMIRCompiler<'a> {
                             .collect::<Vec<_>>();
                         arguments_regs.reverse();
 
-                        let return_value_reg = if func_to_call.return_type() != &Type::Void {
+                        let return_value_reg = if func_to_call.return_type() != &TypeId::Void {
                             Some(self.assign_stack_register(func_to_call.return_type().clone()))
                         } else {
                             None
@@ -193,16 +193,16 @@ impl<'a> InstructionMIRCompiler<'a> {
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadNull(assign_reg)));
             }
             Instruction::NewArray(element) => {
-                let size_reg = self.use_stack_register(Type::Int32);
-                let assign_reg = self.assign_stack_register(Type::Array(Box::new(element.clone())));
+                let size_reg = self.use_stack_register(TypeId::Int32);
+                let assign_reg = self.assign_stack_register(TypeId::Array(Box::new(element.clone())));
                 self.instructions.push(InstructionMIR::new(
                     instruction_index,
                     InstructionMIRData::NewArray(element.clone(), assign_reg, size_reg)
                 ));
             }
             Instruction::LoadElement(element) => {
-                let index_reg = self.use_stack_register(Type::Int32);
-                let array_ref_reg = self.use_stack_register(Type::Array(Box::new(element.clone())));
+                let index_reg = self.use_stack_register(TypeId::Int32);
+                let array_ref_reg = self.use_stack_register(TypeId::Array(Box::new(element.clone())));
                 let assign_reg = self.assign_stack_register(element.clone());
                 self.instructions.push(InstructionMIR::new(
                     instruction_index,
@@ -211,8 +211,8 @@ impl<'a> InstructionMIRCompiler<'a> {
             }
             Instruction::StoreElement(element) => {
                 let value_ref = self.use_stack_register(element.clone());
-                let index_reg = self.use_stack_register(Type::Int32);
-                let array_ref_reg = self.use_stack_register(Type::Array(Box::new(element.clone())));
+                let index_reg = self.use_stack_register(TypeId::Int32);
+                let array_ref_reg = self.use_stack_register(TypeId::Array(Box::new(element.clone())));
                 self.instructions.push(InstructionMIR::new(
                     instruction_index,
                     InstructionMIRData::StoreElement(element.clone(), array_ref_reg, index_reg, value_ref)
@@ -220,16 +220,16 @@ impl<'a> InstructionMIRCompiler<'a> {
             }
             Instruction::LoadArrayLength => {
                 let array_ref_reg = self.use_stack_register(operand_types[0].clone());
-                let assign_reg = self.assign_stack_register(Type::Int32);
+                let assign_reg = self.assign_stack_register(TypeId::Int32);
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadArrayLength(assign_reg, array_ref_reg)));
             }
             Instruction::NewObject(class_type) => {
-                let class_type = Type::Class(class_type.clone());
+                let class_type = TypeId::Class(class_type.clone());
                 let assign_reg = self.assign_stack_register(class_type.clone());
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::NewObject(class_type, assign_reg)));
             }
             Instruction::LoadField(class_type, field_name) => {
-                let class_type = Type::Class(class_type.clone());
+                let class_type = TypeId::Class(class_type.clone());
                 let class_ref_reg = self.use_stack_register(class_type.clone());
                 let assign_reg = self.assign_stack_register(class_type.clone());
                 self.instructions.push(InstructionMIR::new(
@@ -238,7 +238,7 @@ impl<'a> InstructionMIRCompiler<'a> {
                 ));
             }
             Instruction::StoreField(class_type, field_name) => {
-                let class_type = Type::Class(class_type.clone());
+                let class_type = TypeId::Class(class_type.clone());
                 let value_reg = self.use_stack_register(class_type.clone());
                 let class_ref_reg = self.use_stack_register(class_type.clone());
                 self.instructions.push(InstructionMIR::new(
@@ -280,7 +280,7 @@ impl<'a> InstructionMIRCompiler<'a> {
         }
     }
 
-    fn use_stack_register(&mut self, value_type: Type) -> RegisterMIR {
+    fn use_stack_register(&mut self, value_type: TypeId) -> RegisterMIR {
         if self.next_operand_virtual_register == 0 {
             panic!("Invalid stack virtual register.");
         }
@@ -290,7 +290,7 @@ impl<'a> InstructionMIRCompiler<'a> {
         RegisterMIR::new(number, value_type)
     }
 
-    fn assign_stack_register(&mut self, value_type: Type) -> RegisterMIR {
+    fn assign_stack_register(&mut self, value_type: TypeId) -> RegisterMIR {
         let number = self.next_operand_virtual_register;
         self.next_operand_virtual_register += 1;
         self.max_num_virtual_register = self.max_num_virtual_register.max(self.next_operand_virtual_register as usize);
@@ -311,7 +311,7 @@ impl<'a> InstructionMIRCompiler<'a> {
 #[test]
 fn test_simple1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1),
@@ -336,7 +336,7 @@ fn test_simple1() {
 #[test]
 fn test_simple2() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1),
@@ -361,8 +361,8 @@ fn test_simple2() {
 #[test]
 fn test_simple3() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
-        vec![Type::Int32, Type::Int32],
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        vec![TypeId::Int32, TypeId::Int32],
         vec![
             Instruction::LoadInt32(1000),
             Instruction::StoreLocal(0),
@@ -390,8 +390,8 @@ fn test_simple3() {
 #[test]
 fn test_simple4() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
-        vec![Type::Int32],
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1000),
             Instruction::LoadInt32(2000),
@@ -415,12 +415,12 @@ fn test_simple4() {
 #[test]
 fn test_simple5() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
-        vec![Type::Int32],
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1000),
             Instruction::LoadFloat32(2000.0),
-            Instruction::Call(FunctionSignature::new("add".to_owned(), vec![Type::Int32, Type::Float32])),
+            Instruction::Call(FunctionSignature::new("add".to_owned(), vec![TypeId::Int32, TypeId::Float32])),
             Instruction::Return
         ]
     );
@@ -428,8 +428,8 @@ fn test_simple5() {
     let mut binder = Binder::new();
     binder.define(FunctionDefinition::new_managed(
         "add".to_owned(),
-        vec![Type::Int32, Type::Float32],
-        Type::Int32
+        vec![TypeId::Int32, TypeId::Float32],
+        TypeId::Int32
     ));
 
     let type_storage = TypeStorage::new();

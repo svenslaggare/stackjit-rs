@@ -1,5 +1,5 @@
 use crate::model::function::FunctionSignature;
-use crate::model::typesystem::Type;
+use crate::model::typesystem::TypeId;
 
 pub mod compiler;
 pub mod allocated_compiler;
@@ -133,18 +133,18 @@ pub enum InstructionIR {
     NullReferenceCheck(HardwareRegister),
     ArrayBoundsCheck(HardwareRegister, HardwareRegister),
 
-    NewArray(Type, HardwareRegister, usize),
-    LoadElement(Type, HardwareRegister, HardwareRegister, HardwareRegister),
-    StoreElement(Type, HardwareRegister, HardwareRegister, HardwareRegister),
+    NewArray(TypeId, HardwareRegister, usize),
+    LoadElement(TypeId, HardwareRegister, HardwareRegister, HardwareRegister),
+    StoreElement(TypeId, HardwareRegister, HardwareRegister, HardwareRegister),
     LoadArrayLength(HardwareRegister, HardwareRegister),
 
-    NewObject(Type),
-    LoadField(Type, usize, HardwareRegister, HardwareRegister),
-    StoreField(Type, usize, HardwareRegister, HardwareRegister),
+    NewObject(TypeId),
+    LoadField(TypeId, usize, HardwareRegister, HardwareRegister),
+    StoreField(TypeId, usize, HardwareRegister, HardwareRegister),
 
-    Compare(Type, HardwareRegister, HardwareRegister),
-    CompareFromFrameMemory(Type, HardwareRegister, i32),
-    CompareToFrameMemory(Type, i32, HardwareRegister),
+    Compare(TypeId, HardwareRegister, HardwareRegister),
+    CompareFromFrameMemory(TypeId, HardwareRegister, i32),
+    CompareToFrameMemory(TypeId, i32, HardwareRegister),
 
     BranchLabel(BranchLabel),
     Branch(BranchLabel),

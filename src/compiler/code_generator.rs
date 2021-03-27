@@ -7,7 +7,7 @@ use crate::compiler::error_handling::ErrorHandling;
 use crate::compiler::ir::{Condition, HardwareRegisterExplicit, InstructionIR};
 use crate::engine::binder::Binder;
 use crate::model::function::{Function, FunctionType};
-use crate::model::typesystem::{Type, TypeMetadata, TypeStorage};
+use crate::model::typesystem::{TypeId, Type, TypeStorage};
 use crate::runtime::{array, runtime_interface};
 
 pub struct CodeGeneratorResult {
@@ -482,10 +482,9 @@ impl<'a> CodeGenerator<'a> {
                     self.encode_x86_instruction(X86Instruction::try_with_reg_i32(Code::Sub_rm64_imm32, Register::RSP, stack_alignment).unwrap());
                 }
 
-                let array_type = Type::Array(Box::new(element.clone()));
-                let array_type_holder = self.type_storage.entry(array_type);
-                let array_type_holder = array_type_holder as *const TypeMetadata as *const u64 as u64;
-                println!("0x{:0x}", array_type_holder);
+                let array_type_id = TypeId::Array(Box::new(element.clone()));
+                let array_type = self.type_storage.entry(array_type_id);
+                let array_type = array_type as *const Type as *const u64 as u64;
 
                 let size_register = register_mapping::get(*size_register, true);
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_r64_rm64, register_call_arguments::ARG1, size_register));
@@ -503,7 +502,7 @@ impl<'a> CodeGenerator<'a> {
                 self.encode_x86_instruction(X86Instruction::try_with_reg_u64(
                     Code::Mov_r64_imm64,
                     register_call_arguments::ARG0,
-                    array_type_holder
+                    array_type
                 ).unwrap());
 
                 call_direct(
@@ -536,7 +535,7 @@ impl<'a> CodeGenerator<'a> {
                         let destination_register = register_mapping::get(*destination_register, false);
 
                         match element {
-                            Type::Float32 => {
+                            TypeId::Float32 => {
                                 self.encode_x86_instruction(X86Instruction::with_reg_mem(
                                     Code::Movss_xmm_xmmm32,
                                     destination_register,
@@ -576,7 +575,7 @@ impl<'a> CodeGenerator<'a> {
                     }
                     4 => {
                         match element {
-                            Type::Float32 => {
+                            TypeId::Float32 => {
                                 let value_register = register_mapping::get(*value_register, true);
                                 self.encode_x86_instruction(X86Instruction::with_mem_reg(
                                     Code::Movss_xmmm32_xmm,
@@ -611,13 +610,12 @@ impl<'a> CodeGenerator<'a> {
             },
             InstructionIR::NewObject(class_type) => {
                 let class_type = self.type_storage.entry(class_type.clone());
-                let class_type_holder = class_type as *const TypeMetadata as *const u64 as u64;
-                println!("0x{:0x}", class_type_holder);
+                let class_type = class_type as *const Type as *const u64 as u64;
 
                 self.encode_x86_instruction(X86Instruction::try_with_reg_u64(
                     Code::Mov_r64_imm64,
                     register_call_arguments::ARG0,
-                    class_type_holder
+                    class_type
                 ).unwrap());
 
                 call_direct(
@@ -645,7 +643,7 @@ impl<'a> CodeGenerator<'a> {
                         let destination_register = register_mapping::get(*destination_register, false);
 
                         match field_type {
-                            Type::Float32 => {
+                            TypeId::Float32 => {
                                 self.encode_x86_instruction(X86Instruction::with_reg_mem(
                                     Code::Movss_xmm_xmmm32,
                                     destination_register,
@@ -684,7 +682,7 @@ impl<'a> CodeGenerator<'a> {
                     }
                     4 => {
                         match field_type {
-                            Type::Float32 => {
+                            TypeId::Float32 => {
                                 let value_register = register_mapping::get(*value_register, true);
                                 self.encode_x86_instruction(X86Instruction::with_mem_reg(
                                     Code::Movss_xmmm32_xmm,
@@ -721,7 +719,7 @@ impl<'a> CodeGenerator<'a> {
                 let op2 = register_mapping::get(*op2, false);
 
                 match op_type {
-                    Type::Float32 => {
+                    TypeId::Float32 => {
                         self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Ucomiss_xmm_xmmm32, op1, op2));
                     }
                     _ => {
@@ -733,7 +731,7 @@ impl<'a> CodeGenerator<'a> {
                 let op1 = register_mapping::get(*op1, false);
 
                 match op_type {
-                    Type::Float32 => {
+                    TypeId::Float32 => {
                         self.encode_x86_instruction(X86Instruction::with_reg_mem(
                             Code::Ucomiss_xmm_xmmm32,
                             op1,
@@ -753,7 +751,7 @@ impl<'a> CodeGenerator<'a> {
                 let op2 = register_mapping::get(*op2, false);
 
                 match op_type {
-                    Type::Float32 => {
+                    TypeId::Float32 => {
                         unimplemented!();
                     }
                     _ => {
@@ -822,7 +820,7 @@ impl<'a> CodeGenerator<'a> {
     }
 
     fn compute_array_element_address(&mut self,
-                                     element: &Type,
+                                     element: &TypeId,
                                      reference_register: Register,
                                      index_register: Register) -> MemoryOperand {
         MemoryOperand::with_base_index_scale_displ_size(

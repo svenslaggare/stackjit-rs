@@ -11,7 +11,7 @@ use crate::mir::{branches, InstructionMIR, RegisterMIR};
 use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
-use crate::model::typesystem::{Type, TypeStorage};
+use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::model::verifier::Verifier;
 use crate::optimization::register_allocation::{AllocatedRegister, RegisterAllocation};
 
@@ -215,7 +215,7 @@ fn print_allocation(instructions: &Vec<InstructionMIR>, live_intervals: &Vec<Liv
 #[test]
 fn test_allocate1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1),
@@ -261,8 +261,8 @@ fn test_allocate1() {
 #[test]
 fn test_allocate2() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
-        vec![Type::Int32, Type::Int32],
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        vec![TypeId::Int32, TypeId::Int32],
         vec![
             Instruction::LoadInt32(40000),
             Instruction::StoreLocal(1),
@@ -302,7 +302,7 @@ fn test_allocate2() {
 #[test]
 fn test_allocate3() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Float32),
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Float32),
         vec![],
         vec![
             Instruction::LoadFloat32(1.0),
@@ -348,8 +348,8 @@ fn test_allocate3() {
 #[test]
 fn test_allocate4() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Float32),
-        vec![Type::Float32, Type::Float32],
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Float32),
+        vec![TypeId::Float32, TypeId::Float32],
         vec![
             Instruction::LoadFloat32(40000.0),
             Instruction::StoreLocal(1),
@@ -389,20 +389,20 @@ fn test_allocate4() {
 #[test]
 fn test_allocate5() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Array(Box::new(Type::Float32))],
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Float32))],
         vec![
             Instruction::LoadInt32(4711),
-            Instruction::NewArray(Type::Float32),
+            Instruction::NewArray(TypeId::Float32),
             Instruction::StoreLocal(0),
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
             Instruction::LoadFloat32(1337.0),
-            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![Type::Array(Box::new(Type::Float32)), Type::Int32, Type::Float32] }),
+            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![TypeId::Array(Box::new(TypeId::Float32)), TypeId::Int32, TypeId::Float32] }),
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
-            Instruction::LoadElement(Type::Float32),
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![Type::Float32] }),
+            Instruction::LoadElement(TypeId::Float32),
+            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
 
             Instruction::LoadInt32(0),
             Instruction::Return,
@@ -412,12 +412,12 @@ fn test_allocate5() {
     let mut binder = Binder::new();
 
     binder.define(FunctionDefinition::new_external(
-        "set_array".to_owned(), vec![Type::Array(Box::new(Type::Float32)), Type::Int32, Type::Float32], Type::Void,
+        "set_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Float32)), TypeId::Int32, TypeId::Float32], TypeId::Void,
         std::ptr::null_mut()
     ));
 
     binder.define(FunctionDefinition::new_external(
-        "print".to_owned(), vec![Type::Float32], Type::Void,
+        "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
         std::ptr::null_mut()
     ));
 
@@ -445,12 +445,12 @@ fn test_allocate5() {
 #[test]
 fn test_allocate6() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
-            Instruction::LoadNull(Type::Array(Box::new(Type::Int32))),
+            Instruction::LoadNull(TypeId::Array(Box::new(TypeId::Int32))),
             Instruction::LoadInt32(1000),
-            Instruction::LoadElement(Type::Int32),
+            Instruction::LoadElement(TypeId::Int32),
             Instruction::Return
         ]
     );

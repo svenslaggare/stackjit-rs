@@ -1,4 +1,4 @@
-use crate::model::typesystem::{Type, TypeStorage};
+use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::runtime::array;
 use crate::runtime::object;
 use crate::runtime::object::ObjectReference;

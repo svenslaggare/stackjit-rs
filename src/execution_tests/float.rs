@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
-use crate::model::typesystem::Type;
+use crate::model::typesystem::TypeId;
 use crate::vm::VirtualMachine;
 
 thread_local!(static FLOAT_RESULT: RefCell<f32> = RefCell::new(0.0));
@@ -32,19 +32,19 @@ fn test1() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "print".to_owned(), vec![Type::Float32], Type::Void,
+            "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadFloat32(13.37),
             Instruction::LoadFloat32(47.11),
             Instruction::Add,
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![Type::Float32] }),
+            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
             Instruction::LoadInt32(0),
             Instruction::Return
         ]
@@ -65,26 +65,26 @@ fn test2() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "print".to_owned(), vec![Type::Float32], Type::Void,
+            "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "add".to_owned(), vec![Type::Float32, Type::Float32], Type::Float32,
+            "add".to_owned(), vec![TypeId::Float32, TypeId::Float32], TypeId::Float32,
             add as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadFloat32(13.37),
             Instruction::LoadFloat32(47.11),
-            Instruction::Call(FunctionSignature { name: "add".to_owned(), parameters: vec![Type::Float32, Type::Float32] }),
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![Type::Float32] }),
+            Instruction::Call(FunctionSignature { name: "add".to_owned(), parameters: vec![TypeId::Float32, TypeId::Float32] }),
+            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
             Instruction::LoadInt32(0),
             Instruction::Return
         ]
@@ -105,13 +105,13 @@ fn test3() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "print".to_owned(), vec![Type::Float32], Type::Void,
+            "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("sum8".to_owned(), (0..8).map(|_| Type::Float32).collect(), Type::Float32),
+        FunctionDefinition::new_managed("sum8".to_owned(), (0..8).map(|_| TypeId::Float32).collect(), TypeId::Float32),
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),
@@ -134,7 +134,7 @@ fn test3() {
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadFloat32(1.1),
@@ -145,8 +145,8 @@ fn test3() {
             Instruction::LoadFloat32(6.1),
             Instruction::LoadFloat32(7.1),
             Instruction::LoadFloat32(8.1),
-            Instruction::Call(FunctionSignature::new("sum8".to_owned(), (0..8).map(|_| Type::Float32).collect())),
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![Type::Float32] }),
+            Instruction::Call(FunctionSignature::new("sum8".to_owned(), (0..8).map(|_| TypeId::Float32).collect())),
+            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
             Instruction::LoadInt32(0),
             Instruction::Return,
         ]
@@ -167,19 +167,19 @@ fn test4() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "print".to_owned(), vec![Type::Float32], Type::Void,
+            "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadFloat32(13.37),
             Instruction::LoadFloat32(47.11),
             Instruction::Sub,
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![Type::Float32] }),
+            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
             Instruction::LoadInt32(0),
             Instruction::Return
         ]
@@ -200,14 +200,14 @@ fn test5() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "print".to_owned(), vec![Type::Float32], Type::Void,
+            "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Float32],
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Float32],
         vec![
             Instruction::LoadFloat32(1000.0),
             Instruction::LoadFloat32(2000.0),
@@ -216,7 +216,7 @@ fn test5() {
             Instruction::LoadFloat32(3000.0),
             Instruction::LoadLocal(0),
             Instruction::Add,
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![Type::Float32] }),
+            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
 
             Instruction::LoadInt32(0),
             Instruction::Return
@@ -238,14 +238,14 @@ fn test6() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "print".to_owned(), vec![Type::Float32], Type::Void,
+            "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Float32],
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Float32],
         vec![
             Instruction::LoadFloat32(1000.0),
             Instruction::LoadFloat32(2000.0),
@@ -254,7 +254,7 @@ fn test6() {
             Instruction::LoadLocal(0),
             Instruction::LoadFloat32(3000.0),
             Instruction::Add,
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![Type::Float32] }),
+            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
 
             Instruction::LoadInt32(0),
             Instruction::Return

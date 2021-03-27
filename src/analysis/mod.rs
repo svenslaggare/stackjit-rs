@@ -8,7 +8,7 @@ pub mod null_check_elision;
 use crate::compiler::ir::BranchLabel;
 use crate::analysis::null_check_elision::InstructionsRegisterNullStatus;
 use crate::mir::{RegisterMIR, InstructionMIR, InstructionMIRData};
-use crate::model::typesystem::Type;
+use crate::model::typesystem::TypeId;
 
 pub struct AnalysisResult {
     pub instructions_register_null_status: InstructionsRegisterNullStatus
@@ -29,7 +29,7 @@ pub struct VirtualRegister {
 impl VirtualRegister {
     pub fn from(register: &RegisterMIR) -> VirtualRegister {
         match register.value_type {
-            Type::Float32 => VirtualRegister { number: register.number, register_type: VirtualRegisterType::Float },
+            TypeId::Float32 => VirtualRegister { number: register.number, register_type: VirtualRegisterType::Float },
             _ => VirtualRegister { number: register.number, register_type: VirtualRegisterType::Int }
         }
     }

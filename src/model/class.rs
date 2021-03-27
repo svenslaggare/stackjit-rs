@@ -1,17 +1,17 @@
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
-use crate::model::typesystem::Type;
+use crate::model::typesystem::TypeId;
 
 #[derive(Clone)]
 pub struct Field {
     name: String,
-    field_type: Type,
+    field_type: TypeId,
     offset: usize
 }
 
 impl Field {
-    pub fn new(name: String, field_type: Type) -> Field {
+    pub fn new(name: String, field_type: TypeId) -> Field {
         Field {
             name,
             field_type,
@@ -23,7 +23,7 @@ impl Field {
         &self.name
     }
 
-    pub fn field_type(&self) -> &Type {
+    pub fn field_type(&self) -> &TypeId {
         &self.field_type
     }
 

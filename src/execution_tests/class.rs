@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
-use crate::model::typesystem::Type;
+use crate::model::typesystem::TypeId;
 use crate::vm::{VirtualMachine, get_vm};
 use crate::runtime::array;
 use crate::engine::execution::{ExecutionEngineError, RuntimeError};
@@ -42,17 +42,17 @@ fn test_create1() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "print_point".to_owned(), vec![Type::Class("Point".to_owned())], Type::Void,
+            "print_point".to_owned(), vec![TypeId::Class("Point".to_owned())], TypeId::Void,
             print_point as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::NewObject("Point".to_owned()),
-            Instruction::Call(FunctionSignature { name: "print_point".to_owned(), parameters: vec![Type::Class("Point".to_owned())] }),
+            Instruction::Call(FunctionSignature { name: "print_point".to_owned(), parameters: vec![TypeId::Class("Point".to_owned())] }),
             Instruction::LoadInt32(0),
             Instruction::Return,
         ]
@@ -61,8 +61,8 @@ fn test_create1() {
     vm.engine.add_class(Class::new(
         "Point".to_owned(),
         vec![
-            Field::new("x".to_owned(), Type::Int32),
-            Field::new("y".to_owned(), Type::Int32),
+            Field::new("x".to_owned(), TypeId::Int32),
+            Field::new("y".to_owned(), TypeId::Int32),
         ]
     )).unwrap();
 
@@ -79,7 +79,7 @@ fn test_load1() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "set_point_x".to_owned(), vec![Type::Class("Point".to_owned()), Type::Int32], Type::Void,
+            "set_point_x".to_owned(), vec![TypeId::Class("Point".to_owned()), TypeId::Int32], TypeId::Void,
             set_point_x as *mut std::ffi::c_void
         )
     );
@@ -87,21 +87,21 @@ fn test_load1() {
     vm.engine.add_class(Class::new(
         "Point".to_owned(),
         vec![
-            Field::new("x".to_owned(), Type::Int32),
-            Field::new("y".to_owned(), Type::Int32),
+            Field::new("x".to_owned(), TypeId::Int32),
+            Field::new("y".to_owned(), TypeId::Int32),
         ]
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Class("Point".to_owned())],
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Class("Point".to_owned())],
         vec![
             Instruction::NewObject("Point".to_owned()),
             Instruction::StoreLocal(0),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(i32::MIN),
-            Instruction::Call(FunctionSignature { name: "set_point_x".to_owned(), parameters: vec![Type::Class("Point".to_owned()), Type::Int32] }),
+            Instruction::Call(FunctionSignature { name: "set_point_x".to_owned(), parameters: vec![TypeId::Class("Point".to_owned()), TypeId::Int32] }),
 
             Instruction::LoadLocal(0),
             Instruction::LoadField("Point".to_owned(), "x".to_owned()),
@@ -120,14 +120,14 @@ fn test_store1() {
     vm.engine.add_class(Class::new(
         "Point".to_owned(),
         vec![
-            Field::new("x".to_owned(), Type::Int32),
-            Field::new("y".to_owned(), Type::Int32),
+            Field::new("x".to_owned(), TypeId::Int32),
+            Field::new("y".to_owned(), TypeId::Int32),
         ]
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Class("Point".to_owned())],
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Class("Point".to_owned())],
         vec![
             Instruction::NewObject("Point".to_owned()),
             Instruction::StoreLocal(0),
@@ -156,7 +156,7 @@ fn test_array1() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "print_array_element".to_owned(), vec![Type::Array(Box::new(Type::Class("Point".to_owned()))), Type::Int32], Type::Void,
+            "print_array_element".to_owned(), vec![TypeId::Array(Box::new(TypeId::Class("Point".to_owned()))), TypeId::Int32], TypeId::Void,
             print_array_element as *mut std::ffi::c_void
         )
     );
@@ -164,29 +164,29 @@ fn test_array1() {
     vm.engine.add_class(Class::new(
         "Point".to_owned(),
         vec![
-            Field::new("x".to_owned(), Type::Int32),
-            Field::new("y".to_owned(), Type::Int32),
+            Field::new("x".to_owned(), TypeId::Int32),
+            Field::new("y".to_owned(), TypeId::Int32),
         ]
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Array(Box::new(Type::Class("Point".to_owned())))],
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Class("Point".to_owned())))],
         vec![
             Instruction::LoadInt32(10),
-            Instruction::NewArray(Type::Class("Point".to_owned())),
+            Instruction::NewArray(TypeId::Class("Point".to_owned())),
             Instruction::StoreLocal(0),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
             Instruction::NewObject("Point".to_owned()),
-            Instruction::StoreElement(Type::Class("Point".to_owned())),
+            Instruction::StoreElement(TypeId::Class("Point".to_owned())),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
             Instruction::Call(FunctionSignature {
                 name: "print_array_element".to_string(),
-                parameters: vec![Type::Array(Box::new(Type::Class("Point".to_owned()))), Type::Int32]
+                parameters: vec![TypeId::Array(Box::new(TypeId::Class("Point".to_owned()))), TypeId::Int32]
             }),
 
             Instruction::LoadInt32(0),

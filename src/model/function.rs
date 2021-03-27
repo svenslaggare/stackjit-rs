@@ -1,4 +1,4 @@
-use crate::model::typesystem::Type;
+use crate::model::typesystem::TypeId;
 use crate::model::instruction::Instruction;
 
 pub type FunctionAddress = *mut std::ffi::c_void;
@@ -13,13 +13,13 @@ pub enum FunctionType {
 pub struct FunctionDefinition {
     function_type: FunctionType,
     name: String,
-    parameters: Vec<Type>,
-    return_type: Type,
+    parameters: Vec<TypeId>,
+    return_type: TypeId,
     address: Option<FunctionAddress>,
 }
 
 impl FunctionDefinition {
-    pub fn new_external(name: String, parameters: Vec<Type>, return_type: Type, address: FunctionAddress) -> FunctionDefinition {
+    pub fn new_external(name: String, parameters: Vec<TypeId>, return_type: TypeId, address: FunctionAddress) -> FunctionDefinition {
         FunctionDefinition {
             function_type: FunctionType::External,
             name,
@@ -29,7 +29,7 @@ impl FunctionDefinition {
         }
     }
 
-    pub fn new_managed(name: String, parameters: Vec<Type>, return_type: Type) -> FunctionDefinition {
+    pub fn new_managed(name: String, parameters: Vec<TypeId>, return_type: TypeId) -> FunctionDefinition {
         FunctionDefinition {
             function_type: FunctionType::Managed,
             name,
@@ -47,11 +47,11 @@ impl FunctionDefinition {
         &self.name
     }
 
-    pub fn parameters(&self) -> &Vec<Type> {
+    pub fn parameters(&self) -> &Vec<TypeId> {
         &self.parameters
     }
 
-    pub fn return_type(&self) -> &Type {
+    pub fn return_type(&self) -> &TypeId {
         &self.return_type
     }
 
@@ -75,21 +75,21 @@ impl FunctionDefinition {
         &self.function_type == &FunctionType::Managed
         && self.name() == "main"
         && self.parameters().is_empty()
-        && self.return_type() == &Type::Int32
+        && self.return_type() == &TypeId::Int32
     }
 }
 
 pub struct Function {
     definition: FunctionDefinition,
-    locals: Vec<Type>,
+    locals: Vec<TypeId>,
     instructions: Vec<Instruction>,
-    instruction_operand_types: Vec<Vec<Type>>,
+    instruction_operand_types: Vec<Vec<TypeId>>,
     operand_stack_size: usize
 }
 
 impl Function {
     pub fn new(definition: FunctionDefinition,
-               locals: Vec<Type>,
+               locals: Vec<TypeId>,
                instructions: Vec<Instruction>) -> Function {
         let num_instructions = instructions.len();
         Function {
@@ -105,7 +105,7 @@ impl Function {
         &self.definition
     }
 
-    pub fn locals(&self) -> &Vec<Type> {
+    pub fn locals(&self) -> &Vec<TypeId> {
         &self.locals
     }
 
@@ -121,11 +121,11 @@ impl Function {
         &self.instructions
     }
 
-    pub fn instruction_operand_types(&self, index: usize) -> &Vec<Type> {
+    pub fn instruction_operand_types(&self, index: usize) -> &Vec<TypeId> {
         &self.instruction_operand_types[index]
     }
 
-    pub fn instruction_operand_types_mut(&mut self, index: usize) -> &mut Vec<Type> {
+    pub fn instruction_operand_types_mut(&mut self, index: usize) -> &mut Vec<TypeId> {
         &mut self.instruction_operand_types[index]
     }
 }
@@ -133,11 +133,11 @@ impl Function {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FunctionSignature {
     pub name: String,
-    pub parameters: Vec<Type>
+    pub parameters: Vec<TypeId>
 }
 
 impl FunctionSignature {
-    pub fn new(name: String, parameters: Vec<Type>) -> FunctionSignature {
+    pub fn new(name: String, parameters: Vec<TypeId>) -> FunctionSignature {
         FunctionSignature {
             name,
             parameters

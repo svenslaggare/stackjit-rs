@@ -10,7 +10,7 @@ use crate::mir::compiler::InstructionMIRCompiler;
 use crate::mir::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition};
 use crate::model::instruction::Instruction;
-use crate::model::typesystem::{Type, TypeStorage};
+use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::model::verifier::Verifier;
 use crate::analysis;
 
@@ -99,8 +99,8 @@ impl ControlFlowGraph {
 #[test]
 fn test_branches1() {
     let mut function = Function::new(
-        FunctionDefinition::new_managed("test".to_owned(), vec![], Type::Int32),
-        vec![Type::Int32],
+        FunctionDefinition::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1),
             Instruction::LoadInt32(2),

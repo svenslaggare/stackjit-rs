@@ -1,5 +1,5 @@
 use crate::model::function::FunctionSignature;
-use crate::model::typesystem::Type;
+use crate::model::typesystem::TypeId;
 
 pub type BranchTarget = u32;
 
@@ -7,7 +7,7 @@ pub type BranchTarget = u32;
 pub enum Instruction {
     LoadInt32(i32),
     LoadFloat32(f32),
-    LoadNull(Type),
+    LoadNull(TypeId),
     LoadLocal(u32),
     StoreLocal(u32),
     Add,
@@ -15,9 +15,9 @@ pub enum Instruction {
     Call(FunctionSignature),
     LoadArgument(u32),
     Return,
-    NewArray(Type),
-    LoadElement(Type),
-    StoreElement(Type),
+    NewArray(TypeId),
+    LoadElement(TypeId),
+    StoreElement(TypeId),
     LoadArrayLength,
     NewObject(String),
     LoadField(String, String),

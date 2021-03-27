@@ -4,7 +4,7 @@ use crate::analysis::{VirtualRegister, VirtualRegisterType};
 use crate::analysis::liveness::LiveInterval;
 use crate::compiler::ir::HardwareRegister;
 use crate::mir::RegisterMIR;
-use crate::model::typesystem::Type;
+use crate::model::typesystem::TypeId;
 
 pub mod linear_scan;
 

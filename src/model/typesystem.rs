@@ -4,27 +4,27 @@ use std::ops::Deref;
 use crate::model::class::Class;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum Type {
+pub enum TypeId {
     Void,
     Int32,
     Float32,
-    Array(Box<Type>),
+    Array(Box<TypeId>),
     Class(String)
 }
 
-impl Type {
+impl TypeId {
     pub fn size(&self) -> usize {
         match self {
-            Type::Void => 0,
-            Type::Int32 => 4,
-            Type::Float32 => 4,
-            Type::Array(_) => 8,
-            Type::Class(_) => 8
+            TypeId::Void => 0,
+            TypeId::Int32 => 4,
+            TypeId::Float32 => 4,
+            TypeId::Array(_) => 8,
+            TypeId::Class(_) => 8
         }
     }
 
-    pub fn element_type(&self) -> Option<&Type> {
-        if let Type::Array(element) = self {
+    pub fn element_type(&self) -> Option<&TypeId> {
+        if let TypeId::Array(element) = self {
             Some(element.deref())
         } else {
             None
@@ -32,7 +32,7 @@ impl Type {
     }
 
     pub fn class_name(&self) -> Option<&str> {
-        if let Type::Class(class) = self {
+        if let TypeId::Class(class) = self {
             Some(class)
         } else {
             None
@@ -41,60 +41,60 @@ impl Type {
 
     pub fn is_reference(&self) -> bool {
         match self {
-            Type::Array(_) => true,
-            Type::Class(_) => true,
+            TypeId::Array(_) => true,
+            TypeId::Class(_) => true,
             _ => false,
         }
     }
 
     pub fn is_array(&self) -> bool {
         match self {
-            Type::Array(_) => true,
+            TypeId::Array(_) => true,
             _ => false,
         }
     }
 
     pub fn is_class(&self) -> bool {
         match self {
-            Type::Class(_) => true,
+            TypeId::Class(_) => true,
             _ => false,
         }
     }
 
-    pub fn is_same_type(&self, other: &Type) -> bool {
+    pub fn is_same_type(&self, other: &TypeId) -> bool {
         self == other
     }
 }
 
-impl std::fmt::Display for Type {
+impl std::fmt::Display for TypeId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Type::Void => {
+            TypeId::Void => {
                 write!(f, "Void")
             }
-            Type::Int32 => {
+            TypeId::Int32 => {
                 write!(f, "Int32")
             }
-            Type::Float32 => {
+            TypeId::Float32 => {
                 write!(f, "Float32")
             }
-            Type::Array(element) => {
+            TypeId::Array(element) => {
                 write!(f, "Ref.Array[{}]", element)
             }
-            Type::Class(name) => {
+            TypeId::Class(name) => {
                 write!(f, "Ref.{}", name)
             }
         }
     }
 }
 
-pub struct TypeMetadata {
-    pub instance: Type,
+pub struct Type {
+    pub id: TypeId,
     pub class: Option<Class>
 }
 
 pub struct TypeStorage {
-    types: HashMap<Type, Box<TypeMetadata>>,
+    types: HashMap<TypeId, Box<Type>>,
 }
 
 impl TypeStorage {
@@ -105,29 +105,29 @@ impl TypeStorage {
     }
 
     pub fn add_class(&mut self, class: Class) {
-        let type_instance = Type::Class(class.name().to_owned());
+        let type_instance = TypeId::Class(class.name().to_owned());
 
         self.types.entry(type_instance.clone()).or_insert_with(|| {
             Box::new(
-                TypeMetadata {
-                    instance: type_instance,
+                Type {
+                    id: type_instance,
                     class: Some(class)
                 }
             )
         });
     }
 
-    pub fn get(&self, type_instance: &Type) -> Option<&TypeMetadata> {
+    pub fn get(&self, type_instance: &TypeId) -> Option<&Type> {
         self.types.get(type_instance).map(|t| t.as_ref())
     }
 
-    pub fn entry(&mut self, type_instance: Type) -> &TypeMetadata {
+    pub fn entry(&mut self, type_instance: TypeId) -> &Type {
         self.types.entry(type_instance.clone()).or_insert_with(|| {
             assert!(!type_instance.is_class());
 
             Box::new(
-                TypeMetadata {
-                    instance: type_instance,
+                Type {
+                    id: type_instance,
                     class: None
                 }
             )

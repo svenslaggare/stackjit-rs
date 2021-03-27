@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
-use crate::model::typesystem::Type;
+use crate::model::typesystem::TypeId;
 use crate::vm::{VirtualMachine, get_vm};
 use crate::runtime::array;
 use crate::engine::execution::{ExecutionEngineError, RuntimeError};
@@ -48,18 +48,18 @@ fn test_create1() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "print_array".to_owned(), vec![Type::Array(Box::new(Type::Int32))], Type::Void,
+            "print_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Int32))], TypeId::Void,
             print_array as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
-            Instruction::NewArray(Type::Int32),
-            Instruction::Call(FunctionSignature { name: "print_array".to_owned(), parameters: vec![Type::Array(Box::new(Type::Int32))] }),
+            Instruction::NewArray(TypeId::Int32),
+            Instruction::Call(FunctionSignature { name: "print_array".to_owned(), parameters: vec![TypeId::Array(Box::new(TypeId::Int32))] }),
             Instruction::LoadInt32(0),
             Instruction::Return,
         ]
@@ -78,25 +78,25 @@ fn test_load1() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "set_array".to_owned(), vec![Type::Array(Box::new(Type::Int32)), Type::Int32, Type::Int32], Type::Void,
+            "set_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Int32, TypeId::Int32], TypeId::Void,
             set_array as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Array(Box::new(Type::Int32))],
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadInt32(4711),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::StoreLocal(0),
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
             Instruction::LoadInt32(i32::MIN),
-            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![Type::Array(Box::new(Type::Int32)), Type::Int32, Type::Int32] }),
+            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Int32, TypeId::Int32] }),
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
-            Instruction::LoadElement(Type::Int32),
+            Instruction::LoadElement(TypeId::Int32),
             Instruction::Return,
         ]
     )).unwrap();
@@ -115,33 +115,33 @@ fn test_load2() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "set_array".to_owned(), vec![Type::Array(Box::new(Type::Float32)), Type::Int32, Type::Float32], Type::Void,
+            "set_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Float32)), TypeId::Int32, TypeId::Float32], TypeId::Void,
             set_array_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "print".to_owned(), vec![Type::Float32], Type::Void,
+            "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Array(Box::new(Type::Float32))],
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Float32))],
         vec![
             Instruction::LoadInt32(4711),
-            Instruction::NewArray(Type::Float32),
+            Instruction::NewArray(TypeId::Float32),
             Instruction::StoreLocal(0),
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
             Instruction::LoadFloat32(1337.0),
-            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![Type::Array(Box::new(Type::Float32)), Type::Int32, Type::Float32] }),
+            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![TypeId::Array(Box::new(TypeId::Float32)), TypeId::Int32, TypeId::Float32] }),
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
-            Instruction::LoadElement(Type::Float32),
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![Type::Float32] }),
+            Instruction::LoadElement(TypeId::Float32),
+            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
 
             Instruction::LoadInt32(0),
             Instruction::Return,
@@ -159,36 +159,36 @@ fn test_load3() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "set_array".to_owned(), vec![Type::Array(Box::new(Type::Int32)), Type::Int32, Type::Int32], Type::Void,
+            "set_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Int32, TypeId::Int32], TypeId::Void,
             set_array as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Array(Box::new(Type::Int32))],
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadInt32(4711),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::StoreLocal(0),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
             Instruction::LoadInt32(1000),
-            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![Type::Array(Box::new(Type::Int32)), Type::Int32, Type::Int32] }),
+            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Int32, TypeId::Int32] }),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(1),
             Instruction::LoadInt32(2000),
-            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![Type::Array(Box::new(Type::Int32)), Type::Int32, Type::Int32] }),
+            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Int32, TypeId::Int32] }),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
-            Instruction::LoadElement(Type::Int32),
+            Instruction::LoadElement(TypeId::Int32),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(1),
-            Instruction::LoadElement(Type::Int32),
+            Instruction::LoadElement(TypeId::Int32),
 
             Instruction::Add,
             Instruction::Return,
@@ -204,13 +204,13 @@ fn test_load1_no_null_check() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::LoadInt32(1000),
-            Instruction::LoadElement(Type::Int32),
+            Instruction::LoadElement(TypeId::Int32),
             Instruction::Return,
         ]
     )).unwrap();
@@ -224,21 +224,21 @@ fn test_store1() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Array(Box::new(Type::Int32))],
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadInt32(4711),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::StoreLocal(0),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(146),
             Instruction::LoadInt32(4711),
 
-            Instruction::StoreElement(Type::Int32),
+            Instruction::StoreElement(TypeId::Int32),
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(146),
-            Instruction::LoadElement(Type::Int32),
+            Instruction::LoadElement(TypeId::Int32),
             Instruction::Return
         ]
     )).unwrap();
@@ -252,26 +252,26 @@ fn test_store2() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Array(Box::new(Type::Int32))],
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadInt32(4711),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::StoreLocal(0),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(1),
             Instruction::LoadInt32(1337),
-            Instruction::StoreElement(Type::Int32),
+            Instruction::StoreElement(TypeId::Int32),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
             Instruction::LoadInt32(4711),
-            Instruction::StoreElement(Type::Int32),
+            Instruction::StoreElement(TypeId::Int32),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(1),
-            Instruction::LoadElement(Type::Int32),
+            Instruction::LoadElement(TypeId::Int32),
             Instruction::Return
         ]
     )).unwrap();
@@ -290,33 +290,33 @@ fn test_store3() {
 
     vm.engine.binder_mut().define(
         FunctionDefinition::new_external(
-            "print".to_owned(), vec![Type::Float32], Type::Void,
+            "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Array(Box::new(Type::Float32))],
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Float32))],
         vec![
             Instruction::LoadInt32(4711),
-            Instruction::NewArray(Type::Float32),
+            Instruction::NewArray(TypeId::Float32),
             Instruction::StoreLocal(0),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(1),
             Instruction::LoadFloat32(1337.0),
-            Instruction::StoreElement(Type::Float32),
+            Instruction::StoreElement(TypeId::Float32),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
             Instruction::LoadFloat32(4711.0),
-            Instruction::StoreElement(Type::Float32),
+            Instruction::StoreElement(TypeId::Float32),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(1),
-            Instruction::LoadElement(Type::Float32),
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![Type::Float32] }),
+            Instruction::LoadElement(TypeId::Float32),
+            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
 
             Instruction::LoadInt32(0),
             Instruction::Return
@@ -333,11 +333,11 @@ fn test_load_length1() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(4711),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::LoadArrayLength,
             Instruction::Return,
         ]
@@ -352,17 +352,17 @@ fn test_load_length2() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Array(Box::new(Type::Int32))],
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadInt32(4711),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::StoreLocal(0),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
             Instruction::LoadInt32(-1),
-            Instruction::StoreElement(Type::Int32),
+            Instruction::StoreElement(TypeId::Int32),
 
             Instruction::LoadLocal(0),
             Instruction::LoadArrayLength,
@@ -379,12 +379,12 @@ fn test_checks1() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
-            Instruction::LoadNull(Type::Array(Box::new(Type::Int32))),
+            Instruction::LoadNull(TypeId::Array(Box::new(TypeId::Int32))),
             Instruction::LoadInt32(1000),
-            Instruction::LoadElement(Type::Int32),
+            Instruction::LoadElement(TypeId::Int32),
             Instruction::Return
         ]
     )).unwrap();
@@ -398,18 +398,18 @@ fn test_checks2() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("new_array".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("new_array".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
-            Instruction::LoadNull(Type::Array(Box::new(Type::Int32))),
+            Instruction::LoadNull(TypeId::Array(Box::new(TypeId::Int32))),
             Instruction::LoadInt32(1000),
-            Instruction::LoadElement(Type::Int32),
+            Instruction::LoadElement(TypeId::Int32),
             Instruction::Return
         ]
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(2000),
@@ -428,13 +428,13 @@ fn test_checks3() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1000),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::LoadInt32(1000),
-            Instruction::LoadElement(Type::Int32),
+            Instruction::LoadElement(TypeId::Int32),
             Instruction::Return,
         ]
     )).unwrap();
@@ -448,13 +448,13 @@ fn test_check4() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1000),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::LoadInt32(-1),
-            Instruction::LoadElement(Type::Int32),
+            Instruction::LoadElement(TypeId::Int32),
             Instruction::Return,
         ]
     )).unwrap();
@@ -468,14 +468,14 @@ fn test_check5() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1000),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::LoadInt32(-1),
             Instruction::LoadInt32(1337),
-            Instruction::StoreElement(Type::Int32),
+            Instruction::StoreElement(TypeId::Int32),
             Instruction::LoadInt32(4711),
             Instruction::Return,
         ]
@@ -490,11 +490,11 @@ fn test_check6() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Array(Box::new(Type::Int32))],
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadInt32(-1),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::StoreLocal(0),
             Instruction::LoadInt32(4711),
             Instruction::Return,
@@ -510,11 +510,11 @@ fn test_check7() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-        vec![Type::Array(Box::new(Type::Int32))],
+        FunctionDefinition::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
             Instruction::LoadInt32(0),
-            Instruction::NewArray(Type::Int32),
+            Instruction::NewArray(TypeId::Int32),
             Instruction::StoreLocal(0),
             Instruction::LoadInt32(4711),
             Instruction::Return,

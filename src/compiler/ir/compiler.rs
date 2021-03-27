@@ -8,7 +8,7 @@ use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::mir::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
-use crate::model::typesystem::{Type, TypeStorage};
+use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::model::verifier::Verifier;
 
 pub struct InstructionIRCompiler<'a> {
@@ -165,7 +165,7 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::ArrayBoundsCheck(HardwareRegister::Int(0), HardwareRegister::Int(1)));
 
                 let return_value = match element {
-                    Type::Float32 => HardwareRegister::Float(2),
+                    TypeId::Float32 => HardwareRegister::Float(2),
                     _ => HardwareRegister::Int(2)
                 };
 
@@ -178,7 +178,7 @@ impl<'a> InstructionIRCompiler<'a> {
             }
             InstructionMIRData::StoreElement(element, array_ref, index, value) => {
                 let value_register = match element {
-                    Type::Float32 => HardwareRegister::Float(2),
+                    TypeId::Float32 => HardwareRegister::Float(2),
                     _ => HardwareRegister::Int(2)
                 };
 
@@ -232,7 +232,7 @@ impl<'a> InstructionIRCompiler<'a> {
                 }
 
                 let return_value = match field.field_type() {
-                    Type::Float32 => HardwareRegister::Float(1),
+                    TypeId::Float32 => HardwareRegister::Float(1),
                     _ => HardwareRegister::Int(1)
                 };
 
@@ -253,7 +253,7 @@ impl<'a> InstructionIRCompiler<'a> {
                 let field = class.get_field(field_name).unwrap();
 
                 let value_register = match field.field_type() {
-                    Type::Float32 => HardwareRegister::Float(1),
+                    TypeId::Float32 => HardwareRegister::Float(1),
                     _ => HardwareRegister::Int(1)
                 };
 
@@ -282,16 +282,16 @@ impl<'a> InstructionIRCompiler<'a> {
             }
             InstructionMIRData::BranchCondition(condition, compare_type, label, operand1, operand2) => {
                 let signed = match compare_type {
-                    Type::Int32 => {
+                    TypeId::Int32 => {
                         self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(operand1)));
                         self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(1), self.get_register_stack_offset(operand2)));
-                        self.instructions.push(InstructionIR::Compare(Type::Int32, HardwareRegister::Int(0), HardwareRegister::Int(1)));
+                        self.instructions.push(InstructionIR::Compare(TypeId::Int32, HardwareRegister::Int(0), HardwareRegister::Int(1)));
                         true
                     }
-                    Type::Float32 => {
+                    TypeId::Float32 => {
                         self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Float(0), self.get_register_stack_offset(operand1)));
                         self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Float(1), self.get_register_stack_offset(operand2)));
-                        self.instructions.push(InstructionIR::Compare(Type::Float32, HardwareRegister::Float(0), HardwareRegister::Float(1)));
+                        self.instructions.push(InstructionIR::Compare(TypeId::Float32, HardwareRegister::Float(0), HardwareRegister::Float(1)));
                         false
                     }
                     _ => { panic!("unexpected."); }

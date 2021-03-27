@@ -16,7 +16,7 @@ use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::mir::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
-use crate::model::typesystem::{Type, TypeStorage};
+use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::model::verifier::Verifier;
 use crate::optimization::register_allocation;
 use crate::optimization::register_allocation::{AllocatedRegister, RegisterAllocation};
@@ -88,7 +88,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
 
             for register in &self.compilation_result.need_zero_initialize_registers {
                 match register.value_type {
-                    Type::Float32 => {
+                    TypeId::Float32 => {
                         if !float_initialized {
                             self.instructions.push(InstructionIR::LoadZeroToRegister(HardwareRegister::FloatSpill));
                             float_initialized = true;
@@ -337,7 +337,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     Some(register) => register,
                     None => {
                         match element {
-                            Type::Float32 => HardwareRegister::FloatSpill,
+                            TypeId::Float32 => HardwareRegister::FloatSpill,
                             _ => HardwareRegister::IntSpill
                         }
                     }
@@ -485,7 +485,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     Some(register) => register,
                     None => {
                         match field.field_type() {
-                            Type::Float32 => HardwareRegister::FloatSpill,
+                            TypeId::Float32 => HardwareRegister::FloatSpill,
                             _ => HardwareRegister::IntSpill
                         }
                     }
@@ -558,31 +558,31 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
             }
             InstructionMIRData::BranchCondition(condition, compare_type, label, operand1, operand2) => {
                 let signed = match compare_type {
-                    Type::Int32 => {
+                    TypeId::Int32 => {
                         self.binary_operator(
                             operand1,
                             operand2,
                             |instructions, op1, op2| {
-                                instructions.push(InstructionIR::Compare(Type::Int32, op1, op2));
+                                instructions.push(InstructionIR::Compare(TypeId::Int32, op1, op2));
                             },
                             |instructions, op1, op2| {
-                                instructions.push(InstructionIR::CompareFromFrameMemory(Type::Int32, op1, op2));
+                                instructions.push(InstructionIR::CompareFromFrameMemory(TypeId::Int32, op1, op2));
                             },
                             |instructions, op1, op2| {
-                                instructions.push(InstructionIR::CompareToFrameMemory(Type::Int32, op1, op2));
+                                instructions.push(InstructionIR::CompareToFrameMemory(TypeId::Int32, op1, op2));
                             }
                         );
                         true
                     }
-                    Type::Float32 => {
+                    TypeId::Float32 => {
                         self.binary_operator_f32(
                             operand1,
                             operand2,
                             |instructions, op1, op2| {
-                                instructions.push(InstructionIR::Compare(Type::Float32, op1, op2));
+                                instructions.push(InstructionIR::Compare(TypeId::Float32, op1, op2));
                             },
                             |instructions, op1, op2| {
-                                instructions.push(InstructionIR::CompareFromFrameMemory(Type::Float32, op1, op2));
+                                instructions.push(InstructionIR::CompareFromFrameMemory(TypeId::Float32, op1, op2));
                             }
                         );
 
