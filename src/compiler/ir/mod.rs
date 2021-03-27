@@ -1,6 +1,9 @@
 use crate::model::function::FunctionSignature;
 use crate::model::typesystem::Type;
 
+pub mod compiler;
+pub mod allocated_compiler;
+
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum HardwareRegister {
     Int(u32),

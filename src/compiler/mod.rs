@@ -12,8 +12,6 @@ pub mod jit;
 pub mod calling_conventions;
 pub mod error_handling;
 pub mod ir;
-pub mod ir_compiler;
-pub mod allocated_ir_compiler;
 
 pub struct FunctionCompilationData {
     pub unresolved_function_calls: Vec<UnresolvedFunctionCall>,
