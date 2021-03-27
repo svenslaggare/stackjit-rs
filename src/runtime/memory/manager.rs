@@ -1,12 +1,10 @@
-use crate::model::class::{Class};
-use crate::model::typesystem::{TypeId, Type, TypeStorage};
+use crate::model::class::Class;
+use crate::model::typesystem::{Type, TypeId, TypeStorage};
 use crate::runtime::array;
 use crate::runtime::memory::gc::GarbageCollector;
 use crate::runtime::memory::heap::Heap;
-use crate::runtime::object::{ObjectHeader, ObjectReference};
+use crate::runtime::object::{ObjectHeader, ObjectPointer, ObjectReference};
 use crate::runtime::object;
-
-pub type ObjectPointer = *mut std::ffi::c_void;
 
 pub struct MemoryManager {
     pub heap: Heap,

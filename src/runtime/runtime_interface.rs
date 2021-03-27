@@ -4,7 +4,7 @@ use crate::engine::execution::RuntimeError;
 use crate::model::function::{FunctionSignature, Function};
 use crate::compiler::stack_layout;
 use crate::runtime::stack_walker::StackFrame;
-use crate::runtime::memory::manager::ObjectPointer;
+use crate::runtime::object::ObjectPointer;
 
 pub extern "C" fn set_error_return(return_address: u64, base_pointer: u64, stack_pointer: u64) {
     get_vm(|vm| {

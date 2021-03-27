@@ -2,7 +2,7 @@ use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::runtime::array;
 use crate::runtime::object;
 use crate::runtime::object::ObjectReference;
-use crate::runtime::memory::manager::ObjectPointer;
+use crate::runtime::object::ObjectPointer;
 
 pub struct Heap {
     data: Vec<u8>,

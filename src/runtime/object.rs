@@ -1,6 +1,7 @@
-use crate::model::typesystem::{TypeStorage, TypeId, Type};
-use crate::runtime::memory::manager::ObjectPointer;
+use crate::model::typesystem::{Type, TypeId, TypeStorage};
 use crate::runtime::array;
+
+pub type ObjectPointer = *mut std::ffi::c_void;
 
 #[repr(packed, C)]
 #[derive(Copy, Clone)]

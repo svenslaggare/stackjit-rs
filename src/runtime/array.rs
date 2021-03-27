@@ -1,4 +1,4 @@
-use crate::runtime::memory::manager::ObjectPointer;
+use crate::runtime::object::ObjectPointer;
 
 pub const LENGTH_SIZE: usize = 4;
 

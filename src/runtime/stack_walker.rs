@@ -4,7 +4,7 @@ use crate::compiler::jit::JitCompiler;
 use crate::engine::binder::Binder;
 use crate::mir::RegisterMIR;
 use crate::model::typesystem::TypeId;
-use crate::runtime::memory::manager::ObjectPointer;
+use crate::runtime::object::ObjectPointer;
 
 pub struct StackFrame<'a> {
     base_pointer: u64,

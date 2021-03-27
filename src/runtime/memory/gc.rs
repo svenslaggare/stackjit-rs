@@ -6,7 +6,7 @@ use crate::model::typesystem::TypeId;
 use crate::runtime::object::ObjectReference;
 use crate::runtime::array;
 use crate::runtime::array::ArrayReference;
-use crate::runtime::memory::manager::ObjectPointer;
+use crate::runtime::object::ObjectPointer;
 
 pub struct GarbageCollector {
     deleted_objects: Vec<(u64, TypeId)>
