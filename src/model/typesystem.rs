@@ -105,29 +105,29 @@ impl TypeStorage {
     }
 
     pub fn add_class(&mut self, class: Class) {
-        let type_instance = TypeId::Class(class.name().to_owned());
+        let type_id = TypeId::Class(class.name().to_owned());
 
-        self.types.entry(type_instance.clone()).or_insert_with(|| {
+        self.types.entry(type_id.clone()).or_insert_with(|| {
             Box::new(
                 Type {
-                    id: type_instance,
+                    id: type_id,
                     class: Some(class)
                 }
             )
         });
     }
 
-    pub fn get(&self, type_instance: &TypeId) -> Option<&Type> {
-        self.types.get(type_instance).map(|t| t.as_ref())
+    pub fn get(&self, type_id: &TypeId) -> Option<&Type> {
+        self.types.get(type_id).map(|t| t.as_ref())
     }
 
-    pub fn entry(&mut self, type_instance: TypeId) -> &Type {
-        self.types.entry(type_instance.clone()).or_insert_with(|| {
-            assert!(!type_instance.is_class());
+    pub fn entry(&mut self, type_id: TypeId) -> &Type {
+        self.types.entry(type_id.clone()).or_insert_with(|| {
+            assert!(!type_id.is_class());
 
             Box::new(
                 Type {
-                    id: type_instance,
+                    id: type_id,
                     class: None
                 }
             )
