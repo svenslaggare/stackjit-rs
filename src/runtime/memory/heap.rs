@@ -2,6 +2,7 @@ use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::runtime::array;
 use crate::runtime::object;
 use crate::runtime::object::ObjectReference;
+use crate::runtime::memory::manager::ObjectPointer;
 
 pub struct Heap {
     data: Vec<u8>,
@@ -63,7 +64,7 @@ impl<'a> Iterator for HeapObjectsIterator<'a> {
         }
 
         while self.current_object_offset < self.heap.offset() {
-            match ObjectReference::from_full_ptr(unsafe { self.heap.data().as_ptr().add(self.current_object_offset) }) {
+            match ObjectReference::from_full_ptr(unsafe { self.heap.data().as_ptr().add(self.current_object_offset) as ObjectPointer }) {
                 Ok(object_ref) => {
                     self.current_object_offset += object_ref.full_size();
                     return Some(object_ref)

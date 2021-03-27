@@ -6,6 +6,7 @@ use crate::model::typesystem::TypeId;
 use crate::runtime::object::ObjectReference;
 use crate::runtime::array;
 use crate::runtime::array::ArrayReference;
+use crate::runtime::memory::manager::ObjectPointer;
 
 pub struct GarbageCollector {
     deleted_objects: Vec<(u64, TypeId)>
@@ -84,8 +85,8 @@ impl GarbageCollector {
 
     fn mark_value(&mut self, value: FrameValue) {
         if value.value_type.is_reference() {
-            if value.value_u64() != 0 {
-                self.mark_object(ObjectReference::from_ptr(value.value_u64() as *const u8).unwrap());
+            if value.value_ptr() != std::ptr::null_mut() {
+                self.mark_object(ObjectReference::from_ptr(value.value_ptr()).unwrap());
             }
         }
     }
@@ -110,10 +111,10 @@ impl GarbageCollector {
                 }
                 TypeId::Class(_) => {
                     for field in object_ref.object_type().class.as_ref().unwrap().fields() {
-                        if field.field_type().is_reference() {
+                        if field.type_id().is_reference() {
                             self.mark_value(
                                 FrameValue::new_value(
-                                    field.field_type(),
+                                    field.type_id(),
                                     unsafe { object_ref.ptr().add(field.offset()) as *const u8 }
                                 )
                             );

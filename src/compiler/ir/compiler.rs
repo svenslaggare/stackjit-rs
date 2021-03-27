@@ -231,13 +231,13 @@ impl<'a> InstructionIRCompiler<'a> {
                     self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
                 }
 
-                let return_value = match field.field_type() {
+                let return_value = match field.type_id() {
                     TypeId::Float32 => HardwareRegister::Float(1),
                     _ => HardwareRegister::Int(1)
                 };
 
                 self.instructions.push(InstructionIR::LoadField(
-                    field.field_type().clone(),
+                    field.type_id().clone(),
                     field.offset(),
                     return_value,
                     HardwareRegister::Int(0)
@@ -252,7 +252,7 @@ impl<'a> InstructionIRCompiler<'a> {
                 let class = self.type_storage.get(class_type).unwrap().class.as_ref().unwrap();
                 let field = class.get_field(field_name).unwrap();
 
-                let value_register = match field.field_type() {
+                let value_register = match field.type_id() {
                     TypeId::Float32 => HardwareRegister::Float(1),
                     _ => HardwareRegister::Int(1)
                 };
@@ -265,7 +265,7 @@ impl<'a> InstructionIRCompiler<'a> {
                 }
 
                 self.instructions.push(InstructionIR::StoreField(
-                    field.field_type().clone(),
+                    field.type_id().clone(),
                     field.offset(),
                     HardwareRegister::Int(0),
                     value_register,

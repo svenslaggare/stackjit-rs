@@ -4,6 +4,7 @@ use crate::compiler::jit::JitCompiler;
 use crate::engine::binder::Binder;
 use crate::mir::RegisterMIR;
 use crate::model::typesystem::TypeId;
+use crate::runtime::memory::manager::ObjectPointer;
 
 pub struct StackFrame<'a> {
     base_pointer: u64,
@@ -247,6 +248,10 @@ impl<'a> FrameValue<'a> {
 
     pub fn value_u64(&self) -> u64 {
         unsafe { *(self.value_ptr as *const u64) }
+    }
+
+    pub fn value_ptr(&self) -> ObjectPointer {
+        unsafe { *(self.value_ptr as *const ObjectPointer) }
     }
 }
 

@@ -3,7 +3,6 @@ use std::iter::FromIterator;
 
 use crate::model::typesystem::TypeId;
 
-#[derive(Clone)]
 pub struct Field {
     name: String,
     field_type: TypeId,
@@ -23,7 +22,7 @@ impl Field {
         &self.name
     }
 
-    pub fn field_type(&self) -> &TypeId {
+    pub fn type_id(&self) -> &TypeId {
         &self.field_type
     }
 
@@ -32,7 +31,6 @@ impl Field {
     }
 }
 
-#[derive(Clone)]
 pub struct Class {
     name: String,
     fields: Vec<Field>,

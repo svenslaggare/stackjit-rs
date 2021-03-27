@@ -220,7 +220,7 @@ impl<'a> Verifier<'a> {
 
                     let class_reference = self.pop_operand_stack(instruction_index)?;
                     self.same_type(instruction_index, &TypeId::Class(class.name().to_owned()), &class_reference)?;
-                    self.push_operand_stack(field.field_type().clone());
+                    self.push_operand_stack(field.type_id().clone());
                 }
                 Instruction::StoreField(class_name, field_name) => {
                     let class_type = TypeId::Class(class_name.clone());
@@ -235,7 +235,7 @@ impl<'a> Verifier<'a> {
                     let class_reference = self.pop_operand_stack(instruction_index)?;
 
                     self.same_type(instruction_index, &TypeId::Class(class.name().to_owned()), &class_reference)?;
-                    self.same_type(instruction_index, field.field_type(), &value_type)?;
+                    self.same_type(instruction_index, field.type_id(), &value_type)?;
                 }
                 Instruction::Branch(target) => {
                     if *target >= self.function.instructions().len() as u32 {

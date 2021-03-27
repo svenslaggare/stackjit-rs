@@ -484,7 +484,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 let return_value = match self.register_allocation.get_register(destination).hardware_register() {
                     Some(register) => register,
                     None => {
-                        match field.field_type() {
+                        match field.type_id() {
                             TypeId::Float32 => HardwareRegister::FloatSpill,
                             _ => HardwareRegister::IntSpill
                         }
@@ -492,7 +492,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 };
 
                 self.instructions.push(InstructionIR::LoadField(
-                    field.field_type().clone(),
+                    field.type_id().clone(),
                     field.offset(),
                     return_value,
                     class_ref_register,
@@ -531,7 +531,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 }
 
                 self.instructions.push(InstructionIR::StoreField(
-                    field.field_type().clone(),
+                    field.type_id().clone(),
                     field.offset(),
                     class_ref_register,
                     value_register,

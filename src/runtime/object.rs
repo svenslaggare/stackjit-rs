@@ -67,7 +67,7 @@ pub struct ObjectReference<'a> {
 }
 
 impl<'a> ObjectReference<'a> {
-    pub fn from_full_ptr(ptr: *const u8) -> Result<ObjectReference<'a>, usize> {
+    pub fn from_full_ptr(ptr: ObjectPointer) -> Result<ObjectReference<'a>, usize> {
         let object_header = ptr as *const ObjectHeader;
 
         unsafe {
@@ -99,7 +99,7 @@ impl<'a> ObjectReference<'a> {
         )
     }
 
-    pub fn from_ptr(ptr: *const u8) -> Result<ObjectReference<'a>, usize> {
+    pub fn from_ptr(ptr: ObjectPointer) -> Result<ObjectReference<'a>, usize> {
         ObjectReference::from_full_ptr(unsafe { ptr.sub(HEADER_SIZE) })
     }
 
