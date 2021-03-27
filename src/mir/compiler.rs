@@ -29,7 +29,7 @@ pub struct InstructionMIRCompiler<'a> {
     next_operand_virtual_register: u32,
     max_num_virtual_register: usize,
     instructions_operand_types: Vec<Vec<RegisterMIR>>,
-    macros: HashMap<FunctionSignature, Box<dyn Fn(&mut Vec<InstructionMIR>, usize, &Instruction) + 'a>>
+    macros: HashMap<FunctionSignature, Box<dyn Fn(&mut InstructionMIRCompiler, usize, &Instruction) + 'a>>
 }
 
 impl<'a> InstructionMIRCompiler<'a> {
@@ -48,8 +48,8 @@ impl<'a> InstructionMIRCompiler<'a> {
 
         compiler.make_macro(
             FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] },
-            |instructions: &mut Vec<InstructionMIR>, instruction_index: usize, instruction: &Instruction| {
-                instructions.push(InstructionMIR::new(
+            |compiler: &mut InstructionMIRCompiler, instruction_index: usize, instruction: &Instruction| {
+                compiler.instructions.push(InstructionMIR::new(
                     instruction_index,
                     InstructionMIRData::GarbageCollect
                 ));
@@ -59,7 +59,7 @@ impl<'a> InstructionMIRCompiler<'a> {
         compiler
     }
 
-    fn make_macro<F: Fn(&mut Vec<InstructionMIR>, usize, &Instruction) + 'a>(&mut self, signature: FunctionSignature, f: F) {
+    fn make_macro<F: Fn(&mut InstructionMIRCompiler, usize, &Instruction) + 'a>(&mut self, signature: FunctionSignature, f: F) {
         self.macros.insert(signature, Box::new(f));
     }
 
@@ -158,9 +158,10 @@ impl<'a> InstructionMIRCompiler<'a> {
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::Return(return_value)));
             }
             Instruction::Call(signature) => {
-                match self.macros.get(signature) {
+                match self.macros.remove(signature) {
                     Some(macro_fn) => {
-                        macro_fn(&mut self.instructions, instruction_index, instruction);
+                        macro_fn(self, instruction_index, instruction);
+                        self.macros.insert(signature.clone(), macro_fn);
                     }
                     None => {
                         let func_to_call = self.binder.get(signature).unwrap();
