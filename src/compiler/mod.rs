@@ -1,15 +1,19 @@
 use std::collections::HashMap;
 
+use ir::{BranchLabel, HardwareRegisterExplicit, InstructionIR};
+
+use crate::mir::compiler::MIRCompilationResult;
+use crate::model::function::{Function, FunctionSignature};
+
 pub mod code_generator;
 pub mod allocator;
 pub mod stack_layout;
 pub mod jit;
 pub mod calling_conventions;
 pub mod error_handling;
-
-use crate::ir::{BranchLabel, HardwareRegisterExplicit, InstructionIR};
-use crate::model::function::{Function, FunctionSignature};
-use crate::ir::compiler::MIRCompilationResult;
+pub mod ir;
+pub mod ir_compiler;
+pub mod allocated_ir_compiler;
 
 pub struct FunctionCompilationData {
     pub unresolved_function_calls: Vec<UnresolvedFunctionCall>,

@@ -1,15 +1,14 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::ir::mid::{InstructionMIR, InstructionMIRData, RegisterMIR};
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
-use crate::ir::compiler::{MIRCompilationResult, InstructionMIRCompiler};
+use crate::engine::binder::Binder;
+use crate::mir::{branches, InstructionMIR, InstructionMIRData, RegisterMIR};
+use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::model::function::{Function, FunctionDefinition};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::{Type, TypeStorage};
-use crate::engine::binder::Binder;
 use crate::model::verifier::Verifier;
-use crate::ir::branches;
 
 pub type RegisterNullStatus = HashMap<RegisterMIR, bool>;
 pub type InstructionsRegisterNullStatus = Vec<RegisterNullStatus>;
@@ -529,11 +528,7 @@ fn test_branches1() {
     compiler.compile(function.instructions());
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-    let control_flow_graph = ControlFlowGraph::new(
-        &compilation_result.instructions,
-        &basic_blocks,
-        &branches::create_label_mapping(&compilation_result.instructions)
-    );
+    let control_flow_graph = ControlFlowGraph::new(&compilation_result.instructions, &basic_blocks);
 
     let result = compute_null_check_elision(&function, &compilation_result, &basic_blocks, &control_flow_graph);
 
@@ -580,11 +575,7 @@ fn test_branches2() {
     compiler.compile(function.instructions());
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-    let control_flow_graph = ControlFlowGraph::new(
-        &compilation_result.instructions,
-        &basic_blocks,
-        &branches::create_label_mapping(&compilation_result.instructions)
-    );
+    let control_flow_graph = ControlFlowGraph::new(&compilation_result.instructions, &basic_blocks);
 
     let result = compute_null_check_elision(&function, &compilation_result, &basic_blocks, &control_flow_graph);
 

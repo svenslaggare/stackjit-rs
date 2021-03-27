@@ -5,9 +5,8 @@ use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
 use crate::analysis::VirtualRegister;
 use crate::engine::binder::Binder;
-use crate::ir::branches;
-use crate::ir::mid::{InstructionMIR, RegisterMIR};
-use crate::ir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
+use crate::mir::{branches, InstructionMIR, RegisterMIR};
+use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::model::function::{Function, FunctionDefinition};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::{Type, TypeStorage};
@@ -248,9 +247,7 @@ fn test_liveness1() {
     let instructions = &compilation_result.instructions;
 
     let blocks = BasicBlock::create_blocks(&instructions);
-    let branch_label_mapping = branches::create_label_mapping(&instructions);
-
-    let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks, &branch_label_mapping);
+    let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks);
 
     let live_intervals = compute_liveness(&compilation_result, &blocks, &control_flow_graph);
 
@@ -302,9 +299,7 @@ fn test_liveness2() {
     let instructions = &compilation_result.instructions;
 
     let blocks = BasicBlock::create_blocks(&instructions);
-    let branch_label_mapping = branches::create_label_mapping(&instructions);
-
-    let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks, &branch_label_mapping);
+    let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks);
 
     let live_intervals = compute_liveness(&compilation_result, &blocks, &control_flow_graph);
 
@@ -365,9 +360,7 @@ fn test_liveness3() {
     let instructions = &compilation_result.instructions;
 
     let blocks = BasicBlock::create_blocks(&instructions);
-    let branch_label_mapping = branches::create_label_mapping(&instructions);
-
-    let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks, &branch_label_mapping);
+    let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks);
 
     let live_intervals = compute_liveness(&compilation_result, &blocks, &control_flow_graph);
 

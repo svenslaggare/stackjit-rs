@@ -2,14 +2,15 @@ use std::collections::BTreeSet;
 use std::iter::FromIterator;
 
 use crate::engine::binder::Binder;
-use crate::ir::branches;
-use crate::ir::mid::InstructionMIR;
-use crate::ir::compiler::InstructionMIRCompiler;
-use crate::ir::mid::InstructionMIRData;
+use crate::mir::branches;
+use crate::mir::InstructionMIR;
+use crate::mir::compiler::InstructionMIRCompiler;
+use crate::mir::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::{Type, TypeStorage};
 use crate::model::verifier::Verifier;
+use crate::analysis;
 
 pub struct BasicBlock {
     pub start_offset: usize,
@@ -52,7 +53,7 @@ impl BasicBlock {
     }
 
     fn find_leaders(instructions: &Vec<InstructionMIR>) -> Vec<usize> {
-        let branch_label_mapping = branches::create_label_mapping(instructions);
+        let branch_label_mapping = analysis::create_label_mapping(instructions);
 
         // A leader is the start of a basic block
         let mut leaders = BTreeSet::new();

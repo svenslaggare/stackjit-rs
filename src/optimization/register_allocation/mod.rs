@@ -1,12 +1,12 @@
-pub mod linear_scan;
-
 use std::collections::HashMap;
 
-use crate::ir::HardwareRegister;
-use crate::analysis::liveness::LiveInterval;
-use crate::ir::mid::{RegisterMIR};
-use crate::model::typesystem::Type;
 use crate::analysis::{VirtualRegister, VirtualRegisterType};
+use crate::analysis::liveness::LiveInterval;
+use crate::compiler::ir::HardwareRegister;
+use crate::mir::RegisterMIR;
+use crate::model::typesystem::Type;
+
+pub mod linear_scan;
 
 #[derive(Debug, Clone)]
 pub enum AllocatedRegister {

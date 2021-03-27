@@ -1,21 +1,21 @@
 use std::collections::HashMap;
 
-use crate::compiler::{FunctionCallType, FunctionCompilationData};
-use crate::compiler::allocator::ExecutableMemoryAllocator;
-use crate::compiler::code_generator::{CodeGenerator, CodeGeneratorResult};
-use crate::compiler::error_handling::ErrorHandling;
-use crate::engine::binder::Binder;
-use crate::ir;
-use crate::ir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
-use crate::ir::{InstructionIR, branches};
-use crate::ir::mid;
-use crate::ir::ir_compiler::InstructionIRCompiler;
-use crate::ir::allocated_ir_compiler::AllocatedInstructionIRCompiler;
-use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
-use crate::model::typesystem::TypeStorage;
 use crate::analysis::{AnalysisResult, null_check_elision};
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
+use crate::compiler::{FunctionCallType, FunctionCompilationData};
+use crate::compiler::allocated_ir_compiler::AllocatedInstructionIRCompiler;
+use crate::compiler::allocator::ExecutableMemoryAllocator;
+use crate::compiler::code_generator::{CodeGenerator, CodeGeneratorResult};
+use crate::compiler::error_handling::ErrorHandling;
+use crate::compiler::ir::InstructionIR;
+use crate::compiler::ir_compiler::InstructionIRCompiler;
+use crate::engine::binder::Binder;
+use crate::mir;
+use crate::mir::branches;
+use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
+use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
+use crate::model::typesystem::TypeStorage;
 
 pub struct JitCompiler {
     memory_allocator: ExecutableMemoryAllocator,
@@ -157,7 +157,6 @@ impl JitCompiler {
         let control_flow_graph = ControlFlowGraph::new(
             &compilation_result.instructions,
             &basic_blocks,
-            &branches::create_label_mapping(&compilation_result.instructions)
         );
 
         let analysis_result = AnalysisResult {

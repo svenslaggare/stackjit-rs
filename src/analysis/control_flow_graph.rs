@@ -3,15 +3,16 @@ use std::iter::FromIterator;
 
 use crate::analysis::basic_block::BasicBlock;
 use crate::engine::binder::Binder;
-use crate::ir::branches;
-use crate::ir::BranchLabel;
-use crate::ir::mid::InstructionMIR;
-use crate::ir::compiler::InstructionMIRCompiler;
-use crate::ir::mid::InstructionMIRData;
+use crate::mir::branches;
+use crate::compiler::ir::BranchLabel;
+use crate::mir::InstructionMIR;
+use crate::mir::compiler::InstructionMIRCompiler;
+use crate::mir::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::{Type, TypeStorage};
 use crate::model::verifier::Verifier;
+use crate::analysis;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ControlFlowEdge {
@@ -26,9 +27,9 @@ pub struct ControlFlowGraph {
 }
 
 impl ControlFlowGraph {
-    pub fn new(instructions: &Vec<InstructionMIR>,
-               blocks: &Vec<BasicBlock>,
-               branch_label_mapping: &HashMap<BranchLabel, usize>) -> ControlFlowGraph {
+    pub fn new(instructions: &Vec<InstructionMIR>, blocks: &Vec<BasicBlock>) -> ControlFlowGraph {
+        let branch_label_mapping = analysis::create_label_mapping(instructions);
+
         let vertices = (0..blocks.len()).collect::<Vec<_>>();
         let mut edges = HashMap::new();
         let mut back_edges = HashMap::new();
@@ -126,9 +127,8 @@ fn test_branches1() {
     let instructions = compiler.done().instructions;
 
     let blocks = BasicBlock::create_blocks(&instructions);
-    let branch_label_mapping = branches::create_label_mapping(&instructions);
 
-    let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks, &branch_label_mapping);
+    let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks);
     control_flow_graph.print_graph(&instructions, &blocks);
 
     assert_eq!(

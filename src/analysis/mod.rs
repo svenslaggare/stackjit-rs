@@ -1,11 +1,14 @@
-use crate::analysis::null_check_elision::InstructionsRegisterNullStatus;
-use crate::ir::mid::RegisterMIR;
-use crate::model::typesystem::Type;
+use std::collections::HashMap;
 
 pub mod basic_block;
 pub mod control_flow_graph;
 pub mod liveness;
 pub mod null_check_elision;
+
+use crate::compiler::ir::BranchLabel;
+use crate::analysis::null_check_elision::InstructionsRegisterNullStatus;
+use crate::mir::{RegisterMIR, InstructionMIR, InstructionMIRData};
+use crate::model::typesystem::Type;
 
 pub struct AnalysisResult {
     pub instructions_register_null_status: InstructionsRegisterNullStatus
@@ -30,4 +33,16 @@ impl VirtualRegister {
             _ => VirtualRegister { number: register.number, register_type: VirtualRegisterType::Int }
         }
     }
+
+}
+pub fn create_label_mapping(instructions: &Vec<InstructionMIR>) -> HashMap<BranchLabel, usize> {
+    let mut mapping = HashMap::new();
+
+    for (instruction_index, instruction) in instructions.iter().enumerate() {
+        if let InstructionMIRData::BranchLabel(label) = &instruction.data {
+            mapping.insert(*label, instruction_index);
+        }
+    }
+
+    mapping
 }

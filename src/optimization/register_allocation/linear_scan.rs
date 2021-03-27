@@ -2,19 +2,18 @@ use std::cmp::Ordering;
 use std::collections::{BTreeSet, HashMap};
 use std::iter::FromIterator;
 
+use crate::analysis::{VirtualRegister, VirtualRegisterType};
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
 use crate::analysis::liveness::{compute_liveness, LiveInterval};
 use crate::engine::binder::Binder;
-use crate::ir::branches;
-use crate::ir::mid::{InstructionMIR, RegisterMIR};
-use crate::ir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
+use crate::mir::{branches, InstructionMIR, RegisterMIR};
+use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::{Type, TypeStorage};
 use crate::model::verifier::Verifier;
 use crate::optimization::register_allocation::{AllocatedRegister, RegisterAllocation};
-use crate::analysis::{VirtualRegister, VirtualRegisterType};
 
 pub struct Settings {
     pub num_int_registers: usize,
@@ -188,11 +187,7 @@ impl Ord for LiveIntervalByEndPoint {
 
 fn analyze(compilation_result: &MIRCompilationResult) -> (Vec<BasicBlock>, ControlFlowGraph, Vec<LiveInterval>) {
     let blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-    let control_flow_graph = ControlFlowGraph::new(
-        &compilation_result.instructions,
-        &blocks,
-        &branches::create_label_mapping(&compilation_result.instructions)
-    );
+    let control_flow_graph = ControlFlowGraph::new(&compilation_result.instructions, &blocks);
 
     let live_intervals = compute_liveness(compilation_result, &blocks, &control_flow_graph);
 

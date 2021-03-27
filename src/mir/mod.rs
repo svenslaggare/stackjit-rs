@@ -1,9 +1,12 @@
 use std::iter::FromIterator;
 
-use crate::ir::{BranchLabel, Condition};
+pub mod compiler;
+pub mod branches;
+
+use crate::analysis::VirtualRegister;
+use crate::compiler::ir::{BranchLabel, Condition};
 use crate::model::function::FunctionSignature;
 use crate::model::typesystem::Type;
-use crate::analysis::VirtualRegister;
 
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct RegisterMIR {

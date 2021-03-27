@@ -2,7 +2,7 @@ use crate::compiler::{FunctionCompilationData, stack_layout};
 use crate::model::function::Function;
 use crate::compiler::jit::JitCompiler;
 use crate::engine::binder::Binder;
-use crate::ir::mid::RegisterMIR;
+use crate::mir::RegisterMIR;
 use crate::model::typesystem::Type;
 
 pub struct StackFrame<'a> {

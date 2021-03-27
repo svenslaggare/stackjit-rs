@@ -1,5 +1,5 @@
 use crate::model::function::Function;
-use crate::ir::compiler::MIRCompilationResult;
+use crate::mir::compiler::MIRCompilationResult;
 
 pub const STACK_ENTRY_SIZE: i32 = 8;
 pub const STACK_OFFSET: u32 = 1;

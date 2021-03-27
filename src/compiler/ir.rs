@@ -1,9 +1,3 @@
-pub mod mid;
-pub mod compiler;
-pub mod ir_compiler;
-pub mod allocated_ir_compiler;
-pub mod branches;
-
 use crate::model::function::FunctionSignature;
 use crate::model::typesystem::Type;
 
@@ -29,6 +23,48 @@ impl std::fmt::Debug for HardwareRegister {
             }
             HardwareRegister::FloatSpill => {
                 write!(f, "HardwareRegister::FloatSpill")
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum Variable {
+    Register(HardwareRegister),
+    FrameMemory(i32)
+}
+
+impl Variable {
+    pub fn move_to_explicit(&self, destination: HardwareRegisterExplicit, instructions: &mut Vec<InstructionIR>) {
+        match self {
+            Variable::Register(source) => {
+                instructions.push(InstructionIR::MoveImplicitToExplicit(destination, *source));
+            }
+            Variable::FrameMemory(offset) => {
+                instructions.push(InstructionIR::LoadFrameMemoryExplicit(destination, *offset));
+            }
+        }
+    }
+
+    pub fn move_to_stack(&self, instructions: &mut Vec<InstructionIR>) {
+        match self {
+            Variable::Register(source) => {
+                instructions.push(InstructionIR::Push(*source));
+            }
+            Variable::FrameMemory(offset) => {
+                instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::IntSpill, *offset));
+                instructions.push(InstructionIR::Push(HardwareRegister::IntSpill));
+            }
+        }
+    }
+
+    pub fn move_from_explicit(&self, source: HardwareRegisterExplicit, instructions: &mut Vec<InstructionIR>) {
+        match self {
+            Variable::Register(destination) => {
+                instructions.push(InstructionIR::MoveExplicitToImplicit(*destination, source));
+            }
+            Variable::FrameMemory(offset) => {
+                instructions.push(InstructionIR::StoreFrameMemoryExplicit(*offset, source));
             }
         }
     }
@@ -113,46 +149,4 @@ pub enum InstructionIR {
 
     PrintStackFrame(usize),
     GarbageCollect(usize)
-}
-
-#[derive(Debug)]
-pub enum Variable {
-    Register(HardwareRegister),
-    FrameMemory(i32)
-}
-
-impl Variable {
-    pub fn move_to_explicit(&self, destination: HardwareRegisterExplicit, instructions: &mut Vec<InstructionIR>) {
-        match self {
-            Variable::Register(source) => {
-                instructions.push(InstructionIR::MoveImplicitToExplicit(destination, *source));
-            }
-            Variable::FrameMemory(offset) => {
-                instructions.push(InstructionIR::LoadFrameMemoryExplicit(destination, *offset));
-            }
-        }
-    }
-
-    pub fn move_to_stack(&self, instructions: &mut Vec<InstructionIR>) {
-        match self {
-            Variable::Register(source) => {
-                instructions.push(InstructionIR::Push(*source));
-            }
-            Variable::FrameMemory(offset) => {
-                instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::IntSpill, *offset));
-                instructions.push(InstructionIR::Push(HardwareRegister::IntSpill));
-            }
-        }
-    }
-
-    pub fn move_from_explicit(&self, source: HardwareRegisterExplicit, instructions: &mut Vec<InstructionIR>) {
-        match self {
-            Variable::Register(destination) => {
-                instructions.push(InstructionIR::MoveExplicitToImplicit(*destination, source));
-            }
-            Variable::FrameMemory(offset) => {
-                instructions.push(InstructionIR::StoreFrameMemoryExplicit(*offset, source));
-            }
-        }
-    }
 }

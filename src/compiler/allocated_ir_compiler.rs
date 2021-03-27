@@ -1,26 +1,26 @@
-use std::collections::{HashMap, HashSet, BTreeSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::iter::FromIterator;
 
 use iced_x86::Register;
 
-use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments, float_register_call_arguments, get_call_register};
+use crate::analysis::{AnalysisResult, liveness, VirtualRegister};
+use crate::analysis::basic_block::BasicBlock;
+use crate::analysis::control_flow_graph::ControlFlowGraph;
+use crate::compiler::calling_conventions::{CallingConventions, float_register_call_arguments, get_call_register, register_call_arguments};
+use crate::compiler::code_generator::register_mapping;
+use crate::compiler::ir::{HardwareRegister, HardwareRegisterExplicit, InstructionIR, Variable};
 use crate::compiler::stack_layout;
 use crate::engine::binder::Binder;
-use crate::ir::{HardwareRegister, HardwareRegisterExplicit, InstructionIR, Variable, branches};
-use crate::ir::mid::{InstructionMIR, RegisterMIR};
-use crate::ir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
-use crate::ir::mid::InstructionMIRData;
+use crate::mir::{branches, InstructionMIR, RegisterMIR};
+use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
+use crate::mir::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::{Type, TypeStorage};
 use crate::model::verifier::Verifier;
-use crate::analysis::basic_block::BasicBlock;
-use crate::analysis::control_flow_graph::ControlFlowGraph;
-use crate::analysis::{liveness, AnalysisResult, VirtualRegister};
 use crate::optimization::register_allocation;
+use crate::optimization::register_allocation::{AllocatedRegister, RegisterAllocation};
 use crate::optimization::register_allocation::linear_scan::Settings;
-use crate::optimization::register_allocation::{RegisterAllocation, AllocatedRegister};
-use crate::compiler::code_generator::register_mapping;
 
 pub struct AllocatedInstructionIRCompiler<'a> {
     binder: &'a Binder,
@@ -64,8 +64,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
     fn register_allocate(compilation_result: &MIRCompilationResult) -> RegisterAllocation {
         let instructions = &compilation_result.instructions;
         let basic_blocks = BasicBlock::create_blocks(instructions);
-        let branch_label_mapping = branches::create_label_mapping(&instructions);
-        let control_flow_graph = ControlFlowGraph::new(&instructions, &basic_blocks, &branch_label_mapping);
+        let control_flow_graph = ControlFlowGraph::new(&instructions, &basic_blocks);
         let live_intervals = liveness::compute_liveness(compilation_result, &basic_blocks, &control_flow_graph);
         register_allocation::linear_scan::allocate(
             &live_intervals,

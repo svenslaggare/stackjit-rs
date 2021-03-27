@@ -1,15 +1,15 @@
-use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments, float_register_call_arguments};
+use crate::analysis::AnalysisResult;
+use crate::compiler::calling_conventions::{CallingConventions, float_register_call_arguments, register_call_arguments};
+use crate::compiler::ir::{HardwareRegister, HardwareRegisterExplicit, InstructionIR, Variable};
 use crate::compiler::stack_layout;
 use crate::engine::binder::Binder;
-use crate::ir::{HardwareRegister, HardwareRegisterExplicit, InstructionIR, Variable};
-use crate::ir::mid::{InstructionMIR, RegisterMIR};
-use crate::ir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
-use crate::ir::mid::InstructionMIRData;
+use crate::mir::{InstructionMIR, RegisterMIR};
+use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
+use crate::mir::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::{Type, TypeStorage};
 use crate::model::verifier::Verifier;
-use crate::analysis::AnalysisResult;
 
 pub struct InstructionIRCompiler<'a> {
     binder: &'a Binder,

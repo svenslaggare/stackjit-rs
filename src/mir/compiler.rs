@@ -1,16 +1,16 @@
 use std::collections::HashMap;
 
+use crate::analysis::null_check_elision::InstructionsRegisterNullStatus;
+use crate::analysis::VirtualRegister;
+use crate::compiler::ir::Condition;
 use crate::engine::binder::Binder;
-use crate::ir::branches::BranchManager;
-use crate::ir::Condition;
-use crate::ir::mid::{InstructionMIR, RegisterMIR};
-use crate::ir::mid::InstructionMIRData;
+use crate::mir::{InstructionMIR, RegisterMIR};
+use crate::mir::branches::BranchManager;
+use crate::mir::InstructionMIRData;
 use crate::model::function::{Function, FunctionDefinition, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::{Type, TypeStorage};
 use crate::model::verifier::Verifier;
-use crate::analysis::null_check_elision::InstructionsRegisterNullStatus;
-use crate::analysis::VirtualRegister;
 
 pub struct MIRCompilationResult {
     pub instructions: Vec<InstructionMIR>,

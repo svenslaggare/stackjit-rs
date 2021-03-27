@@ -2,12 +2,12 @@ use iced_x86::{Code, Encoder, MemoryOperand, Register};
 use iced_x86::Instruction as X86Instruction;
 
 use crate::compiler::{FunctionCallType, FunctionCompilationData, stack_layout, UnresolvedFunctionCall};
-use crate::compiler::calling_conventions::{CallingConventions, register_call_arguments, float_register_call_arguments};
+use crate::compiler::calling_conventions::{CallingConventions, float_register_call_arguments, register_call_arguments};
 use crate::compiler::error_handling::ErrorHandling;
+use crate::compiler::ir::{Condition, HardwareRegisterExplicit, InstructionIR};
 use crate::engine::binder::Binder;
-use crate::ir::{HardwareRegisterExplicit, InstructionIR, Condition};
 use crate::model::function::{Function, FunctionType};
-use crate::model::typesystem::{Type, TypeStorage, TypeMetadata};
+use crate::model::typesystem::{Type, TypeMetadata, TypeStorage};
 use crate::runtime::{array, runtime_interface};
 
 pub struct CodeGeneratorResult {
@@ -858,9 +858,9 @@ impl<'a> CodeGenerator<'a> {
 pub mod register_mapping {
     use iced_x86::Register;
 
-    use crate::ir::HardwareRegister;
+    use crate::compiler::calling_conventions::{float_register_call_arguments, register_call_arguments};
     use crate::compiler::FunctionCallType::Relative;
-    use crate::compiler::calling_conventions::{register_call_arguments, float_register_call_arguments};
+    use crate::compiler::ir::HardwareRegister;
 
     lazy_static! {
        static ref mapping_i64: Vec<Register> = {
