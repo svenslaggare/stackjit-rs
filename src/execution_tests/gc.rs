@@ -23,7 +23,6 @@ fn test_stack_frame1() {
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),
-            // Instruction::NewArray(Type::Int32),
             Instruction::Call(FunctionSignature { name: "create_int_array".to_string(), parameters: vec![TypeId::Int32] }),
             Instruction::Return,
         ]
@@ -77,16 +76,20 @@ fn test_collect1() {
 
             Instruction::NewObject("Point".to_owned()),
             Instruction::StoreLocal(1),
+            Instruction::LoadLocal(1),
+            Instruction::LoadInt32(4711),
+            Instruction::StoreField("Point".to_owned(), "x".to_owned()),
 
             Instruction::Call(FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] }),
 
-            Instruction::LoadInt32(0),
+            Instruction::LoadLocal(1),
+            Instruction::LoadField("Point".to_owned(), "x".to_owned()),
             Instruction::Return,
         ]
     )).unwrap();
 
     let execution_result = vm.execute().unwrap();
-    assert_eq!(0, execution_result);
+    assert_eq!(4711, execution_result);
 
     get_vm(|vm| {
         assert_eq!(1, vm.memory_manager.garbage_collector.deleted_objects().len());
@@ -96,6 +99,57 @@ fn test_collect1() {
 
 #[test]
 fn test_collect2() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_class(Class::new(
+        "Point".to_owned(),
+        vec![
+            Field::new("x".to_owned(), TypeId::Int32),
+            Field::new("y".to_owned(), TypeId::Int32),
+        ]
+    )).unwrap();
+
+    let point_type = TypeId::Class("Point".to_owned());
+
+    vm.engine.add_function(Function::new(
+        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Int32)), point_type.clone()],
+        vec![
+            Instruction::LoadInt32(4711),
+            Instruction::NewArray(TypeId::Int32),
+            Instruction::StoreLocal(0),
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(100),
+            Instruction::LoadInt32(4711),
+            Instruction::StoreElement(TypeId::Int32),
+
+            Instruction::NewObject("Point".to_owned()),
+            Instruction::StoreLocal(1),
+
+            Instruction::LoadNull(TypeId::Class("Point".to_owned())),
+            Instruction::StoreLocal(1),
+
+            Instruction::Call(FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] }),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(100),
+            Instruction::LoadElement(TypeId::Int32),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(4711, execution_result);
+
+    get_vm(|vm| {
+        assert_eq!(1, vm.memory_manager.garbage_collector.deleted_objects().len());
+        assert_eq!(point_type.clone(), vm.memory_manager.garbage_collector.deleted_objects()[0].1);
+    });
+}
+
+
+#[test]
+fn test_collect3() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_class(Class::new(
@@ -133,7 +187,7 @@ fn test_collect2() {
 }
 
 #[test]
-fn test_collect3() {
+fn test_collect4() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_class(Class::new(
@@ -175,7 +229,7 @@ fn test_collect3() {
 }
 
 #[test]
-fn test_collect4() {
+fn test_collect5() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_class(Class::new(
