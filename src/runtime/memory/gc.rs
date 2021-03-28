@@ -71,6 +71,74 @@ impl GarbageCollector {
         println!("--------------------------------------------");
     }
 
+    fn sweep_objects(&mut self, heap: &Heap) {
+        for mut object_ref in HeapObjectsIterator::new(heap) {
+            if !object_ref.header().is_marked() {
+                println!("Deleted object: 0x{:0x}, type: {}", object_ref.ptr() as u64, object_ref.object_type().id);
+                self.deleted_objects.push((object_ref.ptr() as u64, object_ref.object_type().id.clone()));
+                object_ref.delete();
+            } else {
+                object_ref.header_mut().unmark();
+            }
+        }
+    }
+
+    fn compact_objects(&mut self,
+                       compiler: &JitCompiler,
+                       binder: &Binder,
+                       heap: &mut Heap,
+                       stack_frame: &StackFrame) {
+        let (next_object_offset, new_locations) = self.compute_new_locations(heap);
+
+        self.update_references(compiler, binder, stack_frame, heap, &new_locations);
+
+        self.move_objects(heap, &new_locations);
+
+        println!("Decreased heap by {} bytes", heap.offset() as isize - next_object_offset as isize);
+        heap.set_offset(next_object_offset);
+    }
+
+    fn compute_new_locations(&self, heap: &Heap) -> (usize, HashMap<ObjectPointer, ObjectPointer>) {
+        let mut object_offset = 0;
+        let mut new_locations = HashMap::new();
+
+        for object_ref in HeapObjectsIterator::new(heap) {
+            if object_ref.header().is_marked() {
+                new_locations.insert(
+                    object_ref.full_ptr(),
+                    unsafe { heap.data().as_ptr().add(object_offset) } as ObjectPointer
+                );
+
+                object_offset += object_ref.full_size();
+            }
+        }
+
+        (object_offset, new_locations)
+    }
+
+    fn move_objects(&mut self,
+                    heap: &mut Heap,
+                    new_locations: &HashMap<ObjectPointer, ObjectPointer>,) {
+        for mut object_ref in HeapObjectsIterator::new(heap) {
+            if object_ref.header().is_marked() {
+                object_ref.header_mut().unmark();
+                let new_address = new_locations[&object_ref.full_ptr()];
+
+                unsafe {
+                    object_ref.full_ptr().copy_to(new_address, object_ref.full_size());
+                }
+            } else {
+                println!("Deleted object: 0x{:0x}, type: {}", object_ref.ptr() as u64, object_ref.object_type().id);
+                self.deleted_objects.push((object_ref.ptr() as u64, object_ref.object_type().id.clone()));
+            }
+        }
+    }
+}
+
+impl MarkObjects for GarbageCollector {}
+impl UpdateReferences for GarbageCollector {}
+
+pub trait MarkObjects {
     fn mark_objects(&mut self,
                     compiler: &JitCompiler,
                     binder: &Binder,
@@ -128,51 +196,17 @@ impl GarbageCollector {
             }
         }
     }
+}
 
-    fn sweep_objects(&mut self, heap: &Heap) {
-        for mut object_ref in HeapObjectsIterator::new(heap) {
-            if !object_ref.header().is_marked() {
-                println!("Deleted object: 0x{:0x}, type: {}", object_ref.ptr() as u64, object_ref.object_type().id);
-                self.deleted_objects.push((object_ref.ptr() as u64, object_ref.object_type().id.clone()));
-                object_ref.delete();
-            } else {
-                object_ref.header_mut().unmark();
-            }
-        }
-    }
-
-    fn compact_objects(&mut self,
-                       compiler: &JitCompiler,
-                       binder: &Binder,
-                       heap: &mut Heap,
-                       stack_frame: &StackFrame) {
-        let (next_object_offset, new_locations) = self.compute_new_locations(heap);
-
+pub trait UpdateReferences {
+    fn update_references(&self,
+                         compiler: &JitCompiler,
+                         binder: &Binder,
+                         stack_frame: &StackFrame,
+                         heap: &Heap,
+                         new_locations: &HashMap<ObjectPointer, ObjectPointer>) {
         self.update_stack_references(compiler, binder, stack_frame, &new_locations);
         self.update_heap_references(heap, &new_locations);
-
-        self.move_objects(heap, &new_locations);
-
-        println!("Decreased heap by {} bytes", heap.offset() as isize - next_object_offset as isize);
-        heap.set_offset(next_object_offset);
-    }
-
-    fn compute_new_locations(&self, heap: &Heap) -> (usize, HashMap<ObjectPointer, ObjectPointer>) {
-        let mut object_offset = 0;
-        let mut new_locations = HashMap::new();
-
-        for object_ref in HeapObjectsIterator::new(heap) {
-            if object_ref.header().is_marked() {
-                new_locations.insert(
-                    object_ref.full_ptr(),
-                    unsafe { heap.data().as_ptr().add(object_offset) } as ObjectPointer
-                );
-
-                object_offset += object_ref.full_size();
-            }
-        }
-
-        (object_offset, new_locations)
     }
 
     fn update_stack_references(&self,
@@ -232,24 +266,6 @@ impl GarbageCollector {
                 let old_address = object_ref.sub(object::HEADER_SIZE);
                 let new_address = new_locations[&old_address];
                 *object_ref_ptr = new_address.add(object::HEADER_SIZE);
-            }
-        }
-    }
-
-    fn move_objects(&mut self,
-                    heap: &mut Heap,
-                    new_locations: &HashMap<ObjectPointer, ObjectPointer>,) {
-        for mut object_ref in HeapObjectsIterator::new(heap) {
-            if object_ref.header().is_marked() {
-                object_ref.header_mut().unmark();
-                let new_address = new_locations[&object_ref.full_ptr()];
-
-                unsafe {
-                    object_ref.full_ptr().copy_to(new_address, object_ref.full_size());
-                }
-            } else {
-                println!("Deleted object: 0x{:0x}, type: {}", object_ref.ptr() as u64, object_ref.object_type().id);
-                self.deleted_objects.push((object_ref.ptr() as u64, object_ref.object_type().id.clone()));
             }
         }
     }
