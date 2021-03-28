@@ -58,13 +58,13 @@ fn test_create1() {
         ]
     )).unwrap();
 
-    vm.engine.add_class(Class::new(
+    vm.type_storage.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
             Field::new("y".to_owned(), TypeId::Int32),
         ]
-    )).unwrap();
+    ));
 
     let execution_result = vm.execute().unwrap();
     assert_eq!(0, execution_result);
@@ -84,13 +84,13 @@ fn test_load1() {
         )
     );
 
-    vm.engine.add_class(Class::new(
+    vm.type_storage.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
             Field::new("y".to_owned(), TypeId::Int32),
         ]
-    )).unwrap();
+    ));
 
     vm.engine.add_function(Function::new(
         FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
@@ -117,13 +117,13 @@ fn test_load1() {
 fn test_store1() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_class(Class::new(
+    vm.type_storage.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
             Field::new("y".to_owned(), TypeId::Int32),
         ]
-    )).unwrap();
+    ));
 
     vm.engine.add_function(Function::new(
         FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
@@ -161,13 +161,13 @@ fn test_array1() {
         )
     );
 
-    vm.engine.add_class(Class::new(
+    vm.type_storage.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
             Field::new("y".to_owned(), TypeId::Int32),
         ]
-    )).unwrap();
+    ));
 
     vm.engine.add_function(Function::new(
         FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),

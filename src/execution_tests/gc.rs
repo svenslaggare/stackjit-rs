@@ -55,13 +55,13 @@ fn test_stack_frame1() {
 fn test_collect1() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_class(Class::new(
+    vm.type_storage.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
             Field::new("y".to_owned(), TypeId::Int32),
         ]
-    )).unwrap();
+    ));
 
     vm.engine.add_function(Function::new(
         FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
@@ -101,13 +101,13 @@ fn test_collect1() {
 fn test_collect2() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_class(Class::new(
+    vm.type_storage.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
             Field::new("y".to_owned(), TypeId::Int32),
         ]
-    )).unwrap();
+    ));
 
     let point_type = TypeId::Class("Point".to_owned());
 
@@ -152,13 +152,13 @@ fn test_collect2() {
 fn test_collect3() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_class(Class::new(
+    vm.type_storage.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
             Field::new("y".to_owned(), TypeId::Int32),
         ]
-    )).unwrap();
+    ));
 
     vm.engine.add_function(Function::new(
         FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
@@ -190,13 +190,13 @@ fn test_collect3() {
 fn test_collect4() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_class(Class::new(
+    vm.type_storage.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
             Field::new("y".to_owned(), TypeId::Int32),
         ]
-    )).unwrap();
+    ));
 
     let point_type = TypeId::Class("Point".to_owned());
 
@@ -232,13 +232,13 @@ fn test_collect4() {
 fn test_collect5() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_class(Class::new(
+    vm.type_storage.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
             Field::new("y".to_owned(), TypeId::Int32),
         ]
-    )).unwrap();
+    ));
 
     let point_type = TypeId::Class("Point".to_owned());
 
