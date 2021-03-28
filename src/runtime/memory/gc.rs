@@ -89,7 +89,7 @@ impl GarbageCollector {
                        heap: &mut Heap,
                        stack_frame: &StackFrame) {
         let (next_object_offset, new_locations) = self.compute_new_locations(heap);
-        self.update_references(compiler, binder, stack_frame, heap, &new_locations);
+        self.update_references(compiler, binder, heap, stack_frame, &new_locations);
         self.move_objects(heap, &new_locations);
 
         println!("Decreased heap by {} bytes", heap.offset() as isize - next_object_offset as isize);
@@ -116,7 +116,7 @@ impl GarbageCollector {
 
     fn move_objects(&mut self,
                     heap: &mut Heap,
-                    new_locations: &HashMap<ObjectPointer, ObjectPointer>,) {
+                    new_locations: &HashMap<ObjectPointer, ObjectPointer>) {
         for mut object_ref in HeapObjectsIterator::new(heap) {
             if object_ref.header().is_marked() {
                 object_ref.header_mut().unmark();
@@ -200,8 +200,8 @@ pub trait UpdateReferences {
     fn update_references(&self,
                          compiler: &JitCompiler,
                          binder: &Binder,
-                         stack_frame: &StackFrame,
                          heap: &Heap,
+                         stack_frame: &StackFrame,
                          new_locations: &HashMap<ObjectPointer, ObjectPointer>) {
         self.update_stack_references(compiler, binder, stack_frame, &new_locations);
         self.update_heap_references(heap, &new_locations);
