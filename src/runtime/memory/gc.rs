@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::runtime::memory::heap::{Heap, HeapObjectsIterator};
 use crate::runtime::stack_walker::{StackFrame, FrameValue};
 use crate::compiler::jit::JitCompiler;
@@ -7,7 +9,6 @@ use crate::runtime::object::ObjectReference;
 use crate::runtime::{array, object};
 use crate::runtime::array::ArrayReference;
 use crate::runtime::object::ObjectPointer;
-use std::collections::HashMap;
 
 pub struct GarbageCollector {
     deleted_objects: Vec<(u64, TypeId)>
@@ -207,7 +208,7 @@ impl GarbageCollector {
                             if field.type_id().is_reference() {
                                 self.update_reference(
                                     new_locations,
-                                    unsafe { object_ref.ptr().add(field.offset()) as *const u8 }as *mut ObjectPointer
+                                    unsafe { object_ref.ptr().add(field.offset()) as *mut u8 } as *mut ObjectPointer
                                 );
                             }
                         }
