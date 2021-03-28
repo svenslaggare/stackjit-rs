@@ -248,3 +248,26 @@ fn test_locals5() {
     let execution_result = vm.execute().unwrap();
     assert_eq!(1000 + 2000 + 3000, execution_result);
 }
+
+#[test]
+fn test_locals6() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Int32, TypeId::Int32],
+        vec![
+            Instruction::LoadInt32(1000),
+            Instruction::LoadInt32(2000),
+            Instruction::Add,
+            Instruction::StoreLocal(0),
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(3000),
+            Instruction::Add,
+            Instruction::Return
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(1000 + 2000 + 3000, execution_result);
+}

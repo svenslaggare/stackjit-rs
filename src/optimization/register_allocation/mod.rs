@@ -74,6 +74,10 @@ impl RegisterAllocation {
         &self.registers[&VirtualRegister::from(register)]
     }
 
+    pub fn is_used(&self, register: &RegisterMIR) -> bool {
+        self.registers.contains_key(&VirtualRegister::from(register))
+    }
+
     pub fn alive_registers_at(&self, instruction_index: usize) -> Vec<(VirtualRegister, HardwareRegister)> {
         self.registers
             .iter()

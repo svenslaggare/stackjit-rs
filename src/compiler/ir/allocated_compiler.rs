@@ -85,29 +85,33 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
             let mut float_initialized = false;
 
             for register in &self.compilation_result.need_zero_initialize_registers {
-                match register.value_type {
-                    TypeId::Float32 => {
-                        if !float_initialized {
-                            self.instructions.push(InstructionIR::LoadZeroToRegister(HardwareRegister::FloatSpill));
-                            float_initialized = true;
-                        }
+                if self.register_allocation.is_used(register) {
+                    let allocated_register = self.register_allocation.get_register(register).hardware_register();
 
-                        if let Some(register) = self.register_allocation.get_register(register).hardware_register() {
-                            self.instructions.push(InstructionIR::Move(register, HardwareRegister::FloatSpill));
-                        } else {
-                            self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(register), HardwareRegister::FloatSpill));
-                        }
-                    }
-                    _ => {
-                        if !int_initialized {
-                            self.instructions.push(InstructionIR::LoadZeroToRegister(HardwareRegister::IntSpill));
-                            int_initialized = true;
-                        }
+                    match register.value_type {
+                        TypeId::Float32 => {
+                            if !float_initialized {
+                                self.instructions.push(InstructionIR::LoadZeroToRegister(HardwareRegister::FloatSpill));
+                                float_initialized = true;
+                            }
 
-                        if let Some(register) = self.register_allocation.get_register(register).hardware_register() {
-                            self.instructions.push(InstructionIR::Move(register, HardwareRegister::IntSpill));
-                        } else {
-                            self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(register), HardwareRegister::IntSpill));
+                            if let Some(register) = allocated_register{
+                                self.instructions.push(InstructionIR::Move(register, HardwareRegister::FloatSpill));
+                            } else {
+                                self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(register), HardwareRegister::FloatSpill));
+                            }
+                        }
+                        _ => {
+                            if !int_initialized {
+                                self.instructions.push(InstructionIR::LoadZeroToRegister(HardwareRegister::IntSpill));
+                                int_initialized = true;
+                            }
+
+                            if let Some(register) = allocated_register {
+                                self.instructions.push(InstructionIR::Move(register, HardwareRegister::IntSpill));
+                            } else {
+                                self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(register), HardwareRegister::IntSpill));
+                            }
                         }
                     }
                 }
