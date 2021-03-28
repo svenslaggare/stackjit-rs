@@ -1,8 +1,6 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::iter::FromIterator;
 
-use iced_x86::Register;
-
 use crate::analysis::{AnalysisResult, liveness, VirtualRegister};
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
