@@ -163,7 +163,11 @@ impl GarbageCollector {
 
         for object_ref in HeapObjectsIterator::new(heap) {
             if object_ref.header().is_marked() {
-                new_locations.insert(object_ref.full_ptr(), unsafe { heap.data().as_ptr().add(object_offset) } as ObjectPointer);
+                new_locations.insert(
+                    object_ref.full_ptr(),
+                    unsafe { heap.data().as_ptr().add(object_offset) } as ObjectPointer
+                );
+
                 object_offset += object_ref.full_size();
             }
         }
