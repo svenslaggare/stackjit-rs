@@ -89,9 +89,7 @@ impl GarbageCollector {
                        heap: &mut Heap,
                        stack_frame: &StackFrame) {
         let (next_object_offset, new_locations) = self.compute_new_locations(heap);
-
         self.update_references(compiler, binder, stack_frame, heap, &new_locations);
-
         self.move_objects(heap, &new_locations);
 
         println!("Decreased heap by {} bytes", heap.offset() as isize - next_object_offset as isize);
