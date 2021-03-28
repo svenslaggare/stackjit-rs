@@ -152,6 +152,7 @@ impl GarbageCollector {
 
         self.move_objects(heap, &new_locations);
 
+        println!("Decreased heap by {} bytes", heap.offset() as isize - next_object_offset as isize);
         heap.set_offset(next_object_offset);
     }
 
