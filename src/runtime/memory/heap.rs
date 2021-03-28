@@ -25,6 +25,10 @@ impl Heap {
         self.offset
     }
 
+    pub fn set_offset(&mut self, offset: usize) {
+        self.offset = offset;
+    }
+
     pub fn allocate(&mut self, size: usize) -> Option<*mut std::ffi::c_void> {
         if self.offset + size <= self.data.len() {
             let ptr = (&self.data[self.offset]) as *const u8 as *mut std::ffi::c_void;

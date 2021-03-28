@@ -246,6 +246,14 @@ impl<'a> FrameValue<'a> {
         }
     }
 
+    pub fn ptr(&self) -> *const u8 {
+        self.value_ptr
+    }
+
+    pub fn ptr_mut(&self) -> *mut u8 {
+        self.value_ptr as *mut u8
+    }
+
     pub fn value_u64(&self) -> u64 {
         unsafe { *(self.value_ptr as *const u64) }
     }
