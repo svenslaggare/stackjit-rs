@@ -117,7 +117,7 @@ impl GarbageCollector {
                             self.mark_value(
                                 FrameValue::new_value(
                                     field.type_id(),
-                                    unsafe { object_ref.ptr().add(field.offset()) as *const u8 }
+                                    unsafe { object_ref.ptr().add(field.offset()) as *mut u8 }
                                 )
                             );
                         }

@@ -27,7 +27,7 @@ impl<T> ArrayReference<T> {
         self.length
     }
 
-    pub fn get_raw(&self, index: usize) -> *const u8 {
-        unsafe { self.elements_ptr.add(index) as *const u8 }
+    pub fn get_raw(&self, index: usize) -> *mut u8 {
+        unsafe { self.elements_ptr.add(index) as *mut u8 }
     }
 }

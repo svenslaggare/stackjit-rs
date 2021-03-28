@@ -146,7 +146,7 @@ impl<'a> Iterator for StackFrameArgumentsIterator<'a> {
 
         let argument_type = &self.arguments()[self.index];
         let value_offset = stack_layout::argument_stack_offset(self.stack_frame.function, self.index as u32);
-        let value_ptr = (self.stack_frame.base_pointer as isize + value_offset as isize) as *const u8;
+        let value_ptr = (self.stack_frame.base_pointer as isize + value_offset as isize) as *mut u8;
 
         self.index += 1;
         Some(FrameValue::new_value(argument_type, value_ptr))
@@ -181,7 +181,7 @@ impl<'a> Iterator for StackFrameLocalsIterator<'a> {
 
         let register = &self.locals()[self.index];
         let value_offset = stack_layout::virtual_register_stack_offset(self.stack_frame.function, register.number);
-        let value_ptr = (self.stack_frame.base_pointer as isize + value_offset as isize) as *const u8;
+        let value_ptr = (self.stack_frame.base_pointer as isize + value_offset as isize) as *mut u8;
 
         self.index += 1;
         Some(FrameValue::new_register(&register.value_type, register, value_ptr))
@@ -216,7 +216,7 @@ impl<'a> Iterator for StackFrameOperandsIterator<'a> {
 
         let register = &self.operand_registers()[self.index];
         let value_offset = stack_layout::virtual_register_stack_offset(self.stack_frame.function, register.number);
-        let value_ptr = (self.stack_frame.base_pointer as isize + value_offset as isize) as *const u8;
+        let value_ptr = (self.stack_frame.base_pointer as isize + value_offset as isize) as *mut u8;
 
         self.index += 1;
         Some(FrameValue::new_register(&register.value_type, register, value_ptr))
@@ -226,11 +226,11 @@ impl<'a> Iterator for StackFrameOperandsIterator<'a> {
 pub struct FrameValue<'a> {
     pub value_type: &'a TypeId,
     pub register: Option<&'a RegisterMIR>,
-    value_ptr: *const u8
+    value_ptr: *mut u8
 }
 
 impl<'a> FrameValue<'a> {
-    pub fn new_value(value_type: &'a TypeId, value_ptr: *const u8) -> FrameValue<'a> {
+    pub fn new_value(value_type: &'a TypeId, value_ptr: *mut u8) -> FrameValue<'a> {
         FrameValue {
             register: None,
             value_type,
@@ -238,7 +238,7 @@ impl<'a> FrameValue<'a> {
         }
     }
 
-    pub fn new_register(value_type: &'a TypeId, register: &'a RegisterMIR, value_ptr: *const u8) -> FrameValue<'a> {
+    pub fn new_register(value_type: &'a TypeId, register: &'a RegisterMIR, value_ptr: *mut u8) -> FrameValue<'a> {
         FrameValue {
             register: Some(register),
             value_type,
@@ -247,11 +247,11 @@ impl<'a> FrameValue<'a> {
     }
 
     pub fn ptr(&self) -> *const u8 {
-        self.value_ptr
+        self.value_ptr as *const u8
     }
 
     pub fn ptr_mut(&self) -> *mut u8 {
-        self.value_ptr as *mut u8
+        self.value_ptr
     }
 
     pub fn value_u64(&self) -> u64 {
