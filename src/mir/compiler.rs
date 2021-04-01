@@ -89,7 +89,7 @@ impl<'a> InstructionMIRCompiler<'a> {
             self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::BranchLabel(branch_label)));
         }
 
-        self.instructions_operand_types.push(
+        self.  instructions_operand_types.push(
             operand_types
                 .iter()
                 .enumerate()

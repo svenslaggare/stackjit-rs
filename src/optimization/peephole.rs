@@ -24,6 +24,13 @@ pub fn remove_unnecessary_locals(compilation_result: &mut MIRCompilationResult, 
         index += 1;
         keep
     });
+
+    let mut index = 0;
+    compilation_result.instructions_operand_types.retain(|instruction| {
+        let keep = valid_instructions.contains(&index);
+        index += 1;
+        keep
+    });
 }
 
 fn remove_unnecessary_local_for_block(compilation_result: &mut MIRCompilationResult,
@@ -52,6 +59,22 @@ fn remove_unnecessary_local_for_block(compilation_result: &mut MIRCompilationRes
 
                 if let Some((op2_new, load_instruction_index)) = local_load_target.remove(op2) {
                     *op2 = op2_new;
+                    instructions_to_remove.insert(load_instruction_index);
+                }
+            }
+            InstructionMIRData::StoreElement(_, op1, op2, op3) => {
+                if let Some((op1_new, load_instruction_index)) = local_load_target.remove(op1) {
+                    *op1 = op1_new;
+                    instructions_to_remove.insert(load_instruction_index);
+                }
+
+                if let Some((op2_new, load_instruction_index)) = local_load_target.remove(op2) {
+                    *op2 = op2_new;
+                    instructions_to_remove.insert(load_instruction_index);
+                }
+
+                if let Some((op3_new, load_instruction_index)) = local_load_target.remove(op3) {
+                    *op3 = op3_new;
                     instructions_to_remove.insert(load_instruction_index);
                 }
             }

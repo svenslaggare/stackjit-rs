@@ -267,7 +267,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 }
             }
             InstructionMIRData::NewArray(element, destination, size) => {
-                self.print_stack_frame(instruction_index);
+                // self.print_stack_frame(instruction_index);
 
                 let alive_registers = self.push_alive_registers(instruction_index);
                 let alive_hardware_registers = alive_registers.iter().map(|(_, register)| register.clone()).collect::<Vec<_>>();
@@ -428,7 +428,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 }
             }
             InstructionMIRData::NewObject(class_type, destination) => {
-                self.print_stack_frame(instruction_index);
+                // self.print_stack_frame(instruction_index);
 
                 let alive_registers = self.push_alive_registers(instruction_index);
 

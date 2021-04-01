@@ -51,7 +51,6 @@ impl<'a> CodeGenerator<'a> {
                         function.instructions()[*index],
                         compilation_data.mir_compilation_result.instructions[*mir_index].data
                     );
-                    // println!("  {:?}", compilation_data.mir_compilation_result.instructions[*mir_index].data);
                 }
                 _ => {
                     println!("\t{:?}", instruction);

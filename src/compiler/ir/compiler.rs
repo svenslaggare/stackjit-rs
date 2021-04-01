@@ -145,7 +145,7 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::MoveInt32ToFrameMemory(self.get_register_stack_offset(destination), 0));
             }
             InstructionMIRData::NewArray(element, destination, size) => {
-                self.instructions.push(InstructionIR::PrintStackFrame(instruction_index));
+                // self.instructions.push(InstructionIR::PrintStackFrame(instruction_index));
 
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(size)));
                 self.instructions.push(InstructionIR::NewArray(element.clone(), HardwareRegister::Int(0), 0));
@@ -213,7 +213,7 @@ impl<'a> InstructionIRCompiler<'a> {
                 ));
             }
             InstructionMIRData::NewObject(class_type, destination) => {
-                self.instructions.push(InstructionIR::PrintStackFrame(instruction_index));
+                // self.instructions.push(InstructionIR::PrintStackFrame(instruction_index));
 
                 self.instructions.push(InstructionIR::NewObject(class_type.clone()));
                 self.instructions.push(InstructionIR::StoreFrameMemoryExplicit(

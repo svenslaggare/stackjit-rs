@@ -91,4 +91,26 @@ pub extern "C" fn garbage_collect(base_pointer: u64, function_ptr: *const Functi
             stack_frame
         );
     });
+
+    // get_vm(|vm| {
+    //     let function = unsafe { function_ptr.as_ref().unwrap() };
+    //     let compilation_data = vm.engine.compiler()
+    //         .get_compilation_data(&function.declaration().signature())
+    //         .unwrap();
+    //
+    //     println!("--------------------------------------------");
+    //
+    //     let stack_frame = StackFrame::new(base_pointer, instruction_index, function, compilation_data);
+    //
+    //     stack_frame.walk(
+    //         vm.engine.compiler(),
+    //         vm.engine.binder(),
+    //         |frame| {
+    //             frame.print_frame();
+    //             println!();
+    //         }
+    //     );
+    //
+    //     println!("--------------------------------------------");
+    // });
 }
