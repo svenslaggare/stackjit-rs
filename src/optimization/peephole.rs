@@ -96,16 +96,16 @@ fn remove_unnecessary_local_for_block(compilation_result: &mut MIRCompilationRes
                     }
                 }
             }
-            InstructionMIRData::Call(_, _, arguments) => {
-                for argument in arguments {
-                    if !argument.value_type.is_reference() {
-                        if let Some((argument_new, load_instruction_index)) = local_load_target.remove(argument) {
-                            *argument = argument_new;
-                            instructions_to_remove.insert(load_instruction_index);
-                        }
-                    }
-                }
-            }
+            // InstructionMIRData::Call(_, _, arguments) => {
+            //     for argument in arguments {
+            //         if !argument.value_type.is_reference() {
+            //             if let Some((argument_new, load_instruction_index)) = local_load_target.remove(argument) {
+            //                 *argument = argument_new;
+            //                 instructions_to_remove.insert(load_instruction_index);
+            //             }
+            //         }
+            //     }
+            // }
             _ => {}
         }
 
