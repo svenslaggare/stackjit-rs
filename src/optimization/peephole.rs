@@ -242,3 +242,90 @@ fn test_combine_load_local4() {
         &compilation_result.instructions[5]
     );
 }
+
+#[test]
+fn test_combine_load_local5() {
+    let mut function = Function::new(
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        vec![TypeId::Int32],
+        vec![
+            Instruction::LoadLocal(0),
+            Instruction::LoadLocal(0),
+            Instruction::Add,
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
+
+    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    compiler.compile(function.instructions());
+    let mut compilation_result = compiler.done();
+
+    println!("Before optimization:");
+    for instruction in &compilation_result.instructions {
+        println!("{:?}", instruction);
+    }
+
+    let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
+    remove_load_local(&mut compilation_result, &mut basic_blocks);
+
+    println!();
+    println!("After optimization:");
+    for instruction in &compilation_result.instructions {
+        println!("{:?}", instruction);
+    }
+
+    assert_eq!(2, compilation_result.instructions.len());
+    assert_eq!(
+        &InstructionMIR::new(2, InstructionMIRData::AddInt32(RegisterMIR::new(1, TypeId::Int32), RegisterMIR::new(0, TypeId::Int32), RegisterMIR::new(0, TypeId::Int32))),
+        &compilation_result.instructions[0]
+    );
+}
+
+#[test]
+fn test_combine_load_local6() {
+    let mut function = Function::new(
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        vec![TypeId::Int32],
+        vec![
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(1),
+            Instruction::Add,
+            Instruction::StoreLocal(0),
+
+            Instruction::LoadInt32(200000),
+            Instruction::LoadLocal(0),
+            Instruction::BranchGreaterThan(0),
+
+            Instruction::LoadLocal(0),
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
+
+    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    compiler.compile(function.instructions());
+    let mut compilation_result = compiler.done();
+
+    println!("Before optimization:");
+    for instruction in &compilation_result.instructions {
+        println!("{:?}", instruction);
+    }
+
+    let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
+    remove_load_local(&mut compilation_result, &mut basic_blocks);
+
+    println!();
+    println!("After optimization:");
+    for instruction in &compilation_result.instructions {
+        println!("{:?}", instruction);
+    }
+
+    assert_eq!(9, compilation_result.instructions.len());
+}

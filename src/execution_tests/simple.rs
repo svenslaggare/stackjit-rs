@@ -346,3 +346,29 @@ fn test_locals9() {
     let execution_result = vm.execute().unwrap();
     assert_eq!(1337 + 4711 + 4711, execution_result);
 }
+
+#[test]
+fn test_locals10() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Int32],
+        vec![
+            Instruction::LoadInt32(1337),
+            Instruction::StoreLocal(0),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadLocal(0),
+            Instruction::Add,
+
+            Instruction::LoadLocal(0),
+            Instruction::Add,
+
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(1337 + 1337 + 1337, execution_result);
+}
