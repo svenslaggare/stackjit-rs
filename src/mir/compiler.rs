@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::analysis::null_check_elision::InstructionsRegisterNullStatus;
+use crate::optimization::null_check_elision::InstructionsRegisterNullStatus;
 use crate::analysis::VirtualRegister;
 use crate::compiler::ir::Condition;
 use crate::model::binder::Binder;

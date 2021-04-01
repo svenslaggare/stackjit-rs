@@ -44,8 +44,14 @@ impl<'a> CodeGenerator<'a> {
                     instructions: &Vec<InstructionIR>) {
         for instruction in instructions {
             match instruction {
-                InstructionIR::Marker(index, _) => {
-                    println!("{}", function.instructions()[*index]);
+                InstructionIR::Marker(index, mir_index) => {
+                    // println!("{}", function.instructions()[*index]);
+                    println!(
+                        "{} -> {:?}",
+                        function.instructions()[*index],
+                        compilation_data.mir_compilation_result.instructions[*mir_index].data
+                    );
+                    // println!("  {:?}", compilation_data.mir_compilation_result.instructions[*mir_index].data);
                 }
                 _ => {
                     println!("\t{:?}", instruction);

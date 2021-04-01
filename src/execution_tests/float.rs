@@ -265,3 +265,45 @@ fn test6() {
     assert_eq!(0, execution_result);
     assert_eq!(1000.0 + 2000.0 + 3000.0, FLOAT_RESULT.with(|result| *result.borrow()));
 }
+
+#[test]
+fn test7() {
+    FLOAT_RESULT.with(|result| {
+        *result.borrow_mut() = 0.0;
+    });
+
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.binder_mut().define(
+        FunctionDeclaration::new_external(
+            "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
+            print_float as *mut std::ffi::c_void
+        )
+    );
+
+    vm.engine.add_function(Function::new(
+        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Float32, TypeId::Float32],
+        vec![
+            Instruction::LoadFloat32(1337.0),
+            Instruction::StoreLocal(0),
+            Instruction::LoadFloat32(4711.0),
+            Instruction::StoreLocal(1),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadLocal(1),
+            Instruction::Add,
+
+            Instruction::LoadLocal(0),
+            Instruction::Add,
+
+            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
+            Instruction::LoadInt32(0),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(0, execution_result);
+    assert_eq!(1337.0 + 4711.0 + 1337.0, FLOAT_RESULT.with(|result| *result.borrow()));
+}

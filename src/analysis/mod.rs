@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 
+use crate::compiler::ir::BranchLabel;
+use crate::mir::{InstructionMIR, InstructionMIRData, RegisterMIR};
+use crate::model::typesystem::TypeId;
+use crate::optimization::null_check_elision::InstructionsRegisterNullStatus;
+
 pub mod basic_block;
 pub mod control_flow_graph;
 pub mod liveness;
-pub mod null_check_elision;
-
-use crate::compiler::ir::BranchLabel;
-use crate::analysis::null_check_elision::InstructionsRegisterNullStatus;
-use crate::mir::{RegisterMIR, InstructionMIR, InstructionMIRData};
-use crate::model::typesystem::TypeId;
 
 pub struct AnalysisResult {
     pub instructions_register_null_status: InstructionsRegisterNullStatus

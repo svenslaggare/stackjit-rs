@@ -150,7 +150,8 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 self.move_register(destination, source);
             }
             InstructionMIRData::AddInt32(destination, operand1, operand2) => {
-                self.binary_operator(
+                self.binary_operator_with_destination(
+                    destination,
                     operand1,
                     operand2,
                     |instructions, op1, op2| {
@@ -163,13 +164,10 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                         instructions.push(InstructionIR::AddInt32ToFrameMemory(op1, op2));
                     }
                 );
-
-                if destination != operand1 {
-                    self.move_register(destination, operand1);
-                }
             }
             InstructionMIRData::SubInt32(destination, operand1, operand2) => {
-                self.binary_operator(
+                self.binary_operator_with_destination(
+                    destination,
                     operand1,
                     operand2,
                     |instructions, op1, op2| {
@@ -182,13 +180,10 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                         instructions.push(InstructionIR::SubInt32ToFrameMemory(op1, op2));
                     }
                 );
-
-                if destination != operand1 {
-                    self.move_register(destination, operand1);
-                }
             }
             InstructionMIRData::AddFloat32(destination, operand1, operand2) => {
-                self.binary_operator_f32(
+                self.binary_operator_with_destination_f32(
+                    destination,
                     operand1,
                     operand2,
                     |instructions, op1, op2| {
@@ -198,13 +193,10 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                         instructions.push(InstructionIR::AddFloat32FromFrameMemory(op1, op2));
                     }
                 );
-
-                if destination != operand1 {
-                    self.move_register(destination, operand1);
-                }
             }
             InstructionMIRData::SubFloat32(destination, operand1, operand2) => {
-                self.binary_operator_f32(
+                self.binary_operator_with_destination_f32(
+                    destination,
                     operand1,
                     operand2,
                     |instructions, op1, op2| {
@@ -214,10 +206,6 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                         instructions.push(InstructionIR::SubFloat32FromFrameMemory(op1, op2));
                     }
                 );
-
-                if destination != operand1 {
-                    self.move_register(destination, operand1);
-                }
             }
             InstructionMIRData::Return(source) => {
                 if let Some(source) = source {
@@ -700,7 +688,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
 
     fn move_register(&mut self,
                      destination: &RegisterMIR,
-                     source: &RegisterMIR,) {
+                     source: &RegisterMIR) {
         let destination_allocation = self.register_allocation.get_register(destination).clone();
         let source_allocation = self.register_allocation.get_register(source).clone();
 
@@ -721,6 +709,72 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
         }
     }
 
+    fn move_from_hardware_register(&mut self,
+                                   destination: &RegisterMIR,
+                                   source: HardwareRegister) {
+        let destination_allocation = self.register_allocation.get_register(destination).clone();
+        match destination_allocation.hardware_register() {
+            Some(destination_register) => {
+                self.instructions.push(InstructionIR::Move(destination_register, source));
+            }
+            None => {
+                self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), source));
+            }
+        }
+    }
+
+    fn move_to_hardware_register(&mut self,
+                                 destination: HardwareRegister,
+                                 source: &RegisterMIR) {
+        let source_allocation = self.register_allocation.get_register(source).clone();
+        match source_allocation.hardware_register() {
+            Some(source_register) => {
+                self.instructions.push(InstructionIR::Move(destination, source_register));
+            }
+            None => {
+                self.instructions.push(InstructionIR::LoadFrameMemory(destination, self.get_register_stack_offset(source)));
+            }
+        }
+    }
+
+    fn binary_operator_with_destination<
+        F1: Fn(&mut Vec<InstructionIR>, HardwareRegister, HardwareRegister),
+        F2: Fn(&mut Vec<InstructionIR>, HardwareRegister, i32),
+        F3: Fn(&mut Vec<InstructionIR>, i32, HardwareRegister)
+    >(&mut self,
+      destination: &RegisterMIR,
+      operand1: &RegisterMIR,
+      operand2: &RegisterMIR,
+      reg_reg: F1,
+      reg_mem: F2,
+      mem_reg: F3) {
+        let operand2_allocation = self.register_allocation.get_register(operand2).clone();
+        let operand2_offset = self.get_register_stack_offset(operand2);
+
+        if destination == operand1 {
+            let destination_allocation = self.register_allocation.get_register(destination).clone();
+            let destination_offset = self.get_register_stack_offset(destination);
+
+            self.binary_operator_internal(
+                (destination_allocation.hardware_register(), destination_offset),
+                (operand2_allocation.hardware_register(), operand2_offset),
+                reg_reg,
+                reg_mem,
+                mem_reg
+            );
+        } else {
+            self.move_to_hardware_register(HardwareRegister::IntSpill, operand1);
+            self.binary_operator_internal(
+                (Some(HardwareRegister::IntSpill), 0),
+                (operand2_allocation.hardware_register(), operand2_offset),
+                reg_reg,
+                reg_mem,
+                mem_reg
+            );
+            self.move_from_hardware_register(destination, HardwareRegister::IntSpill);
+        }
+    }
+
     fn binary_operator<
         F1: Fn(&mut Vec<InstructionIR>, HardwareRegister, HardwareRegister),
         F2: Fn(&mut Vec<InstructionIR>, HardwareRegister, i32),
@@ -731,28 +785,77 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
       reg_reg: F1,
       reg_mem: F2,
       mem_reg: F3) {
-        let operand1_allocation = self.register_allocation.get_register(operand1).clone();
-        let operand2_allocation = self.register_allocation.get_register(operand2).clone();
+        self.binary_operator_internal(
+            (self.register_allocation.get_register(operand1).hardware_register(), self.get_register_stack_offset(operand1)),
+            (self.register_allocation.get_register(operand2).hardware_register(), self.get_register_stack_offset(operand2)),
+            reg_reg,
+            reg_mem,
+            mem_reg
+        );
+    }
+
+    fn binary_operator_internal<
+        F1: Fn(&mut Vec<InstructionIR>, HardwareRegister, HardwareRegister),
+        F2: Fn(&mut Vec<InstructionIR>, HardwareRegister, i32),
+        F3: Fn(&mut Vec<InstructionIR>, i32, HardwareRegister)
+    >(&mut self,
+      operand1: (Option<HardwareRegister>, i32),
+      operand2: (Option<HardwareRegister>, i32),
+      reg_reg: F1,
+      reg_mem: F2,
+      mem_reg: F3) {
+        let (operand1_allocation, operand1_offset) = operand1;
+        let (operand2_allocation, operand2_offset) = operand2;
 
         use AllocatedRegister::{Hardware, Stack};
         match (operand1_allocation, operand2_allocation) {
-            (Hardware { register: operand1_register, .. },  Hardware { register: operand2_register, .. }) => {
+            (Some(operand1_register), Some(operand2_register)) => {
                 reg_reg(&mut self.instructions, operand1_register, operand2_register);
             }
-            (Hardware { register: operand1_register, .. }, Stack { .. }) => {
-                let operand2_offset = self.get_register_stack_offset(operand2);
+            (Some(operand1_register), None) => {
                 reg_mem(&mut self.instructions, operand1_register, operand2_offset);
             }
-            (Stack { ..}, Hardware { register: operand2_register, .. }) => {
-                let operand1_offset = self.get_register_stack_offset(operand1);
+            (None, Some(operand2_register)) => {
                 mem_reg(&mut self.instructions, operand1_offset, operand2_register);
             }
-            (Stack { .. }, Stack { .. }) => {
-                let operand1_offset = self.get_register_stack_offset(operand1);
-                let operand2_offset = self.get_register_stack_offset(operand2);
+            (None, None) => {
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::IntSpill, operand2_offset));
                 mem_reg(&mut self.instructions, operand1_offset, HardwareRegister::IntSpill);
             }
+        }
+    }
+
+    fn binary_operator_with_destination_f32<
+        F1: Fn(&mut Vec<InstructionIR>, HardwareRegister, HardwareRegister),
+        F2: Fn(&mut Vec<InstructionIR>, HardwareRegister, i32)
+    >(&mut self,
+      destination: &RegisterMIR,
+      operand1: &RegisterMIR,
+      operand2: &RegisterMIR,
+      reg_reg: F1,
+      reg_mem: F2) {
+        let operand2_allocation = self.register_allocation.get_register(operand2).clone();
+        let operand2_offset = self.get_register_stack_offset(operand2);
+
+        if destination == operand1 {
+            let destination_allocation = self.register_allocation.get_register(destination).clone();
+            let destination_offset = self.get_register_stack_offset(destination);
+
+            self.binary_operator_internal_f32(
+                (destination_allocation.hardware_register(), destination_offset),
+                (operand2_allocation.hardware_register(), operand2_offset),
+                reg_reg,
+                reg_mem,
+            );
+        } else {
+            self.move_to_hardware_register(HardwareRegister::FloatSpill, operand1);
+            self.binary_operator_internal_f32(
+                (Some(HardwareRegister::FloatSpill), 0),
+                (operand2_allocation.hardware_register(), operand2_offset),
+                reg_reg,
+                reg_mem,
+            );
+            self.move_from_hardware_register(destination, HardwareRegister::FloatSpill);
         }
     }
 
@@ -764,27 +867,38 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
       operand2: &RegisterMIR,
       reg_reg: F1,
       reg_mem: F2) {
-        let operand1_allocation = self.register_allocation.get_register(operand1).clone();
-        let operand2_allocation = self.register_allocation.get_register(operand2).clone();
+        self.binary_operator_internal_f32(
+            (self.register_allocation.get_register(operand1).hardware_register(), self.get_register_stack_offset(operand1)),
+            (self.register_allocation.get_register(operand2).hardware_register(), self.get_register_stack_offset(operand2)),
+            reg_reg,
+            reg_mem
+        );
+    }
 
-        use AllocatedRegister::{Hardware, Stack};
+    fn binary_operator_internal_f32<
+        F1: Fn(&mut Vec<InstructionIR>, HardwareRegister, HardwareRegister),
+        F2: Fn(&mut Vec<InstructionIR>, HardwareRegister, i32)
+    >(&mut self,
+      operand1: (Option<HardwareRegister>, i32),
+      operand2: (Option<HardwareRegister>, i32),
+      reg_reg: F1,
+      reg_mem: F2) {
+        let (operand1_allocation, operand1_offset) = operand1;
+        let (operand2_allocation, operand2_offset) = operand2;
+
         match (operand1_allocation, operand2_allocation) {
-            (Hardware { register: operand1_register, .. },  Hardware { register: operand2_register, .. }) => {
+            (Some(operand1_register), Some(operand2_register)) => {
                 reg_reg(&mut self.instructions, operand1_register, operand2_register);
             }
-            (Hardware { register: operand1_register, .. }, Stack { .. }) => {
-                let operand2_offset = self.get_register_stack_offset(operand2);
+            (Some(operand1_register), None) => {
                 reg_mem(&mut self.instructions, operand1_register, operand2_offset);
             }
-            (Stack { ..}, Hardware { register: operand2_register, .. }) => {
-                let operand1_offset = self.get_register_stack_offset(operand1);
+            (None, Some(operand2_register)) => {
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::FloatSpill, operand1_offset));
                 reg_reg(&mut self.instructions, HardwareRegister::FloatSpill, operand2_register);
                 self.instructions.push(InstructionIR::StoreFrameMemory(operand1_offset, HardwareRegister::FloatSpill));
             }
-            (Stack { .. }, Stack { .. }) => {
-                let operand1_offset = self.get_register_stack_offset(operand1);
-                let operand2_offset = self.get_register_stack_offset(operand2);
+            (None, None) => {
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::FloatSpill, operand1_offset));
                 reg_mem(&mut self.instructions, HardwareRegister::FloatSpill, operand2_offset);
                 self.instructions.push(InstructionIR::StoreFrameMemory(operand1_offset, HardwareRegister::FloatSpill));

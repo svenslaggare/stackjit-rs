@@ -45,7 +45,7 @@ impl ObjectHeader {
     }
 
     pub fn deleted_size(&self) -> usize {
-        (unsafe { self.object_type as u64 }) as usize
+        self.object_type as usize
     }
 
     fn set_gc_info(&mut self, marked: bool, survived: u8) {

@@ -17,8 +17,6 @@ pub fn compute_null_check_elision(function: &Function,
                                   compilation_result: &MIRCompilationResult,
                                   basic_blocks: &Vec<BasicBlock>,
                                   control_flow_graph: &ControlFlowGraph) -> InstructionsRegisterNullStatus {
-    // return compilation_result.instructions.iter().map(|_| HashMap::new()).collect();
-
     if basic_blocks.len() == 1 {
         compute_null_check_elision_for_block(function, compilation_result, &basic_blocks[0]).0
     } else {

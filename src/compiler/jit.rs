@@ -1,21 +1,22 @@
 use std::collections::HashMap;
 
-use crate::analysis::{AnalysisResult, null_check_elision};
+use crate::analysis::AnalysisResult;
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
 use crate::compiler::{FunctionCallType, FunctionCompilationData};
-use crate::compiler::ir::allocated_compiler::AllocatedInstructionIRCompiler;
 use crate::compiler::allocator::ExecutableMemoryAllocator;
 use crate::compiler::code_generator::{CodeGenerator, CodeGeneratorResult};
 use crate::compiler::error_handling::ErrorHandling;
-use crate::compiler::ir::InstructionIR;
+use crate::compiler::ir::allocated_compiler::AllocatedInstructionIRCompiler;
 use crate::compiler::ir::compiler::InstructionIRCompiler;
-use crate::model::binder::Binder;
+use crate::compiler::ir::InstructionIR;
 use crate::mir;
 use crate::mir::branches;
 use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
+use crate::model::binder::Binder;
 use crate::model::function::{Function, FunctionDeclaration, FunctionSignature};
 use crate::model::typesystem::TypeStorage;
+use crate::optimization::{null_check_elision, peephole};
 
 pub struct JitCompiler {
     memory_allocator: ExecutableMemoryAllocator,
@@ -151,7 +152,9 @@ impl JitCompiler {
                   function: &Function) -> (MIRCompilationResult, Vec<InstructionIR>) {
         let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
         mir_compiler.compile(function.instructions());
-        let compilation_result = mir_compiler.done();
+        let mut compilation_result = mir_compiler.done();
+
+        self.optimize_ir(&mut compilation_result);
 
         let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
         let control_flow_graph = ControlFlowGraph::new(
@@ -173,6 +176,11 @@ impl JitCompiler {
         ir_compiler.compile();
         let instructions_ir = ir_compiler.done();
         (compilation_result, instructions_ir)
+    }
+
+    fn optimize_ir(&self, compilation_result: &mut MIRCompilationResult) {
+        let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
+        peephole::remove_load_local(compilation_result, &mut basic_blocks);
     }
 
     fn generate_code(&self,

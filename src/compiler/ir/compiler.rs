@@ -55,11 +55,11 @@ impl<'a> InstructionIRCompiler<'a> {
         CallingConventions::new().move_arguments_to_stack(self.function, &mut self.instructions);
 
         if !self.compilation_result.need_zero_initialize_registers.is_empty() {
-            self.instructions.push(InstructionIR::LoadZeroToRegister(HardwareRegister::Int(0)));
+            self.instructions.push(InstructionIR::LoadZeroToRegister(HardwareRegister::IntSpill));
             for register in &self.compilation_result.need_zero_initialize_registers {
                 self.instructions.push(InstructionIR::StoreFrameMemory(
                     self.get_register_stack_offset(register),
-                    HardwareRegister::Int(0)
+                    HardwareRegister::IntSpill
                 ));
             }
         }
