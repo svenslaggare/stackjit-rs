@@ -10,10 +10,10 @@ use crate::analysis::basic_block::BasicBlock;
 use crate::model::verifier::Verifier;
 use crate::mir::{InstructionMIR, InstructionMIRData, RegisterMIR};
 
-pub fn remove_load_local(compilation_result: &mut MIRCompilationResult, basic_blocks: &mut Vec<BasicBlock>) {
+pub fn remove_unnecessary_locals(compilation_result: &mut MIRCompilationResult, basic_blocks: &mut Vec<BasicBlock>) {
     let local_registers = HashSet::<RegisterMIR>::from_iter(compilation_result.local_virtual_registers.iter().cloned());
     for block in basic_blocks.iter_mut() {
-        remove_load_local_for_block(compilation_result, &local_registers, block);
+        remove_unnecessary_local_for_block(compilation_result, &local_registers, block);
     }
 
     let valid_instructions = HashSet::<usize>::from_iter(BasicBlock::linearize(basic_blocks).into_iter());
@@ -26,9 +26,9 @@ pub fn remove_load_local(compilation_result: &mut MIRCompilationResult, basic_bl
     });
 }
 
-fn remove_load_local_for_block(compilation_result: &mut MIRCompilationResult,
-                               local_registers: &HashSet<RegisterMIR>,
-                               basic_block: &mut BasicBlock) {
+fn remove_unnecessary_local_for_block(compilation_result: &mut MIRCompilationResult,
+                                      local_registers: &HashSet<RegisterMIR>,
+                                      basic_block: &mut BasicBlock) {
     let mut local_load_target = HashMap::new();
     let mut instructions_to_remove = HashSet::new();
 
@@ -87,7 +87,7 @@ fn test_combine_load_local1() {
     }
 
     let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-    remove_load_local(&mut compilation_result, &mut basic_blocks);
+    remove_unnecessary_locals(&mut compilation_result, &mut basic_blocks);
 
     println!();
     println!("After optimization:");
@@ -125,7 +125,7 @@ fn test_combine_load_local2() {
     }
 
     let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-    remove_load_local(&mut compilation_result, &mut basic_blocks);
+    remove_unnecessary_locals(&mut compilation_result, &mut basic_blocks);
 
     println!();
     println!("After optimization:");
@@ -167,7 +167,7 @@ fn test_combine_load_local3() {
     }
 
     let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-    remove_load_local(&mut compilation_result, &mut basic_blocks);
+    remove_unnecessary_locals(&mut compilation_result, &mut basic_blocks);
 
     println!();
     println!("After optimization:");
@@ -218,7 +218,7 @@ fn test_combine_load_local4() {
     }
 
     let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-    remove_load_local(&mut compilation_result, &mut basic_blocks);
+    remove_unnecessary_locals(&mut compilation_result, &mut basic_blocks);
 
     println!();
     println!("After optimization:");
@@ -270,7 +270,7 @@ fn test_combine_load_local5() {
     }
 
     let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-    remove_load_local(&mut compilation_result, &mut basic_blocks);
+    remove_unnecessary_locals(&mut compilation_result, &mut basic_blocks);
 
     println!();
     println!("After optimization:");
@@ -319,7 +319,7 @@ fn test_combine_load_local6() {
     }
 
     let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-    remove_load_local(&mut compilation_result, &mut basic_blocks);
+    remove_unnecessary_locals(&mut compilation_result, &mut basic_blocks);
 
     println!();
     println!("After optimization:");

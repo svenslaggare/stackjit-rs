@@ -180,7 +180,7 @@ impl JitCompiler {
 
     fn optimize_ir(&self, compilation_result: &mut MIRCompilationResult) {
         let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-        peephole::remove_load_local(compilation_result, &mut basic_blocks);
+        peephole::remove_unnecessary_locals(compilation_result, &mut basic_blocks);
     }
 
     fn generate_code(&self,
