@@ -39,6 +39,7 @@ fn remove_unnecessary_local_for_block(compilation_result: &mut MIRCompilationRes
     let mut local_load_target = HashMap::new();
     let mut instructions_to_remove = HashSet::new();
 
+    // TODO: for load/store element to be able to peephole reference value, the instruction_operand_types needs to be updated!
     for &instruction_index in &basic_block.instructions {
         let instruction = &mut compilation_result.instructions[instruction_index];
         match &mut instruction.data {
@@ -59,6 +60,12 @@ fn remove_unnecessary_local_for_block(compilation_result: &mut MIRCompilationRes
 
                 if let Some((op2_new, load_instruction_index)) = local_load_target.remove(op2) {
                     *op2 = op2_new;
+                    instructions_to_remove.insert(load_instruction_index);
+                }
+            }
+            InstructionMIRData::NewArray(_, _, op1) => {
+                if let Some((op1_new, load_instruction_index)) = local_load_target.remove(op1) {
+                    *op1 = op1_new;
                     instructions_to_remove.insert(load_instruction_index);
                 }
             }
@@ -89,7 +96,21 @@ fn remove_unnecessary_local_for_block(compilation_result: &mut MIRCompilationRes
                     }
                 }
             }
+            InstructionMIRData::Call(_, _, arguments) => {
+                for argument in arguments {
+                    if !argument.value_type.is_reference() {
+                        if let Some((argument_new, load_instruction_index)) = local_load_target.remove(argument) {
+                            *argument = argument_new;
+                            instructions_to_remove.insert(load_instruction_index);
+                        }
+                    }
+                }
+            }
             _ => {}
+        }
+
+        for use_register in instruction.data.use_registers() {
+            local_load_target.remove(&use_register);
         }
     }
 
