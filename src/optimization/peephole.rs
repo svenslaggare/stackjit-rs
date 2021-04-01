@@ -55,6 +55,12 @@ fn remove_unnecessary_local_for_block(compilation_result: &mut MIRCompilationRes
                     instructions_to_remove.insert(load_instruction_index);
                 }
             }
+            // InstructionMIRData::Return(Some(source)) => {
+            //     if let Some((source_new, load_instruction_index)) = local_load_target.remove(source) {
+            //         *source = source_new;
+            //         instructions_to_remove.insert(load_instruction_index);
+            //     }
+            // }
             _ => {}
         }
     }
@@ -96,6 +102,11 @@ fn test_combine_load_local1() {
     }
 
     assert_eq!(2, compilation_result.instructions.len());
+    // assert_eq!(1, compilation_result.instructions.len());
+    // assert_eq!(
+    //     &InstructionMIR::new(1, InstructionMIRData::Return(Some(RegisterMIR::new(0, TypeId::Int32)))),
+    //     &compilation_result.instructions[0]
+    // );
 }
 
 #[test]
