@@ -42,7 +42,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
             function,
             instructions: Vec::new(),
             compilation_result,
-            optimization_result: optimization_result,
+            optimization_result,
             register_allocation: AllocatedInstructionIRCompiler::register_allocate(compilation_result)
         }
     }

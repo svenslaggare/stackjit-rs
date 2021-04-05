@@ -154,22 +154,7 @@ impl JitCompiler {
         mir_compiler.compile(function.instructions());
         let mut compilation_result = mir_compiler.done();
 
-        self.optimize_ir(&mut compilation_result);
-
-        let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-        let control_flow_graph = ControlFlowGraph::new(
-            &compilation_result.instructions,
-            &basic_blocks,
-        );
-
-        let optimization_result = OptimizationResult {
-            instructions_register_null_status: null_check_elision::compute(
-                function,
-                &compilation_result,
-                &basic_blocks,
-                &control_flow_graph
-            )
-        };
+        let optimization_result = self.optimize_ir(function, &mut compilation_result);
 
         // let mut ir_compiler = InstructionIRCompiler::new(&binder, &type_storage, &function, &compilation_result, &optimization_result);
         let mut ir_compiler = AllocatedInstructionIRCompiler::new(&binder, &type_storage, &function, &compilation_result, &optimization_result);
@@ -178,9 +163,25 @@ impl JitCompiler {
         (compilation_result, instructions_ir)
     }
 
-    fn optimize_ir(&self, compilation_result: &mut MIRCompilationResult) {
+    fn optimize_ir(&self, function: &Function,
+                   compilation_result: &mut MIRCompilationResult) -> OptimizationResult {
         let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
         peephole::optimize(compilation_result, &mut basic_blocks, &Default::default());
+
+        let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
+        let control_flow_graph = ControlFlowGraph::new(
+            &compilation_result.instructions,
+            &basic_blocks,
+        );
+
+        OptimizationResult {
+            instructions_register_null_status: null_check_elision::compute(
+                function,
+                &compilation_result,
+                &basic_blocks,
+                &control_flow_graph
+            )
+        }
     }
 
     fn generate_code(&self,
