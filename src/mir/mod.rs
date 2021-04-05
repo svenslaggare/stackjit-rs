@@ -160,6 +160,34 @@ impl InstructionMIRData {
         }
     }
 
+    pub fn use_registers_mut(&mut self) -> Vec<&mut RegisterMIR> {
+        match self {
+            InstructionMIRData::LoadInt32(_, _) => Vec::new(),
+            InstructionMIRData::LoadFloat32(_, _) => Vec::new(),
+            InstructionMIRData::Move(_, op) => vec![op],
+            InstructionMIRData::AddInt32(_, op1, op2) => vec![op1, op2],
+            InstructionMIRData::SubInt32(_, op1, op2) => vec![op1, op2],
+            InstructionMIRData::AddFloat32(_, op1, op2) => vec![op1, op2],
+            InstructionMIRData::SubFloat32(_, op1, op2) => vec![op1, op2],
+            // InstructionMIRData::Return(register) => Vec::from_iter(register.as_mut().iter_mut()),
+            InstructionMIRData::Return(register) => register.as_mut().map(|r| vec![r]).unwrap_or_else(|| Vec::new()),
+            InstructionMIRData::Call(_, _, arguments) => arguments.iter_mut().map(|r| r).collect(),
+            InstructionMIRData::LoadArgument(_, _) => Vec::new(),
+            InstructionMIRData::LoadNull(_) => Vec::new(),
+            InstructionMIRData::NewArray(_, _, op) => vec![op],
+            InstructionMIRData::LoadElement(_, _, op1, op2) => vec![op1, op2],
+            InstructionMIRData::StoreElement(_, op1, op2, op3) => vec![op1, op2, op3],
+            InstructionMIRData::LoadArrayLength(_, _) => Vec::new(),
+            InstructionMIRData::NewObject(_, _) => Vec::new(),
+            InstructionMIRData::LoadField(_, _, _, op) => vec![op],
+            InstructionMIRData::StoreField(_, _, op1, op2) => vec![op1, op2],
+            InstructionMIRData::GarbageCollect => Vec::new(),
+            InstructionMIRData::BranchLabel(_) => Vec::new(),
+            InstructionMIRData::Branch(_) => Vec::new(),
+            InstructionMIRData::BranchCondition(_, _, _, op1, op2) => vec![op1, op2]
+        }
+    }
+
     pub fn use_virtual_registers(&self) -> Vec<VirtualRegister> {
         self.use_registers().iter().map(|register| VirtualRegister::from(register)).collect()
     }

@@ -51,63 +51,10 @@ fn remove_unnecessary_local_for_block(compilation_result: &mut MIRCompilationRes
             InstructionMIRData::Move(destination, _) if local_registers.contains(destination) => {
                 local_load_target.remove(destination);
             }
-            InstructionMIRData::AddInt32(_, op1, op2)
-            | InstructionMIRData::SubInt32(_, op1, op2)
-            | InstructionMIRData::AddFloat32(_, op1, op2)
-            | InstructionMIRData::SubFloat32(_, op1, op2) => {
-                if let Some((op1_new, load_instruction_index)) = local_load_target.remove(op1) {
-                    *op1 = op1_new;
-                    instructions_to_remove.insert(load_instruction_index);
-                }
-
-                if let Some((op2_new, load_instruction_index)) = local_load_target.remove(op2) {
-                    *op2 = op2_new;
-                    instructions_to_remove.insert(load_instruction_index);
-                }
-            }
-            InstructionMIRData::NewArray(_, _, op1) => {
-                if let Some((op1_new, load_instruction_index)) = local_load_target.remove(op1) {
-                    *op1 = op1_new;
-                    instructions_to_remove.insert(load_instruction_index);
-                }
-            }
-            InstructionMIRData::LoadElement(_, _, op1, op2) => {
-                if let Some((op1_new, load_instruction_index)) = local_load_target.remove(op1) {
-                    *op1 = op1_new;
-                    instructions_to_remove.insert(load_instruction_index);
-                }
-
-                if let Some((op2_new, load_instruction_index)) = local_load_target.remove(op2) {
-                    *op2 = op2_new;
-                    instructions_to_remove.insert(load_instruction_index);
-                }
-            }
-            InstructionMIRData::StoreElement(_, op1, op2, op3) => {
-                if let Some((op1_new, load_instruction_index)) = local_load_target.remove(op1) {
-                    *op1 = op1_new;
-                    instructions_to_remove.insert(load_instruction_index);
-                }
-
-                if let Some((op2_new, load_instruction_index)) = local_load_target.remove(op2) {
-                    *op2 = op2_new;
-                    instructions_to_remove.insert(load_instruction_index);
-                }
-
-                if let Some((op3_new, load_instruction_index)) = local_load_target.remove(op3) {
-                    *op3 = op3_new;
-                    instructions_to_remove.insert(load_instruction_index);
-                }
-            }
-            InstructionMIRData::Return(Some(source)) => {
-                if let Some((source_new, load_instruction_index)) = local_load_target.remove(source) {
-                    *source = source_new;
-                    instructions_to_remove.insert(load_instruction_index);
-                }
-            }
-            InstructionMIRData::Call(_, _, arguments) => {
-                for argument in arguments {
-                    if let Some((argument_new, load_instruction_index)) = local_load_target.remove(argument) {
-                        *argument = argument_new;
+            instruction => {
+                for op_register in instruction.use_registers_mut() {
+                    if let Some((op_register_new, load_instruction_index)) = local_load_target.remove(op_register) {
+                        *op_register = op_register_new;
                         instructions_to_remove.insert(load_instruction_index);
                     }
                 }
@@ -392,5 +339,5 @@ fn test_combine_load_local6() {
         println!("{:?}", instruction);
     }
 
-    assert_eq!(8, compilation_result.instructions.len());
+    assert_eq!(7, compilation_result.instructions.len());
 }
