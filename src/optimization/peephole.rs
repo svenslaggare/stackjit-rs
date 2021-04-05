@@ -13,14 +13,16 @@ use crate::analysis::determine_instructions_operand_stack;
 
 pub struct PeepholeSettings {
     pub remove_load_local: bool,
-    pub remove_store_local: bool
+    pub remove_store_local: bool,
+    pub remove_load_constant: bool
 }
 
 impl Default for PeepholeSettings {
     fn default() -> Self {
         PeepholeSettings {
             remove_load_local: true,
-            remove_store_local: true
+            remove_store_local: true,
+            remove_load_constant: true
         }
     }
 }
@@ -29,24 +31,35 @@ impl PeepholeSettings {
     pub fn remove_only_load_local() -> PeepholeSettings {
         PeepholeSettings {
             remove_load_local: true,
-            remove_store_local: false
+            remove_store_local: false,
+            remove_load_constant: false
         }
     }
 
     pub fn remove_only_store_local() -> PeepholeSettings {
         PeepholeSettings {
             remove_load_local: false,
-            remove_store_local: true
+            remove_store_local: true,
+            remove_load_constant: false
+        }
+    }
+
+    pub fn remove_only_constants() -> PeepholeSettings {
+        PeepholeSettings {
+            remove_load_local: false,
+            remove_store_local: false,
+            remove_load_constant: true
         }
     }
 }
 
-pub fn remove_unnecessary_locals(compilation_result: &mut MIRCompilationResult,
-                                 basic_blocks: &mut Vec<BasicBlock>,
-                                 settings: &PeepholeSettings) {
+pub fn optimize(compilation_result: &mut MIRCompilationResult,
+                basic_blocks: &mut Vec<BasicBlock>,
+                settings: &PeepholeSettings) {
     let local_registers = HashSet::<RegisterMIR>::from_iter(compilation_result.local_virtual_registers.iter().cloned());
     for block in basic_blocks.iter_mut() {
         remove_unnecessary_local_for_block(compilation_result, &local_registers, block, settings);
+        remove_unnecessary_load_constant_for_block(compilation_result, &local_registers, block, settings);
     }
 
     let valid_instructions = HashSet::<usize>::from_iter(BasicBlock::linearize(basic_blocks).into_iter());
@@ -125,6 +138,45 @@ fn remove_unnecessary_local_for_block(compilation_result: &mut MIRCompilationRes
     basic_block.instructions.retain(|index| !instructions_to_remove.contains(index));
 }
 
+fn remove_unnecessary_load_constant_for_block(compilation_result: &mut MIRCompilationResult,
+                                              local_registers: &HashSet<RegisterMIR>,
+                                              basic_block: &mut BasicBlock,
+                                              settings: &PeepholeSettings) {
+    if !settings.remove_load_constant {
+        return;
+    }
+
+    let mut instructions_to_remove = HashSet::new();
+    let mut load_constants = HashMap::new();
+
+    for &instruction_index in &basic_block.instructions {
+        let instruction = &compilation_result.instructions[instruction_index];
+        match &instruction.data {
+            InstructionMIRData::LoadInt32(destination, value) if !local_registers.contains(destination) => {
+                load_constants.insert(destination.clone(), (instruction_index, *value));
+            }
+            _ => {}
+        }
+
+        match &instruction.data {
+            InstructionMIRData::AddInt32(destination, op1, op2) => {
+                if let Some((load_constant_index, constant_value)) = load_constants.remove(op2) {
+                    compilation_result.instructions[instruction_index].data = InstructionMIRData::AddInt32Constant(destination.clone(), op1.clone(), constant_value);
+                    instructions_to_remove.insert(load_constant_index);
+                }
+            }
+            _ => {}
+        }
+
+        let instruction = &compilation_result.instructions[instruction_index];
+        for use_register in instruction.data.use_registers() {
+            load_constants.remove(&use_register);
+        }
+    }
+
+    basic_block.instructions.retain(|index| !instructions_to_remove.contains(index));
+}
+
 #[test]
 fn test_combine_load_local1() {
     let mut function = Function::new(
@@ -150,7 +202,7 @@ fn test_combine_load_local1() {
     }
 
     let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-    remove_unnecessary_locals(&mut compilation_result, &mut basic_blocks, &PeepholeSettings::remove_only_load_local());
+    optimize(&mut compilation_result, &mut basic_blocks, &PeepholeSettings::remove_only_load_local());
 
     println!();
     println!("After optimization:");
@@ -192,7 +244,7 @@ fn test_combine_load_local2() {
     }
 
     let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-    remove_unnecessary_locals(&mut compilation_result, &mut basic_blocks, &PeepholeSettings::remove_only_load_local());
+    optimize(&mut compilation_result, &mut basic_blocks, &PeepholeSettings::remove_only_load_local());
 
     println!();
     println!("After optimization:");
@@ -234,7 +286,7 @@ fn test_combine_load_local3() {
     }
 
     let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-    remove_unnecessary_locals(&mut compilation_result, &mut basic_blocks, &PeepholeSettings::remove_only_load_local());
+    optimize(&mut compilation_result, &mut basic_blocks, &PeepholeSettings::remove_only_load_local());
 
     println!();
     println!("After optimization:");
@@ -285,7 +337,7 @@ fn test_combine_load_local4() {
     }
 
     let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-    remove_unnecessary_locals(&mut compilation_result, &mut basic_blocks, &PeepholeSettings::remove_only_load_local());
+    optimize(&mut compilation_result, &mut basic_blocks, &PeepholeSettings::remove_only_load_local());
 
     println!();
     println!("After optimization:");
@@ -337,7 +389,7 @@ fn test_combine_load_local5() {
     }
 
     let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-    remove_unnecessary_locals(&mut compilation_result, &mut basic_blocks, &PeepholeSettings::remove_only_load_local());
+    optimize(&mut compilation_result, &mut basic_blocks, &PeepholeSettings::remove_only_load_local());
 
     println!();
     println!("After optimization:");
@@ -386,7 +438,7 @@ fn test_combine_load_local6() {
     }
 
     let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-    remove_unnecessary_locals(&mut compilation_result, &mut basic_blocks, &PeepholeSettings::remove_only_load_local());
+    optimize(&mut compilation_result, &mut basic_blocks, &PeepholeSettings::remove_only_load_local());
 
     println!();
     println!("After optimization:");
@@ -424,7 +476,7 @@ fn test_combine_store_local1() {
     }
 
     let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-    remove_unnecessary_locals(&mut compilation_result, &mut basic_blocks, &PeepholeSettings::remove_only_store_local());
+    optimize(&mut compilation_result, &mut basic_blocks, &PeepholeSettings::remove_only_store_local());
 
     println!();
     println!("After optimization:");
@@ -472,7 +524,7 @@ fn test_combine_load_store_local1() {
     }
 
     let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
-    remove_unnecessary_locals(&mut compilation_result, &mut basic_blocks, &Default::default());
+    optimize(&mut compilation_result, &mut basic_blocks, &Default::default());
 
     println!();
     println!("After optimization:");
@@ -484,5 +536,91 @@ fn test_combine_load_store_local1() {
     assert_eq!(
         &InstructionMIR::new(2, InstructionMIRData::AddInt32(RegisterMIR::new(0, TypeId::Int32), RegisterMIR::new(0, TypeId::Int32), RegisterMIR::new(1, TypeId::Int32))),
         &compilation_result.instructions[0]
+    );
+}
+
+#[test]
+fn test_combine_load_constant1() {
+    let mut function = Function::new(
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        vec![TypeId::Int32],
+        vec![
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(4711),
+            Instruction::Add,
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
+
+    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    compiler.compile(function.instructions());
+    let mut compilation_result = compiler.done();
+
+    println!("Before optimization:");
+    for instruction in &compilation_result.instructions {
+        println!("{:?}", instruction);
+    }
+
+    let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
+    optimize(&mut compilation_result, &mut basic_blocks, &PeepholeSettings::remove_only_constants());
+
+    println!();
+    println!("After optimization:");
+    for instruction in &compilation_result.instructions {
+        println!("{:?}", instruction);
+    }
+
+    assert_eq!(3, compilation_result.instructions.len());
+    assert_eq!(
+        &InstructionMIR::new(2, InstructionMIRData::AddInt32Constant(RegisterMIR::new(1, TypeId::Int32), RegisterMIR::new(1, TypeId::Int32), 4711)),
+        &compilation_result.instructions[1]
+    );
+}
+
+#[test]
+fn test_combine_load_constant2() {
+    let mut function = Function::new(
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        vec![],
+        vec![
+            Instruction::LoadInt32(10),
+            Instruction::LoadInt32(20),
+            Instruction::LoadInt32(30),
+            Instruction::Add,
+            Instruction::Add,
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
+
+    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    compiler.compile(function.instructions());
+    let mut compilation_result = compiler.done();
+
+    println!("Before optimization:");
+    for instruction in &compilation_result.instructions {
+        println!("{:?}", instruction);
+    }
+
+    let mut basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
+    optimize(&mut compilation_result, &mut basic_blocks, &PeepholeSettings::remove_only_constants());
+
+    println!();
+    println!("After optimization:");
+    for instruction in &compilation_result.instructions {
+        println!("{:?}", instruction);
+    }
+
+    assert_eq!(5, compilation_result.instructions.len());
+    assert_eq!(
+        &InstructionMIR::new(3, InstructionMIRData::AddInt32Constant(RegisterMIR::new(1, TypeId::Int32), RegisterMIR::new(1, TypeId::Int32), 30)),
+        &compilation_result.instructions[2]
     );
 }

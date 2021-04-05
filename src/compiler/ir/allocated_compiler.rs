@@ -165,6 +165,19 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     }
                 );
             }
+            InstructionMIRData::AddInt32Constant(destination, operand1, operand2) => {
+                self.binary_operator_with_constant_and_destination(
+                    destination,
+                    operand1,
+                    *operand2,
+                    |instructions, op1, op2| {
+                        instructions.push(InstructionIR::AddInt32Constant(op1, op2));
+                    },
+                    |instructions, op1, op2| {
+                        instructions.push(InstructionIR::AddInt32ConstantToFrameMemory(op1, op2));
+                    }
+                );
+            }
             InstructionMIRData::SubInt32(destination, operand1, operand2) => {
                 self.binary_operator_with_destination(
                     destination,
@@ -807,7 +820,6 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
         let (operand1_allocation, operand1_offset) = operand1;
         let (operand2_allocation, operand2_offset) = operand2;
 
-        use AllocatedRegister::{Hardware, Stack};
         match (operand1_allocation, operand2_allocation) {
             (Some(operand1_register), Some(operand2_register)) => {
                 reg_reg(&mut self.instructions, operand1_register, operand2_register);
@@ -822,6 +834,47 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::IntSpill, operand2_offset));
                 mem_reg(&mut self.instructions, operand1_offset, HardwareRegister::IntSpill);
             }
+        }
+    }
+
+    fn binary_operator_with_constant_and_destination<
+        F1: Fn(&mut Vec<InstructionIR>, HardwareRegister, i32),
+        F2: Fn(&mut Vec<InstructionIR>, i32, i32)
+    >(&mut self,
+      destination: &RegisterMIR,
+      operand1: &RegisterMIR,
+      operand2: i32,
+      reg_constant: F1,
+      mem_constant: F2) {
+        let handle = |instructions: &mut Vec<InstructionIR>, operand1: (Option<HardwareRegister>, i32), operand2: i32| {
+            let (operand1_allocation, operand1_offset) = operand1;
+
+            match operand1_allocation {
+                Some(operand1_register) => {
+                    reg_constant(instructions, operand1_register, operand2);
+                }
+                None => {
+                    mem_constant(instructions, operand1_offset, operand2);
+                }
+            }
+        };
+
+        if destination == operand1 {
+            let destination_allocation = self.register_allocation.get_register(destination).clone();
+            let destination_offset = self.get_register_stack_offset(destination);
+            handle(
+                &mut self.instructions,
+                (destination_allocation.hardware_register(), destination_offset),
+                operand2
+            );
+        } else {
+            self.move_to_hardware_register(HardwareRegister::IntSpill, operand1);
+            handle(
+                &mut self.instructions,
+                (Some(HardwareRegister::IntSpill), 0),
+                operand2
+            );
+            self.move_from_hardware_register(destination, HardwareRegister::IntSpill);
         }
     }
 

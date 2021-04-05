@@ -345,6 +345,20 @@ impl<'a> CodeGenerator<'a> {
                     register_mapping::get(*source, false)
                 ));
             }
+            InstructionIR::AddInt32Constant(destination, value) => {
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(
+                    Code::Add_rm32_imm32,
+                    register_mapping::get(*destination, false),
+                    *value
+                ).unwrap());
+            }
+            InstructionIR::AddInt32ConstantToFrameMemory(destination_offset, value) => {
+                self.encode_x86_instruction(X86Instruction::try_with_mem_i32(
+                    Code::Add_rm32_imm32,
+                    MemoryOperand::with_base_displ(Register::RBP, *destination_offset),
+                    *value
+                ).unwrap());
+            }
             InstructionIR::SubInt32(destination, source) => {
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(
                     Code::Sub_r32_rm32,

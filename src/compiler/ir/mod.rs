@@ -118,6 +118,8 @@ pub enum InstructionIR {
     AddInt32(HardwareRegister, HardwareRegister),
     AddInt32FromFrameMemory(HardwareRegister, i32),
     AddInt32ToFrameMemory(i32, HardwareRegister),
+    AddInt32Constant(HardwareRegister, i32),
+    AddInt32ConstantToFrameMemory(i32, i32),
     SubInt32(HardwareRegister, HardwareRegister),
     SubInt32FromFrameMemory(HardwareRegister, i32),
     SubInt32ToFrameMemory(i32, HardwareRegister),

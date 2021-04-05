@@ -86,6 +86,11 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::AddInt32(HardwareRegister::Int(0), HardwareRegister::Int(1)));
                 self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::Int(0)));
             }
+            InstructionMIRData::AddInt32Constant(destination, operand1, operand2) => {
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(operand1)));
+                self.instructions.push(InstructionIR::AddInt32Constant(HardwareRegister::Int(0), *operand2));
+                self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::Int(0)));
+            }
             InstructionMIRData::SubInt32(destination, operand1, operand2) => {
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(operand1)));
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(1), self.get_register_stack_offset(operand2)));
