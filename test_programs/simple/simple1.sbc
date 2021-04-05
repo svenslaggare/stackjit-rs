@@ -1,0 +1,7 @@
+func main() Int
+{
+    LDINT 100
+    LDINT 200
+    ADD
+    RET
+}

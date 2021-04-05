@@ -11,7 +11,8 @@ pub enum ExecutionEngineError {
     Verify(VerifyError),
     NoMainFunction,
     NoMainFunctionCompiled,
-    Runtime(RuntimeError)
+    Runtime(RuntimeError),
+    Other(String)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

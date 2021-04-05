@@ -13,93 +13,34 @@ mod engine;
 mod vm;
 mod parser;
 mod execution_tests;
+mod integration_tests;
 
-use crate::model::instruction::Instruction;
-use crate::model::function::{Function, FunctionDeclaration, FunctionSignature};
-use crate::model::typesystem::TypeId;
 use crate::vm::VirtualMachine;
+use crate::parser::Parser;
+use crate::engine::execution::{ExecutionEngineResult, ExecutionEngineError};
 
-extern "C" fn push() -> i32 {
-    return 4711;
-}
+pub fn main_execute(input_file: String) -> ExecutionEngineResult<i32> {
+    let mut vm = VirtualMachine::new();
 
-extern "C" fn sum(x: i32, y: i32) -> i32 {
-    return x + y;
-}
+    let input_text = std::fs::read_to_string(input_file).map_err(|err| ExecutionEngineError::Other(format!("{}", err)))?;
+    let tokens = parser::tokenize(&input_text).map_err(|err| ExecutionEngineError::Other(format!("{:?}", err)))?;
 
-extern "C" fn sum3(x: i32, y: i32, z: i32) -> i32 {
-    return x + y + z;
-}
+    let mut parser = Parser::new(tokens);
+    let (functions, classes)  = parser.parse().map_err(|err| ExecutionEngineError::Other(format!("{:?}", err)))?;
 
-extern "C" fn sum8(x0: i32, x1: i32, x2: i32, x3: i32, x4: i32, x5: i32, x6: i32, x7: i32) -> i32 {
-    return x0 + x1 + x2 + x3 + x4 + x5 + x6 + x7;
-}
+    for function in functions {
+        vm.engine.add_function(function)?;
+    }
 
-extern "C" fn print_float(x: f32) {
-    println!("{}", x);
-}
+    for class in classes {
+        vm.type_storage.add_class(class);
+    }
 
-extern "C" fn print_array(ptr: u64) {
-    println!("0x{:x}", ptr);
+    vm.execute()
 }
 
 fn main() {
-    let mut vm = VirtualMachine::new();
-
-    vm.engine.binder_mut().define(
-        FunctionDeclaration::new_external(
-            "sum8".to_owned(), (0..8).map(|_| TypeId::Int32).collect(), TypeId::Int32,
-            sum8 as *mut std::ffi::c_void
-        )
-    );
-
-    vm.engine.binder_mut().define(
-        FunctionDeclaration::new_external(
-            "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
-            print_float as *mut std::ffi::c_void
-        )
-    );
-
-    vm.engine.binder_mut().define(
-        FunctionDeclaration::new_external(
-            "print_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Int32))], TypeId::Void,
-            print_array as *mut std::ffi::c_void
-        )
-    );
-
-    // vm.engine.add_function(Function::new(
-    //     FunctionDefinition::new_managed("main".to_owned(), Vec::new(), Type::Int32),
-    //     vec![Type::Array(Box::new(Type::Int32))],
-    //     vec![
-    //         Instruction::LoadInt32(4000),
-    //         Instruction::NewArray(Type::Int32),
-    //         Instruction::Call(FunctionSignature { name: "print_array".to_owned(), parameters: vec![Type::Array(Box::new(Type::Int32))] }),
-    //         Instruction::LoadInt32(0),
-    //         Instruction::Return,
-    //     ]
-    // )).unwrap();
-
-    vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("new_array".to_owned(), Vec::new(), TypeId::Int32),
-        vec![],
-        vec![
-            Instruction::LoadNull(TypeId::Array(Box::new(TypeId::Int32))),
-            Instruction::LoadInt32(1000),
-            Instruction::LoadElement(TypeId::Int32),
-            Instruction::Return
-        ]
-    )).unwrap();
-
-    vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
-        vec![],
-        vec![
-            Instruction::LoadInt32(2000),
-            Instruction::Call(FunctionSignature { name: "new_array".to_owned(), parameters: vec![] }),
-            Instruction::Add,
-            Instruction::Return
-        ]
-    )).unwrap();
-
-    println!("Result: {:?}", vm.execute());
+    let input_file = std::env::args().collect::<Vec<_>>().get(1).expect("Expected input file.").clone();
+    let result = main_execute(input_file).unwrap();
+    println!("{}", result);
 }
