@@ -180,7 +180,7 @@ fn remove_unnecessary_load_constant_for_block(compilation_result: &mut MIRCompil
 #[test]
 fn test_combine_load_local1() {
     let mut function = Function::new(
-        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadLocal(0),
@@ -220,7 +220,7 @@ fn test_combine_load_local1() {
 #[test]
 fn test_combine_load_local2() {
     let mut function = Function::new(
-        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(4711),
@@ -262,7 +262,7 @@ fn test_combine_load_local2() {
 #[test]
 fn test_combine_load_local3() {
     let mut function = Function::new(
-        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32, TypeId::Int32],
         vec![
             Instruction::LoadLocal(0),
@@ -304,7 +304,7 @@ fn test_combine_load_local3() {
 #[test]
 fn test_combine_load_local4() {
     let mut function = Function::new(
-        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32, TypeId::Int32],
         vec![
             Instruction::LoadInt32(1337),
@@ -365,7 +365,7 @@ fn test_combine_load_local4() {
 #[test]
 fn test_combine_load_local5() {
     let mut function = Function::new(
-        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadLocal(0),
@@ -407,7 +407,7 @@ fn test_combine_load_local5() {
 #[test]
 fn test_combine_load_local6() {
     let mut function = Function::new(
-        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadLocal(0),
@@ -452,7 +452,7 @@ fn test_combine_load_local6() {
 #[test]
 fn test_combine_store_local1() {
     let mut function = Function::new(
-        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(4711),
@@ -497,7 +497,7 @@ fn test_combine_store_local1() {
 #[test]
 fn test_combine_load_store_local1() {
     let mut function = Function::new(
-        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32, TypeId::Int32],
         vec![
             Instruction::LoadLocal(0),
@@ -542,7 +542,7 @@ fn test_combine_load_store_local1() {
 #[test]
 fn test_combine_load_constant1() {
     let mut function = Function::new(
-        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadLocal(0),
@@ -584,7 +584,7 @@ fn test_combine_load_constant1() {
 #[test]
 fn test_combine_load_constant2() {
     let mut function = Function::new(
-        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(10),

@@ -10,7 +10,7 @@ fn test_sum1() {
     let n = 20000000;
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadLocal(0),

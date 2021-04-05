@@ -41,14 +41,14 @@ fn test_create1() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.binder_mut().define(
-        FunctionDeclaration::new_external(
+        FunctionDeclaration::with_external(
             "print_point".to_owned(), vec![TypeId::Class("Point".to_owned())], TypeId::Void,
             print_point as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::NewObject("Point".to_owned()),
@@ -78,7 +78,7 @@ fn test_load1() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.binder_mut().define(
-        FunctionDeclaration::new_external(
+        FunctionDeclaration::with_external(
             "set_point_x".to_owned(), vec![TypeId::Class("Point".to_owned()), TypeId::Int32], TypeId::Void,
             set_point_x as *mut std::ffi::c_void
         )
@@ -93,7 +93,7 @@ fn test_load1() {
     ));
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Class("Point".to_owned())],
         vec![
             Instruction::NewObject("Point".to_owned()),
@@ -126,7 +126,7 @@ fn test_store1() {
     ));
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Class("Point".to_owned())],
         vec![
             Instruction::NewObject("Point".to_owned()),
@@ -155,7 +155,7 @@ fn test_array1() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.binder_mut().define(
-        FunctionDeclaration::new_external(
+        FunctionDeclaration::with_external(
             "print_array_element".to_owned(), vec![TypeId::Array(Box::new(TypeId::Class("Point".to_owned()))), TypeId::Int32], TypeId::Void,
             print_array_element as *mut std::ffi::c_void
         )
@@ -170,7 +170,7 @@ fn test_array1() {
     ));
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Class("Point".to_owned())))],
         vec![
             Instruction::LoadInt32(10),

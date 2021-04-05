@@ -8,7 +8,7 @@ fn test1() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -25,7 +25,7 @@ fn test2() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -44,7 +44,7 @@ fn test3() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -63,7 +63,7 @@ fn test4() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(10),
@@ -84,7 +84,7 @@ fn test5() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(10),
@@ -113,7 +113,7 @@ fn test6() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(-10),
@@ -132,7 +132,7 @@ fn test7() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(-10),
@@ -151,7 +151,7 @@ fn test_locals1() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadLocal(0),
@@ -168,7 +168,7 @@ fn test_locals2() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1337),
@@ -187,7 +187,7 @@ fn test_locals3() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadLocal(0),
@@ -206,7 +206,7 @@ fn test_locals4() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1337),
@@ -227,7 +227,7 @@ fn test_locals5() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1000),
@@ -250,7 +250,7 @@ fn test_locals6() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1000),
@@ -273,7 +273,7 @@ fn test_locals7() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32, TypeId::Int32],
         vec![
             Instruction::LoadInt32(1000),
@@ -296,7 +296,7 @@ fn test_locals8() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32, TypeId::Int32],
         vec![
             Instruction::LoadInt32(1337),
@@ -324,7 +324,7 @@ fn test_locals9() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32, TypeId::Int32],
         vec![
             Instruction::LoadInt32(1337),
@@ -352,7 +352,7 @@ fn test_locals10() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1337),

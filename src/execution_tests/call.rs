@@ -24,14 +24,14 @@ fn test_external1() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.binder_mut().define(
-        FunctionDeclaration::new_external(
+        FunctionDeclaration::with_external(
             "sum".to_owned(), vec![TypeId::Int32, TypeId::Int32], TypeId::Int32,
             sum as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -50,14 +50,14 @@ fn test_external2() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.binder_mut().define(
-        FunctionDeclaration::new_external(
+        FunctionDeclaration::with_external(
             "sub".to_owned(), vec![TypeId::Int32, TypeId::Int32], TypeId::Int32,
             sub as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -76,14 +76,14 @@ fn test_external3() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.binder_mut().define(
-        FunctionDeclaration::new_external(
+        FunctionDeclaration::with_external(
             "sum8".to_owned(), (0..8).map(|_| TypeId::Int32).collect(), TypeId::Int32,
             sum8 as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(1),
@@ -108,14 +108,14 @@ fn test_external4() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.binder_mut().define(
-        FunctionDeclaration::new_external(
+        FunctionDeclaration::with_external(
             "sum".to_owned(), (0..2).map(|_| TypeId::Int32).collect(), TypeId::Int32,
             sum as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1000),
@@ -138,14 +138,14 @@ fn test_external5() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.binder_mut().define(
-        FunctionDeclaration::new_external(
+        FunctionDeclaration::with_external(
             "sum8_sub".to_owned(), (0..8).map(|_| TypeId::Int32).collect(), TypeId::Int32,
             sum8_sub as *mut std::ffi::c_void
         )
     );
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(1),
@@ -170,7 +170,7 @@ fn test_managed1() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("sum".to_owned(), vec![TypeId::Int32, TypeId::Int32], TypeId::Int32),
+        FunctionDeclaration::with_manager("sum".to_owned(), vec![TypeId::Int32, TypeId::Int32], TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),
@@ -181,7 +181,7 @@ fn test_managed1() {
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -200,7 +200,7 @@ fn test_managed2() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("sum".to_owned(), vec![TypeId::Int32, TypeId::Int32], TypeId::Int32),
+        FunctionDeclaration::with_manager("sum".to_owned(), vec![TypeId::Int32, TypeId::Int32], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadArgument(0),
@@ -213,7 +213,7 @@ fn test_managed2() {
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -232,7 +232,7 @@ fn test_managed3() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("sum8".to_owned(), (0..8).map(|_| TypeId::Int32).collect(), TypeId::Int32),
+        FunctionDeclaration::with_manager("sum8".to_owned(), (0..8).map(|_| TypeId::Int32).collect(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),
@@ -255,7 +255,7 @@ fn test_managed3() {
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(1),
@@ -280,7 +280,7 @@ fn test_managed4() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("sum7".to_owned(), (0..7).map(|_| TypeId::Int32).collect(), TypeId::Int32),
+        FunctionDeclaration::with_manager("sum7".to_owned(), (0..7).map(|_| TypeId::Int32).collect(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),
@@ -301,7 +301,7 @@ fn test_managed4() {
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("sum9".to_owned(), (0..9).map(|_| TypeId::Int32).collect(), TypeId::Int32),
+        FunctionDeclaration::with_manager("sum9".to_owned(), (0..9).map(|_| TypeId::Int32).collect(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),
@@ -326,7 +326,7 @@ fn test_managed4() {
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(1),
@@ -359,7 +359,7 @@ fn test_managed5() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -370,7 +370,7 @@ fn test_managed5() {
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("sum".to_owned(), vec![TypeId::Int32, TypeId::Int32], TypeId::Int32),
+        FunctionDeclaration::with_manager("sum".to_owned(), vec![TypeId::Int32, TypeId::Int32], TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),
@@ -389,7 +389,7 @@ fn test_managed6() {
     let mut vm = VirtualMachine::new();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("sum".to_owned(), vec![TypeId::Int32, TypeId::Int32], TypeId::Int32),
+        FunctionDeclaration::with_manager("sum".to_owned(), vec![TypeId::Int32, TypeId::Int32], TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),
@@ -400,7 +400,7 @@ fn test_managed6() {
     )).unwrap();
 
     vm.engine.add_function(Function::new(
-        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32, TypeId::Int32],
         vec![
             Instruction::LoadInt32(4711),

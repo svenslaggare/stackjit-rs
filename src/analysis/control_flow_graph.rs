@@ -99,7 +99,7 @@ impl ControlFlowGraph {
 #[test]
 fn test_branches1() {
     let mut function = Function::new(
-        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1),

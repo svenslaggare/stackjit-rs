@@ -211,7 +211,7 @@ fn get_register_usage(instructions: &Vec<InstructionMIR>,
 #[test]
 fn test_liveness1() {
     let mut function = Function::new(
-        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1),
@@ -271,7 +271,7 @@ fn test_liveness1() {
 #[test]
 fn test_liveness2() {
     let mut function = Function::new(
-        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1),
@@ -326,7 +326,7 @@ fn test_liveness2() {
 #[test]
 fn test_liveness3() {
     let mut function = Function::new(
-        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1),

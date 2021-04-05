@@ -87,7 +87,7 @@ pub fn determine_instructions_operand_stack(compilation_result: &MIRCompilationR
 #[test]
 fn test_determine_instructions_operand_stack1() {
     let mut function = Function::new(
-        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1000),
@@ -114,7 +114,7 @@ fn test_determine_instructions_operand_stack1() {
 #[test]
 fn test_determine_instructions_operand_stack2() {
     let mut function = Function::new(
-        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32, TypeId::Int32],
         vec![
             Instruction::LoadInt32(1337),

@@ -19,7 +19,7 @@ pub struct FunctionDeclaration {
 }
 
 impl FunctionDeclaration {
-    pub fn new_external(name: String, parameters: Vec<TypeId>, return_type: TypeId, address: FunctionAddress) -> FunctionDeclaration {
+    pub fn with_external(name: String, parameters: Vec<TypeId>, return_type: TypeId, address: FunctionAddress) -> FunctionDeclaration {
         FunctionDeclaration {
             function_type: FunctionType::External,
             name,
@@ -29,7 +29,7 @@ impl FunctionDeclaration {
         }
     }
 
-    pub fn new_managed(name: String, parameters: Vec<TypeId>, return_type: TypeId) -> FunctionDeclaration {
+    pub fn with_manager(name: String, parameters: Vec<TypeId>, return_type: TypeId) -> FunctionDeclaration {
         FunctionDeclaration {
             function_type: FunctionType::Managed,
             name,
