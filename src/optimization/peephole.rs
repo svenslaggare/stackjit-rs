@@ -9,6 +9,7 @@ use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::analysis::basic_block::BasicBlock;
 use crate::model::verifier::Verifier;
 use crate::mir::{InstructionMIR, InstructionMIRData, RegisterMIR};
+use crate::analysis::instructions_operands;
 
 pub fn remove_unnecessary_locals(compilation_result: &mut MIRCompilationResult, basic_blocks: &mut Vec<BasicBlock>) {
     let local_registers = HashSet::<RegisterMIR>::from_iter(compilation_result.local_virtual_registers.iter().cloned());
@@ -26,11 +27,13 @@ pub fn remove_unnecessary_locals(compilation_result: &mut MIRCompilationResult, 
     });
 
     let mut index = 0;
-    compilation_result.instructions_operand_types.retain(|instruction| {
+    compilation_result.instructions_operands.retain(|instruction| {
         let keep = valid_instructions.contains(&index);
         index += 1;
         keep
     });
+
+    compilation_result.instructions_operands = instructions_operands(compilation_result);
 }
 
 fn remove_unnecessary_local_for_block(compilation_result: &mut MIRCompilationResult,
@@ -39,7 +42,6 @@ fn remove_unnecessary_local_for_block(compilation_result: &mut MIRCompilationRes
     let mut local_load_target = HashMap::new();
     let mut instructions_to_remove = HashSet::new();
 
-    // TODO: for load/store element to be able to peephole reference value, the instruction_operand_types needs to be updated!
     for &instruction_index in &basic_block.instructions {
         let instruction = &mut compilation_result.instructions[instruction_index];
         match &mut instruction.data {
@@ -69,43 +71,47 @@ fn remove_unnecessary_local_for_block(compilation_result: &mut MIRCompilationRes
                     instructions_to_remove.insert(load_instruction_index);
                 }
             }
-            InstructionMIRData::LoadElement(_, _, _, op2) => {
+            InstructionMIRData::LoadElement(_, _, op1, op2) => {
+                if let Some((op1_new, load_instruction_index)) = local_load_target.remove(op1) {
+                    *op1 = op1_new;
+                    instructions_to_remove.insert(load_instruction_index);
+                }
+
                 if let Some((op2_new, load_instruction_index)) = local_load_target.remove(op2) {
                     *op2 = op2_new;
                     instructions_to_remove.insert(load_instruction_index);
                 }
             }
-            InstructionMIRData::StoreElement(_, _, op2, op3) => {
+            InstructionMIRData::StoreElement(_, op1, op2, op3) => {
+                if let Some((op1_new, load_instruction_index)) = local_load_target.remove(op1) {
+                    *op1 = op1_new;
+                    instructions_to_remove.insert(load_instruction_index);
+                }
+
                 if let Some((op2_new, load_instruction_index)) = local_load_target.remove(op2) {
                     *op2 = op2_new;
                     instructions_to_remove.insert(load_instruction_index);
                 }
 
-                if !op3.value_type.is_reference() {
-                    if let Some((op3_new, load_instruction_index)) = local_load_target.remove(op3) {
-                        *op3 = op3_new;
-                        instructions_to_remove.insert(load_instruction_index);
-                    }
+                if let Some((op3_new, load_instruction_index)) = local_load_target.remove(op3) {
+                    *op3 = op3_new;
+                    instructions_to_remove.insert(load_instruction_index);
                 }
             }
             InstructionMIRData::Return(Some(source)) => {
-                if !source.value_type.is_reference() {
-                    if let Some((source_new, load_instruction_index)) = local_load_target.remove(source) {
-                        *source = source_new;
+                if let Some((source_new, load_instruction_index)) = local_load_target.remove(source) {
+                    *source = source_new;
+                    instructions_to_remove.insert(load_instruction_index);
+                }
+            }
+            InstructionMIRData::Call(_, _, arguments) => {
+                for argument in arguments {
+                    if let Some((argument_new, load_instruction_index)) = local_load_target.remove(argument) {
+                        *argument = argument_new;
                         instructions_to_remove.insert(load_instruction_index);
                     }
                 }
             }
-            // InstructionMIRData::Call(_, _, arguments) => {
-            //     for argument in arguments {
-            //         if !argument.value_type.is_reference() {
-            //             if let Some((argument_new, load_instruction_index)) = local_load_target.remove(argument) {
-            //                 *argument = argument_new;
-            //                 instructions_to_remove.insert(load_instruction_index);
-            //             }
-            //         }
-            //     }
-            // }
             _ => {}
         }
 

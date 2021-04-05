@@ -1,7 +1,7 @@
 use crate::model::function::{FunctionDeclaration, Function, FunctionSignature};
 use crate::vm::{VirtualMachine, get_vm};
 use crate::model::instruction::Instruction;
-use crate::model::typesystem::TypeId;
+use crate::model::typesystem::{TypeId, Type};
 use crate::model::class::{Class, Field};
 
 #[test]
@@ -272,5 +272,103 @@ fn test_collect5() {
         assert_eq!(2, vm.memory_manager.garbage_collector.deleted_objects().len());
         assert_eq!(TypeId::Array(Box::new(point_type.clone())), vm.memory_manager.garbage_collector.deleted_objects()[0].1);
         assert_eq!(point_type.clone(), vm.memory_manager.garbage_collector.deleted_objects()[1].1);
+    });
+}
+
+#[test]
+fn test_collect6() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Int32))],
+        vec![
+            Instruction::LoadInt32(4711),
+            Instruction::NewArray(TypeId::Int32),
+
+            Instruction::Call(FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] }),
+
+            Instruction::StoreLocal(0),
+
+            Instruction::LoadInt32(0),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(0, execution_result);
+
+    get_vm(|vm| {
+        assert_eq!(0, vm.memory_manager.garbage_collector.deleted_objects().len());
+    });
+}
+
+#[test]
+fn test_collect7() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Int32, TypeId::Array(Box::new(TypeId::Int32))],
+        vec![
+            Instruction::LoadLocal(0),
+
+            Instruction::LoadInt32(4711),
+            Instruction::NewArray(TypeId::Int32),
+
+            Instruction::Call(FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] }),
+
+            Instruction::StoreLocal(1),
+
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(0, execution_result);
+
+    get_vm(|vm| {
+        assert_eq!(0, vm.memory_manager.garbage_collector.deleted_objects().len());
+    });
+}
+
+#[test]
+fn test_collect8() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDeclaration::new_managed("inner".to_owned(), Vec::new(), TypeId::Array(Box::new(TypeId::Int32))),
+        vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Array(Box::new(TypeId::Int32))],
+        vec![
+            Instruction::LoadLocal(0),
+
+            Instruction::LoadInt32(4711),
+            Instruction::NewArray(TypeId::Int32),
+
+            Instruction::Call(FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] }),
+
+            Instruction::StoreLocal(1),
+
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    vm.engine.add_function(Function::new(
+        FunctionDeclaration::new_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Int32))],
+        vec![
+            Instruction::Call(FunctionSignature { name: "inner".to_string(), parameters: vec![] }),
+            Instruction::StoreLocal(0),
+
+            Instruction::LoadInt32(0),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(0, execution_result);
+
+    get_vm(|vm| {
+        assert_eq!(0, vm.memory_manager.garbage_collector.deleted_objects().len());
     });
 }

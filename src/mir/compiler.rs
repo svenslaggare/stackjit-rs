@@ -17,7 +17,7 @@ pub struct MIRCompilationResult {
     pub num_virtual_registers: usize,
     pub local_virtual_registers: Vec<RegisterMIR>,
     pub need_zero_initialize_registers: Vec<RegisterMIR>,
-    pub instructions_operand_types: Vec<Vec<RegisterMIR>>
+    pub instructions_operands: Vec<Vec<RegisterMIR>>
 }
 
 pub struct InstructionMIRCompiler<'a> {
@@ -28,7 +28,7 @@ pub struct InstructionMIRCompiler<'a> {
     local_virtual_registers: Vec<RegisterMIR>,
     next_operand_virtual_register: u32,
     max_num_virtual_register: usize,
-    instructions_operand_types: Vec<Vec<RegisterMIR>>,
+    instructions_operands: Vec<Vec<RegisterMIR>>,
     macros: HashMap<FunctionSignature, Box<dyn Fn(&mut InstructionMIRCompiler, usize, &Instruction) + 'a>>
 }
 
@@ -42,7 +42,7 @@ impl<'a> InstructionMIRCompiler<'a> {
             local_virtual_registers: Vec::new(),
             next_operand_virtual_register: 0,
             max_num_virtual_register: 0,
-            instructions_operand_types: Vec::new(),
+            instructions_operands: Vec::new(),
             macros: HashMap::new()
         };
 
@@ -85,11 +85,11 @@ impl<'a> InstructionMIRCompiler<'a> {
         let operand_types = self.function.instruction_operand_types(instruction_index);
 
         if let Some(branch_label) = self.branch_manager.is_branch(instruction_index) {
-            self.instructions_operand_types.push(Vec::new());
+            self.instructions_operands.push(Vec::new());
             self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::BranchLabel(branch_label)));
         }
 
-        self.instructions_operand_types.push(
+        self.instructions_operands.push(
             operand_types
                 .iter()
                 .enumerate()
@@ -304,7 +304,7 @@ impl<'a> InstructionMIRCompiler<'a> {
             num_virtual_registers: self.max_num_virtual_register,
             local_virtual_registers: self.local_virtual_registers.clone(),
             need_zero_initialize_registers: self.local_virtual_registers.clone(),
-            instructions_operand_types: self.instructions_operand_types
+            instructions_operands: self.instructions_operands
         }
     }
 }
