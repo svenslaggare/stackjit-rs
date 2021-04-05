@@ -9,7 +9,7 @@ use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
 use crate::analysis::basic_block::BasicBlock;
 use crate::model::verifier::Verifier;
 use crate::mir::{InstructionMIR, InstructionMIRData, RegisterMIR};
-use crate::analysis::instructions_operands;
+use crate::analysis::determine_instructions_operand_stack;
 
 pub fn remove_unnecessary_locals(compilation_result: &mut MIRCompilationResult, basic_blocks: &mut Vec<BasicBlock>) {
     let local_registers = HashSet::<RegisterMIR>::from_iter(compilation_result.local_virtual_registers.iter().cloned());
@@ -27,13 +27,13 @@ pub fn remove_unnecessary_locals(compilation_result: &mut MIRCompilationResult, 
     });
 
     let mut index = 0;
-    compilation_result.instructions_operands.retain(|instruction| {
+    compilation_result.instructions_operand_stack.retain(|instruction| {
         let keep = valid_instructions.contains(&index);
         index += 1;
         keep
     });
 
-    compilation_result.instructions_operands = instructions_operands(compilation_result);
+    compilation_result.instructions_operand_stack = determine_instructions_operand_stack(compilation_result);
 }
 
 fn remove_unnecessary_local_for_block(compilation_result: &mut MIRCompilationResult,

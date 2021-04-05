@@ -17,7 +17,7 @@ pub struct MIRCompilationResult {
     pub num_virtual_registers: usize,
     pub local_virtual_registers: Vec<RegisterMIR>,
     pub need_zero_initialize_registers: Vec<RegisterMIR>,
-    pub instructions_operands: Vec<Vec<RegisterMIR>>
+    pub instructions_operand_stack: Vec<Vec<RegisterMIR>>
 }
 
 pub struct InstructionMIRCompiler<'a> {
@@ -304,7 +304,7 @@ impl<'a> InstructionMIRCompiler<'a> {
             num_virtual_registers: self.max_num_virtual_register,
             local_virtual_registers: self.local_virtual_registers.clone(),
             need_zero_initialize_registers: self.local_virtual_registers.clone(),
-            instructions_operands: self.instructions_operands
+            instructions_operand_stack: self.instructions_operands
         }
     }
 }

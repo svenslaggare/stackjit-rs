@@ -202,7 +202,7 @@ impl<'a> StackFrameOperandsIterator<'a> {
     }
 
     fn operand_registers(&self) -> &'a Vec<RegisterMIR> {
-        &self.stack_frame.compilation_data.mir_compilation_result.instructions_operands[self.stack_frame.instruction_index]
+        &self.stack_frame.compilation_data.mir_compilation_result.instructions_operand_stack[self.stack_frame.instruction_index]
     }
 }
 

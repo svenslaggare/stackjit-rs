@@ -48,7 +48,7 @@ pub fn create_label_mapping(instructions: &Vec<InstructionMIR>) -> HashMap<Branc
     mapping
 }
 
-pub fn instructions_operands(compilation_result: &mut MIRCompilationResult) -> Vec<Vec<RegisterMIR>> {
+pub fn determine_instructions_operand_stack(compilation_result: &mut MIRCompilationResult) -> Vec<Vec<RegisterMIR>> {
     let mut operand_stack = Vec::new();
     let mut instructions_operands = Vec::new();
     let local_registers = HashSet::<RegisterMIR>::from_iter(compilation_result.local_virtual_registers.iter().cloned());
