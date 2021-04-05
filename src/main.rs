@@ -11,6 +11,7 @@ mod optimization;
 mod runtime;
 mod engine;
 mod vm;
+mod parser;
 mod execution_tests;
 
 use crate::model::instruction::Instruction;

@@ -40,7 +40,7 @@ impl JitCompiler {
                             binder: &mut Binder,
                             type_storage: &mut TypeStorage,
                             function: &Function) {
-        println!("{}", function.declaration());
+        println!("func {}", function.declaration());
         println!("{{");
 
         let (compilation_result, instructions_ir) = self.compile_ir(binder, type_storage, function);

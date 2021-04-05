@@ -64,6 +64,18 @@ impl TypeId {
     pub fn is_same_type(&self, other: &TypeId) -> bool {
         self == other
     }
+
+    pub fn from_str(text: &str) -> Option<TypeId> {
+        if text == "Void" {
+            Some(TypeId::Void)
+        } else if text == "Int" {
+            Some(TypeId::Int32)
+        } else if text == "Float" {
+            Some(TypeId::Float32)
+        } else {
+            None
+        }
+    }
 }
 
 impl std::fmt::Display for TypeId {
@@ -73,10 +85,10 @@ impl std::fmt::Display for TypeId {
                 write!(f, "Void")
             }
             TypeId::Int32 => {
-                write!(f, "Int32")
+                write!(f, "Int")
             }
             TypeId::Float32 => {
-                write!(f, "Float32")
+                write!(f, "Float")
             }
             TypeId::Array(element) => {
                 write!(f, "Ref.Array[{}]", element)

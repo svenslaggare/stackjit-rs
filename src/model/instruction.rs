@@ -3,7 +3,7 @@ use crate::model::typesystem::TypeId;
 
 pub type BranchTarget = u32;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Instruction {
     LoadInt32(i32),
     LoadFloat32(f32),
