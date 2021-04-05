@@ -4,7 +4,8 @@ Simple virtual machine for a stack-based assembler language written in Rust (por
 Features:
 * Written in Rust.
 * Stack-based ISA.
-* Supports arrays and Classes.
+* JIT compiler for x64.
+    * Register allocations.
+    * Basic optimizations.
+* Supports arrays and classes.
 * Compacting garbage collector.
-* Register allocation.
-* Basic optimizations.
