@@ -3,6 +3,7 @@ use std::str::FromStr;
 use crate::model::function::{Function, FunctionDeclaration, FunctionSignature};
 use crate::model::typesystem::TypeId;
 use crate::model::instruction::Instruction;
+use crate::model::class::{Class, Field};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
@@ -55,7 +56,7 @@ pub fn tokenize(text: &str) -> ParserResult<Vec<Token>> {
 
             loop {
                 match char_iterator.peek() {
-                    Some(next) if next.is_alphanumeric() || next == &'_' => {
+                    Some(next) if next.is_alphanumeric() || next == &'_' || next == &'.' || next == &'[' || next == &']' => {
                         identifier.push(char_iterator.next().unwrap());
                     }
                     _ => {
@@ -145,7 +146,8 @@ pub fn tokenize(text: &str) -> ParserResult<Vec<Token>> {
 pub struct Parser {
     tokens: Vec<Token>,
     index: isize,
-    functions: Vec<Function>
+    functions: Vec<Function>,
+    classes: Vec<Class>
 }
 
 impl Parser {
@@ -153,11 +155,12 @@ impl Parser {
         Parser {
             tokens,
             index: -1,
-            functions: Vec::new()
+            functions: Vec::new(),
+            classes: Vec::new()
         }
     }
 
-    pub fn parse(&mut self) -> ParserResult<Vec<Function>> {
+    pub fn parse(&mut self) -> ParserResult<(Vec<Function>, Vec<Class>)> {
         self.next()?;
 
         loop {
@@ -168,7 +171,7 @@ impl Parser {
             }
         }
 
-        Ok(std::mem::take(&mut self.functions))
+        Ok((std::mem::take(&mut self.functions), std::mem::take(&mut self.classes)))
     }
 
     fn parse_top_level(&mut self) -> ParserResult<()> {
@@ -180,6 +183,8 @@ impl Parser {
                 Ok(())
             }
             Token::Class => {
+                let class = self.parse_class()?;
+                self.classes.push(class);
                 Ok(())
             }
             _ => { return Err(ParserError::ExpectedFunctionOrClass); }
@@ -409,6 +414,37 @@ impl Parser {
         }
     }
 
+    fn parse_class(&mut self) -> ParserResult<Class> {
+        self.next()?;
+        let name = self.next_identifier()?;
+
+        match self.current() {
+            Token::LeftCurlyParentheses => { self.next()?; }
+            _ => { return Err(ParserError::ExpectedLeftCurlyParentheses); }
+        }
+
+        let mut fields = Vec::new();
+
+        loop {
+            let current = self.current().clone();
+            match current {
+                Token::RightCurlyParentheses => {
+                    self.next()?;
+                    break;
+                }
+                Token::Identifier(field_name) => {
+                    self.next()?;
+
+                    let field_type = self.next_type_id()?;
+                    fields.push(Field::new(field_name, field_type));
+                }
+                _ => { return Err(ParserError::ExpectedIdentifier); }
+            }
+        }
+
+        Ok(Class::new(name, fields))
+    }
+
     fn next_type_id(&mut self) -> ParserResult<TypeId> {
         parse_type(&self.next_identifier()?)
     }
@@ -474,7 +510,7 @@ fn test_parse_function1() {
     ";
 
     let mut parser = Parser::new(tokenize(text).unwrap());
-    let functions = parser.parse().unwrap();
+    let (functions, _) = parser.parse().unwrap();
 
     assert_eq!(1, functions.len());
 
@@ -488,7 +524,6 @@ fn test_parse_function1() {
     assert_eq!(Instruction::Add, function.instructions()[2]);
     assert_eq!(Instruction::Return, function.instructions()[3]);
 }
-
 
 #[test]
 fn test_parse_function2() {
@@ -505,7 +540,7 @@ fn test_parse_function2() {
     ";
 
     let mut parser = Parser::new(tokenize(text).unwrap());
-    let functions = parser.parse().unwrap();
+    let (functions, _) = parser.parse().unwrap();
 
     assert_eq!(1, functions.len());
 
@@ -536,7 +571,7 @@ fn test_parse_function3() {
     ";
 
     let mut parser = Parser::new(tokenize(text).unwrap());
-    let functions = parser.parse().unwrap();
+    let (functions, _) = parser.parse().unwrap();
 
     assert_eq!(1, functions.len());
 
@@ -564,7 +599,7 @@ fn test_parse_function4() {
     ";
 
     let mut parser = Parser::new(tokenize(text).unwrap());
-    let functions = parser.parse().unwrap();
+    let (functions, _) = parser.parse().unwrap();
 
     assert_eq!(1, functions.len());
 
@@ -597,7 +632,7 @@ fn test_parse_function5() {
     ";
 
     let mut parser = Parser::new(tokenize(text).unwrap());
-    let functions = parser.parse().unwrap();
+    let (functions, _) = parser.parse().unwrap();
 
     assert_eq!(1, functions.len());
 
@@ -641,7 +676,7 @@ fn test_parse_function6() {
     ";
 
     let mut parser = Parser::new(tokenize(text).unwrap());
-    let functions = parser.parse().unwrap();
+    let (functions, _) = parser.parse().unwrap();
 
     assert_eq!(2, functions.len());
 
@@ -665,4 +700,154 @@ fn test_parse_function6() {
     assert_eq!(Instruction::LoadLocal(0), function.instructions()[1]);
     assert_eq!(Instruction::Add, function.instructions()[2]);
     assert_eq!(Instruction::Return, function.instructions()[3]);
+}
+
+#[test]
+fn test_parse_function7() {
+    let text = r"
+    func test() Int
+    {
+        .locals 1
+        .local 0 Ref.Point
+        NEWOBJ Point
+        STLOC 0
+        RET
+    }
+    ";
+
+    let mut parser = Parser::new(tokenize(text).unwrap());
+    let (functions, _) = parser.parse().unwrap();
+
+    assert_eq!(1, functions.len());
+
+    let function = &functions[0];
+    assert_eq!("test", function.declaration().name());
+    assert_eq!(&Vec::<TypeId>::new(), function.declaration().parameters());
+    assert_eq!(&TypeId::Int32, function.declaration().return_type());
+    assert_eq!(&vec![TypeId::Class("Point".to_owned())], function.locals());
+
+    assert_eq!(Instruction::NewObject("Point".to_owned()), function.instructions()[0]);
+    assert_eq!(Instruction::StoreLocal(0), function.instructions()[1]);
+    assert_eq!(Instruction::Return, function.instructions()[2]);
+}
+
+#[test]
+fn test_parse_function8() {
+    let text = r"
+    func test() Ref.Point
+    {
+        .locals 1
+        .local 0 Ref.Point
+        NEWOBJ Point
+        RET
+    }
+    ";
+
+    let mut parser = Parser::new(tokenize(text).unwrap());
+    let (functions, _) = parser.parse().unwrap();
+
+    assert_eq!(1, functions.len());
+
+    let function = &functions[0];
+    assert_eq!("test", function.declaration().name());
+    assert_eq!(&Vec::<TypeId>::new(), function.declaration().parameters());
+    assert_eq!(&TypeId::Class("Point".to_owned()), function.declaration().return_type());
+    assert_eq!(&vec![TypeId::Class("Point".to_owned())], function.locals());
+
+    assert_eq!(Instruction::NewObject("Point".to_owned()), function.instructions()[0]);
+    assert_eq!(Instruction::Return, function.instructions()[1]);
+}
+
+#[test]
+fn test_parse_function9() {
+    let text = r"
+    func test() Ref.Array[Int]
+    {
+        LDINT 4711
+        NEWARR Int
+        RET
+    }
+    ";
+
+    let mut parser = Parser::new(tokenize(text).unwrap());
+    let (functions, _) = parser.parse().unwrap();
+
+    assert_eq!(1, functions.len());
+
+    let function = &functions[0];
+    assert_eq!("test", function.declaration().name());
+    assert_eq!(&Vec::<TypeId>::new(), function.declaration().parameters());
+    assert_eq!(&TypeId::Array(Box::new(TypeId::Int32)), function.declaration().return_type());
+
+    assert_eq!(Instruction::LoadInt32(4711), function.instructions()[0]);
+    assert_eq!(Instruction::NewArray(TypeId::Int32), function.instructions()[1]);
+    assert_eq!(Instruction::Return, function.instructions()[2]);
+}
+
+#[test]
+fn test_parse_classes1() {
+    let text = r"
+    class Point
+    {
+        x Int
+        y Float
+    }
+    ";
+
+    let mut parser = Parser::new(tokenize(text).unwrap());
+    let (_, classes) = parser.parse().unwrap();
+
+    assert_eq!(1, classes.len());
+
+    let class = &classes[0];
+    assert_eq!("Point", class.name());
+    assert_eq!("x", class.fields()[0].name());
+    assert_eq!(&TypeId::Int32, class.fields()[0].type_id());
+
+    assert_eq!("y", class.fields()[1].name());
+    assert_eq!(&TypeId::Float32, class.fields()[1].type_id());
+}
+
+#[test]
+fn test_parse1() {
+    let text = r"
+    class Point
+    {
+        x Int
+        y Float
+    }
+
+    func test(Int Int) Int
+    {
+        LDINT 100
+        LDINT 200
+        ADD
+        RET
+    }
+    ";
+
+    let mut parser = Parser::new(tokenize(text).unwrap());
+    let (functions, classes) = parser.parse().unwrap();
+
+    assert_eq!(1, functions.len());
+
+    let function = &functions[0];
+    assert_eq!("test", function.declaration().name());
+    assert_eq!(&vec![TypeId::Int32, TypeId::Int32], function.declaration().parameters());
+    assert_eq!(&TypeId::Int32, function.declaration().return_type());
+
+    assert_eq!(Instruction::LoadInt32(100), function.instructions()[0]);
+    assert_eq!(Instruction::LoadInt32(200), function.instructions()[1]);
+    assert_eq!(Instruction::Add, function.instructions()[2]);
+    assert_eq!(Instruction::Return, function.instructions()[3]);
+
+    assert_eq!(1, classes.len());
+
+    let class = &classes[0];
+    assert_eq!("Point", class.name());
+    assert_eq!("x", class.fields()[0].name());
+    assert_eq!(&TypeId::Int32, class.fields()[0].type_id());
+
+    assert_eq!("y", class.fields()[1].name());
+    assert_eq!(&TypeId::Float32, class.fields()[1].type_id());
 }

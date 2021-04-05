@@ -3,6 +3,7 @@ use std::iter::FromIterator;
 
 use crate::model::typesystem::TypeId;
 
+#[derive(Debug)]
 pub struct Field {
     name: String,
     field_type: TypeId,

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::ops::Deref;
+use std::iter::FromIterator;
 
 use crate::model::class::Class;
 
@@ -66,12 +67,32 @@ impl TypeId {
     }
 
     pub fn from_str(text: &str) -> Option<TypeId> {
-        if text == "Void" {
+        TypeId::parse_type(&text.chars().collect::<Vec<_>>()[..])
+    }
+
+    fn parse_type(text: &[char]) -> Option<TypeId> {
+        if text.is_empty() {
+            return None;
+        }
+
+        let void_chars = "Void".chars().collect::<Vec<_>>();
+        let int_chars = "Int".chars().collect::<Vec<_>>();
+        let float_chars = "Float".chars().collect::<Vec<_>>();
+        let ref_array_chars = "Ref.Array[".chars().collect::<Vec<_>>();
+        let ref_chars = "Ref.".chars().collect::<Vec<_>>();
+
+        if text.starts_with(&void_chars[..]) {
             Some(TypeId::Void)
-        } else if text == "Int" {
+        } else if text.starts_with(&int_chars[..]) {
             Some(TypeId::Int32)
-        } else if text == "Float" {
+        } else if text.starts_with(&float_chars[..]) {
             Some(TypeId::Float32)
+        } else if text.starts_with(&ref_array_chars[..]) {
+            let element_type = TypeId::parse_type(&text[ref_array_chars.len()..])?;
+            Some(TypeId::Array(Box::new(element_type)))
+        } else if text.starts_with(&ref_chars[..]) {
+            let end = text.iter().position(|c| c == &']').unwrap_or(text.len());
+            Some(TypeId::Class(String::from_iter(&text[ref_chars.len()..end])))
         } else {
             None
         }
@@ -98,6 +119,26 @@ impl std::fmt::Display for TypeId {
             }
         }
     }
+}
+
+#[test]
+fn test_parse1() {
+    assert_eq!(Some(TypeId::Int32), TypeId::from_str("Int"));
+    assert_eq!(Some(TypeId::Float32), TypeId::from_str("Float"));
+    assert_eq!(Some(TypeId::Void), TypeId::from_str("Void"));
+}
+
+#[test]
+fn test_parse2() {
+    assert_eq!(Some(TypeId::Array(Box::new(TypeId::Int32))), TypeId::from_str("Ref.Array[Int]"));
+    assert_eq!(Some(TypeId::Array(Box::new(TypeId::Array(Box::new(TypeId::Int32))))), TypeId::from_str("Ref.Array[Ref.Array[Int]]"));
+}
+
+#[test]
+fn test_parse3() {
+    assert_eq!(Some(TypeId::Class("Point".to_owned())), TypeId::from_str("Ref.Point"));
+    assert_eq!(Some(TypeId::Array(Box::new(TypeId::Class("Point".to_owned())))), TypeId::from_str("Ref.Array[Ref.Point]"));
+    assert_eq!(Some(TypeId::Array(Box::new(TypeId::Array(Box::new(TypeId::Class("Point".to_owned())))))), TypeId::from_str("Ref.Array[Ref.Array[Ref.Point]]"));
 }
 
 pub struct Type {
