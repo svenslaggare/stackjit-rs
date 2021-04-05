@@ -57,13 +57,13 @@ pub fn determine_instructions_operand_stack(compilation_result: &MIRCompilationR
     let mut instructions_operands = Vec::new();
     let local_registers = HashSet::<RegisterMIR>::from_iter(compilation_result.local_virtual_registers.iter().cloned());
 
-    let mut pop_if_not_local = |operand_stack: &mut Vec<RegisterMIR>, register: &RegisterMIR| {
+    let pop_if_not_local = |operand_stack: &mut Vec<RegisterMIR>, register: &RegisterMIR| {
         if !local_registers.contains(register) {
             operand_stack.pop();
         }
     };
 
-    let mut push_if_not_local = |operand_stack: &mut Vec<RegisterMIR>, register: &RegisterMIR| {
+    let push_if_not_local = |operand_stack: &mut Vec<RegisterMIR>, register: &RegisterMIR| {
         if !local_registers.contains(register) {
             operand_stack.push(register.clone());
         }

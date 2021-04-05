@@ -129,6 +129,33 @@ impl InstructionMIRData {
         }
     }
 
+    pub fn assign_register_mut(&mut self) -> Option<&mut RegisterMIR> {
+        match self {
+            InstructionMIRData::LoadInt32(register, _) => Some(register),
+            InstructionMIRData::LoadFloat32(register, _) => Some(register),
+            InstructionMIRData::Move(register, _) => Some(register),
+            InstructionMIRData::AddInt32(register, _, _) => Some(register),
+            InstructionMIRData::SubInt32(register, _, _) => Some(register),
+            InstructionMIRData::AddFloat32(register, _, _) => Some(register),
+            InstructionMIRData::SubFloat32(register, _, _) => Some(register),
+            InstructionMIRData::Return(_) => None,
+            InstructionMIRData::Call(_, register, _) => register.as_mut(),
+            InstructionMIRData::LoadArgument(_, register) => Some(register),
+            InstructionMIRData::LoadNull(register) => Some(register),
+            InstructionMIRData::NewArray(_, register, _) => Some(register),
+            InstructionMIRData::LoadElement(_, register, _, _) => Some(register),
+            InstructionMIRData::NewObject(_, register) => Some(register),
+            InstructionMIRData::GarbageCollect => None,
+            InstructionMIRData::LoadField(_, _, register, _) => Some(register),
+            InstructionMIRData::StoreField(_, _, _, _) => None,
+            InstructionMIRData::StoreElement(_, _, _, _) => None,
+            InstructionMIRData::LoadArrayLength(_, register) => Some(register),
+            InstructionMIRData::BranchLabel(_) => None,
+            InstructionMIRData::Branch(_) => None,
+            InstructionMIRData::BranchCondition(_, _, _, _, _) => None
+        }
+    }
+
     pub fn assign_virtual_register(&self) -> Option<VirtualRegister> {
         self.assign_register().map(|register| VirtualRegister::from(&register))
     }
@@ -169,7 +196,6 @@ impl InstructionMIRData {
             InstructionMIRData::SubInt32(_, op1, op2) => vec![op1, op2],
             InstructionMIRData::AddFloat32(_, op1, op2) => vec![op1, op2],
             InstructionMIRData::SubFloat32(_, op1, op2) => vec![op1, op2],
-            // InstructionMIRData::Return(register) => Vec::from_iter(register.as_mut().iter_mut()),
             InstructionMIRData::Return(register) => register.as_mut().map(|r| vec![r]).unwrap_or_else(|| Vec::new()),
             InstructionMIRData::Call(_, _, arguments) => arguments.iter_mut().map(|r| r).collect(),
             InstructionMIRData::LoadArgument(_, _) => Vec::new(),
