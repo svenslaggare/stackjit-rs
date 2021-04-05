@@ -2,10 +2,14 @@ use std::collections::{HashMap, HashSet};
 
 use crate::compiler::ir::BranchLabel;
 use crate::mir::{InstructionMIR, InstructionMIRData, RegisterMIR};
-use crate::model::typesystem::TypeId;
+use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::optimization::null_check_elision::InstructionsRegisterNullStatus;
-use crate::mir::compiler::MIRCompilationResult;
+use crate::mir::compiler::{MIRCompilationResult, InstructionMIRCompiler};
 use std::iter::FromIterator;
+use crate::model::function::{Function, FunctionDeclaration};
+use crate::model::instruction::Instruction;
+use crate::model::binder::Binder;
+use crate::model::verifier::Verifier;
 
 pub mod basic_block;
 pub mod control_flow_graph;
@@ -48,7 +52,7 @@ pub fn create_label_mapping(instructions: &Vec<InstructionMIR>) -> HashMap<Branc
     mapping
 }
 
-pub fn determine_instructions_operand_stack(compilation_result: &mut MIRCompilationResult) -> Vec<Vec<RegisterMIR>> {
+pub fn determine_instructions_operand_stack(compilation_result: &MIRCompilationResult) -> Vec<Vec<RegisterMIR>> {
     let mut operand_stack = Vec::new();
     let mut instructions_operands = Vec::new();
     let local_registers = HashSet::<RegisterMIR>::from_iter(compilation_result.local_virtual_registers.iter().cloned());
@@ -68,83 +72,75 @@ pub fn determine_instructions_operand_stack(compilation_result: &mut MIRCompilat
     for instruction in &compilation_result.instructions {
         instructions_operands.push(operand_stack.clone());
 
-        match &instruction.data {
-            InstructionMIRData::LoadInt32(destination, _) => {
-                push_if_not_local(&mut operand_stack, destination);
-            }
-            InstructionMIRData::LoadFloat32(destination, _) => {
-                push_if_not_local(&mut operand_stack, destination);
-            }
-            InstructionMIRData::Move(destination, source) => {
-                pop_if_not_local(&mut operand_stack, source);
-                push_if_not_local(&mut operand_stack, destination);
-            }
-            InstructionMIRData::AddInt32(destination, op1, op2)
-            | InstructionMIRData::SubInt32(destination, op1, op2)
-            | InstructionMIRData::AddFloat32(destination, op1, op2)
-            | InstructionMIRData::SubFloat32(destination, op1, op2)=> {
-                pop_if_not_local(&mut operand_stack, op2);
-                pop_if_not_local(&mut operand_stack, op1);
-                push_if_not_local(&mut operand_stack, destination);
-            }
-            InstructionMIRData::Return(source) => {
-                if let Some(source) = source {
-                    push_if_not_local(&mut operand_stack, source);
-                }
-            }
-            InstructionMIRData::Call(_, destination, arguments) => {
-                for argument in arguments {
-                    pop_if_not_local(&mut operand_stack, argument);
-                }
+        for use_register in instruction.data.use_registers().iter().rev() {
+            pop_if_not_local(&mut operand_stack, use_register);
+        }
 
-                if let Some(destination) = destination {
-                    push_if_not_local(&mut operand_stack, destination);
-                }
-            }
-            InstructionMIRData::LoadArgument(_, destination) => {
-                push_if_not_local(&mut operand_stack, destination);
-            }
-            InstructionMIRData::LoadNull(destination) => {
-                push_if_not_local(&mut operand_stack, destination);
-            }
-            InstructionMIRData::NewArray(_, destination, size) => {
-                pop_if_not_local(&mut operand_stack, size);
-                push_if_not_local(&mut operand_stack, destination);
-            }
-            InstructionMIRData::LoadElement(_, destination, array_ref, index) => {
-                pop_if_not_local(&mut operand_stack, index);
-                pop_if_not_local(&mut operand_stack, array_ref);
-                push_if_not_local(&mut operand_stack, destination);
-            }
-            InstructionMIRData::StoreElement(_, array_ref, index, value) => {
-                pop_if_not_local(&mut operand_stack, value);
-                pop_if_not_local(&mut operand_stack, index);
-                pop_if_not_local(&mut operand_stack, array_ref);
-            }
-            InstructionMIRData::LoadArrayLength(destination, array_ref) => {
-                pop_if_not_local(&mut operand_stack, array_ref);
-                push_if_not_local(&mut operand_stack, destination);
-            }
-            InstructionMIRData::NewObject(_, destination) => {
-                push_if_not_local(&mut operand_stack, destination);
-            }
-            InstructionMIRData::LoadField(_, _, destination, class_ref) => {
-                pop_if_not_local(&mut operand_stack, class_ref);
-                push_if_not_local(&mut operand_stack, destination);
-            }
-            InstructionMIRData::StoreField(_, _, class_ref, value) => {
-                pop_if_not_local(&mut operand_stack, value);
-                pop_if_not_local(&mut operand_stack, class_ref);
-            }
-            InstructionMIRData::GarbageCollect => {}
-            InstructionMIRData::BranchLabel(_) => {}
-            InstructionMIRData::Branch(_) => {}
-            InstructionMIRData::BranchCondition(_, _, _, op1, op2) => {
-                pop_if_not_local(&mut operand_stack, op2);
-                pop_if_not_local(&mut operand_stack, op1);
-            }
+        if let Some(assign_register) = instruction.data.assign_register() {
+            push_if_not_local(&mut operand_stack, &assign_register);
         }
     }
 
     instructions_operands
+}
+
+#[test]
+fn test_determine_instructions_operand_stack1() {
+    let mut function = Function::new(
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        vec![TypeId::Int32],
+        vec![
+            Instruction::LoadInt32(1000),
+            Instruction::LoadInt32(2000),
+            Instruction::Add,
+            Instruction::StoreLocal(0),
+            Instruction::LoadInt32(0),
+            Instruction::Return
+        ]
+    );
+
+    let binder = Binder::new();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
+
+    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    compiler.compile(function.instructions());
+    let result = compiler.done();
+
+    let instructions_operand_stack = determine_instructions_operand_stack(&result);
+    assert_eq!(result.instructions_operand_stack, instructions_operand_stack);
+}
+
+#[test]
+fn test_determine_instructions_operand_stack2() {
+    let mut function = Function::new(
+        FunctionDeclaration::new_managed("test".to_owned(), vec![], TypeId::Int32),
+        vec![TypeId::Int32, TypeId::Int32],
+        vec![
+            Instruction::LoadInt32(1337),
+            Instruction::StoreLocal(0),
+            Instruction::LoadInt32(4711),
+            Instruction::StoreLocal(1),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadLocal(1),
+            Instruction::Add,
+
+            Instruction::LoadLocal(1),
+            Instruction::Add,
+
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let type_storage = TypeStorage::new();
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
+
+    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    compiler.compile(function.instructions());
+    let result = compiler.done();
+
+    let instructions_operand_stack = determine_instructions_operand_stack(&result);
+    assert_eq!(result.instructions_operand_stack, instructions_operand_stack);
 }
