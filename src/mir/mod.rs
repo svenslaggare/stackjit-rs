@@ -70,6 +70,7 @@ pub enum InstructionMIRData {
     LoadField(TypeId, String, RegisterMIR, RegisterMIR),
     StoreField(TypeId, String, RegisterMIR, RegisterMIR),
     GarbageCollect,
+    PrintStackFrame,
     BranchLabel(BranchLabel),
     Branch(BranchLabel),
     BranchCondition(Condition, TypeId, BranchLabel, RegisterMIR, RegisterMIR)
@@ -96,6 +97,7 @@ impl InstructionMIRData {
             InstructionMIRData::LoadArrayLength(_, _) => "LoadArrayLength".to_owned(),
             InstructionMIRData::NewObject(_, _) => "NewObject".to_owned(),
             InstructionMIRData::GarbageCollect => "GarbageCollect".to_owned(),
+            InstructionMIRData::PrintStackFrame => "PrintStackFrame".to_owned(),
             InstructionMIRData::LoadField(_, _, _, _) => "LoadField".to_owned(),
             InstructionMIRData::StoreField(_, _, _, _) => "StoreField".to_owned(),
             InstructionMIRData::BranchLabel(_) => "BranchLabel".to_owned(),
@@ -122,6 +124,7 @@ impl InstructionMIRData {
             InstructionMIRData::LoadElement(_, register, _, _) => Some(register.clone()),
             InstructionMIRData::NewObject(_, register) => Some(register.clone()),
             InstructionMIRData::GarbageCollect => None,
+            InstructionMIRData::PrintStackFrame => None,
             InstructionMIRData::LoadField(_, _, register, _) => Some(register.clone()),
             InstructionMIRData::StoreField(_, _, _, _) => None,
             InstructionMIRData::StoreElement(_, _, _, _) => None,
@@ -150,6 +153,7 @@ impl InstructionMIRData {
             InstructionMIRData::LoadElement(_, register, _, _) => Some(register),
             InstructionMIRData::NewObject(_, register) => Some(register),
             InstructionMIRData::GarbageCollect => None,
+            InstructionMIRData::PrintStackFrame => None,
             InstructionMIRData::LoadField(_, _, register, _) => Some(register),
             InstructionMIRData::StoreField(_, _, _, _) => None,
             InstructionMIRData::StoreElement(_, _, _, _) => None,
@@ -186,6 +190,7 @@ impl InstructionMIRData {
             InstructionMIRData::LoadField(_, _, _, op) => vec![op.clone()],
             InstructionMIRData::StoreField(_, _, op1, op2) => vec![op1.clone(), op2.clone()],
             InstructionMIRData::GarbageCollect => Vec::new(),
+            InstructionMIRData::PrintStackFrame => Vec::new(),
             InstructionMIRData::BranchLabel(_) => Vec::new(),
             InstructionMIRData::Branch(_) => Vec::new(),
             InstructionMIRData::BranchCondition(_, _, _, op1, op2) => vec![op1.clone(), op2.clone()]
@@ -214,6 +219,7 @@ impl InstructionMIRData {
             InstructionMIRData::LoadField(_, _, _, op) => vec![op],
             InstructionMIRData::StoreField(_, _, op1, op2) => vec![op1, op2],
             InstructionMIRData::GarbageCollect => Vec::new(),
+            InstructionMIRData::PrintStackFrame => Vec::new(),
             InstructionMIRData::BranchLabel(_) => Vec::new(),
             InstructionMIRData::Branch(_) => Vec::new(),
             InstructionMIRData::BranchCondition(_, _, _, op1, op2) => vec![op1, op2]

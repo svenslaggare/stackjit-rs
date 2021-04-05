@@ -20,6 +20,13 @@ impl Binder {
             std::ptr::null_mut()
         ));
 
+        binder.define(FunctionDeclaration::new_external(
+            "std.gc.print_stack_frame".to_owned(),
+            Vec::new(),
+            TypeId::Void,
+            std::ptr::null_mut()
+        ));
+
         binder
     }
 

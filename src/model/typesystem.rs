@@ -74,7 +74,7 @@ impl TypeId {
         if text.is_empty() {
             return None;
         }
-        
+
         let void_chars = TypeId::Void.to_string().chars().collect::<Vec<_>>();
         let int_chars = TypeId::Int32.to_string().chars().collect::<Vec<_>>();
         let float_chars = TypeId::Float32.to_string().chars().collect::<Vec<_>>();

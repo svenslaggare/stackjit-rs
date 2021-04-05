@@ -13,6 +13,7 @@ fn test_stack_frame1() {
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),
+            Instruction::Call(FunctionSignature { name: "std.gc.print_stack_frame".to_string(), parameters: vec![] }),
             Instruction::NewArray(TypeId::Int32),
             Instruction::Return,
         ]
@@ -35,11 +36,11 @@ fn test_stack_frame1() {
             Instruction::LoadInt32(1000),
 
             Instruction::LoadInt32(4711),
+            Instruction::Call(FunctionSignature { name: "std.gc.print_stack_frame".to_string(), parameters: vec![] }),
             Instruction::NewArray(TypeId::Int32),
             Instruction::StoreLocal(0),
 
             Instruction::LoadInt32(1337),
-            // Instruction::NewArray(Type::Int32),
             Instruction::Call(FunctionSignature { name: "create_array".to_string(), parameters: vec![TypeId::Int32] }),
             Instruction::StoreLocal(1),
 

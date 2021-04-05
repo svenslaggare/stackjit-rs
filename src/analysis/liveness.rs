@@ -35,8 +35,9 @@ pub fn compute_liveness(compilation_result: &MIRCompilationResult,
     let (use_sites, assign_sites) = get_register_usage(instructions, basic_blocks, control_flow_graph);
 
     for register in virtual_registers {
+        let mut alive_at = HashSet::new();
+
         if let Some(register_use_sites) = use_sites.get(&register) {
-            let mut alive_at = HashSet::new();
             compute_liveness_for_register(
                 instructions,
                 basic_blocks,
@@ -45,26 +46,20 @@ pub fn compute_liveness(compilation_result: &MIRCompilationResult,
                 register_use_sites,
                 &mut alive_at
             );
-
-            if locals_references.contains(&register.number) {
-                alive_at.extend(0..instructions.len());
-            }
-
-            live_intervals.push(get_live_interval(&register, &alive_at));
         } else {
             //This mean that the register is not used. Atm, we do not remove write-only virtual registers.
             //So we need to compute the liveness information, else there won't exist any liveness information for the register.
-            let mut alive_at = HashSet::new();
             for assign_site in &assign_sites[&register] {
                 alive_at.insert(basic_blocks[assign_site.block_index].start_offset + assign_site.offset);
             }
-
-            if locals_references.contains(&register.number) {
-                alive_at.extend(0..instructions.len());
-            }
-
-            live_intervals.push(get_live_interval(&register, &alive_at));
         }
+
+        // Locals are alive through whole function (needed for GC)
+        if locals_references.contains(&register.number) {
+            alive_at.extend(0..instructions.len());
+        }
+
+        live_intervals.push(get_live_interval(&register, &alive_at));
     }
 
     live_intervals
