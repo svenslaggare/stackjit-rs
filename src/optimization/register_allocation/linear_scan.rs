@@ -2,10 +2,10 @@ use std::cmp::Ordering;
 use std::collections::{BTreeSet, HashMap};
 use std::iter::FromIterator;
 
-use crate::analysis::{VirtualRegister, VirtualRegisterType};
+use crate::analysis::{VirtualRegister, VirtualRegisterType, liveness};
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
-use crate::analysis::liveness::{compute_liveness, LiveInterval};
+use crate::analysis::liveness::{LiveInterval};
 use crate::model::binder::Binder;
 use crate::mir::{branches, InstructionMIR, RegisterMIR};
 use crate::mir::compiler::{InstructionMIRCompiler, MIRCompilationResult};
@@ -188,9 +188,7 @@ impl Ord for LiveIntervalByEndPoint {
 fn analyze(compilation_result: &MIRCompilationResult) -> (Vec<BasicBlock>, ControlFlowGraph, Vec<LiveInterval>) {
     let blocks = BasicBlock::create_blocks(&compilation_result.instructions);
     let control_flow_graph = ControlFlowGraph::new(&compilation_result.instructions, &blocks);
-
-    let live_intervals = compute_liveness(compilation_result, &blocks, &control_flow_graph);
-
+    let live_intervals = liveness::compute(compilation_result, &blocks, &control_flow_graph);
     (blocks, control_flow_graph, live_intervals)
 }
 

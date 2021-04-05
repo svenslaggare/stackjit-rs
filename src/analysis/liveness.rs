@@ -19,9 +19,9 @@ pub struct LiveInterval {
     pub register: VirtualRegister
 }
 
-pub fn compute_liveness(compilation_result: &MIRCompilationResult,
-                        basic_blocks: &Vec<BasicBlock>,
-                        control_flow_graph: &ControlFlowGraph) -> Vec<LiveInterval> {
+pub fn compute(compilation_result: &MIRCompilationResult,
+               basic_blocks: &Vec<BasicBlock>,
+               control_flow_graph: &ControlFlowGraph) -> Vec<LiveInterval> {
     let instructions = &compilation_result.instructions;
     let locals_references = HashSet::<u32>::from_iter(
         compilation_result.local_virtual_registers
@@ -244,7 +244,7 @@ fn test_liveness1() {
     let blocks = BasicBlock::create_blocks(&instructions);
     let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks);
 
-    let live_intervals = compute_liveness(&compilation_result, &blocks, &control_flow_graph);
+    let live_intervals = compute(&compilation_result, &blocks, &control_flow_graph);
 
     assert_eq!(2, live_intervals.len());
 
@@ -296,7 +296,7 @@ fn test_liveness2() {
     let blocks = BasicBlock::create_blocks(&instructions);
     let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks);
 
-    let live_intervals = compute_liveness(&compilation_result, &blocks, &control_flow_graph);
+    let live_intervals = compute(&compilation_result, &blocks, &control_flow_graph);
 
     assert_eq!(3, live_intervals.len());
 
@@ -357,7 +357,7 @@ fn test_liveness3() {
     let blocks = BasicBlock::create_blocks(&instructions);
     let control_flow_graph = ControlFlowGraph::new(&instructions, &blocks);
 
-    let live_intervals = compute_liveness(&compilation_result, &blocks, &control_flow_graph);
+    let live_intervals = compute(&compilation_result, &blocks, &control_flow_graph);
 
     assert_eq!(3, live_intervals.len());
 
