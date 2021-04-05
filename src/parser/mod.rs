@@ -158,8 +158,9 @@ impl Parser {
     }
 
     pub fn parse(&mut self) -> ParserResult<Vec<Function>> {
+        self.next()?;
+
         loop {
-            self.next()?;
             self.parse_top_level()?;
 
             if self.current() == &Token::End {
@@ -171,7 +172,8 @@ impl Parser {
     }
 
     fn parse_top_level(&mut self) -> ParserResult<()> {
-        match self.current().clone() {
+        let current = self.current().clone();
+        match current {
             Token::Function => {
                 let function = self.parse_function()?;
                 self.functions.push(function);
@@ -614,4 +616,53 @@ fn test_parse_function5() {
     assert_eq!(Instruction::StoreLocal(0), function.instructions()[7]);
     assert_eq!(Instruction::LoadLocal(0), function.instructions()[8]);
     assert_eq!(Instruction::Return, function.instructions()[9]);
+}
+
+#[test]
+fn test_parse_function6() {
+    let text = r"
+    func test1(Int Int) Int
+    {
+        LDINT 100
+        LDINT 200
+        ADD
+        RET
+    }
+
+    func test2(Int Int) Int
+    {
+        .locals 1
+        .local 0 Int
+        LDINT 100
+        LDLOC 0
+        ADD
+        RET
+    }
+    ";
+
+    let mut parser = Parser::new(tokenize(text).unwrap());
+    let functions = parser.parse().unwrap();
+
+    assert_eq!(2, functions.len());
+
+    let function = &functions[0];
+    assert_eq!("test1", function.declaration().name());
+    assert_eq!(&vec![TypeId::Int32, TypeId::Int32], function.declaration().parameters());
+    assert_eq!(&TypeId::Int32, function.declaration().return_type());
+
+    assert_eq!(Instruction::LoadInt32(100), function.instructions()[0]);
+    assert_eq!(Instruction::LoadInt32(200), function.instructions()[1]);
+    assert_eq!(Instruction::Add, function.instructions()[2]);
+    assert_eq!(Instruction::Return, function.instructions()[3]);
+
+    let function = &functions[1];
+    assert_eq!("test2", function.declaration().name());
+    assert_eq!(&vec![TypeId::Int32, TypeId::Int32], function.declaration().parameters());
+    assert_eq!(&TypeId::Int32, function.declaration().return_type());
+    assert_eq!(&vec![TypeId::Int32], function.locals());
+
+    assert_eq!(Instruction::LoadInt32(100), function.instructions()[0]);
+    assert_eq!(Instruction::LoadLocal(0), function.instructions()[1]);
+    assert_eq!(Instruction::Add, function.instructions()[2]);
+    assert_eq!(Instruction::Return, function.instructions()[3]);
 }
