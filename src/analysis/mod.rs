@@ -15,7 +15,7 @@ pub mod basic_block;
 pub mod control_flow_graph;
 pub mod liveness;
 
-pub struct AnalysisResult {
+pub struct OptimizationResult {
     pub instructions_register_null_status: InstructionsRegisterNullStatus
 }
 

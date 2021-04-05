@@ -13,10 +13,10 @@ use crate::model::verifier::Verifier;
 pub type RegisterNullStatus = HashMap<RegisterMIR, bool>;
 pub type InstructionsRegisterNullStatus = Vec<RegisterNullStatus>;
 
-pub fn compute_null_check_elision(function: &Function,
-                                  compilation_result: &MIRCompilationResult,
-                                  basic_blocks: &Vec<BasicBlock>,
-                                  control_flow_graph: &ControlFlowGraph) -> InstructionsRegisterNullStatus {
+pub fn compute(function: &Function,
+               compilation_result: &MIRCompilationResult,
+               basic_blocks: &Vec<BasicBlock>,
+               control_flow_graph: &ControlFlowGraph) -> InstructionsRegisterNullStatus {
     if basic_blocks.len() == 1 {
         compute_null_check_elision_for_block(function, compilation_result, &basic_blocks[0]).0
     } else {
@@ -529,7 +529,7 @@ fn test_branches1() {
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
     let control_flow_graph = ControlFlowGraph::new(&compilation_result.instructions, &basic_blocks);
 
-    let result = compute_null_check_elision(&function, &compilation_result, &basic_blocks, &control_flow_graph);
+    let result = compute(&function, &compilation_result, &basic_blocks, &control_flow_graph);
 
     for (block_index, block) in basic_blocks.iter().enumerate() {
         println!("Block #{}", block_index);
@@ -576,7 +576,7 @@ fn test_branches2() {
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
     let control_flow_graph = ControlFlowGraph::new(&compilation_result.instructions, &basic_blocks);
 
-    let result = compute_null_check_elision(&function, &compilation_result, &basic_blocks, &control_flow_graph);
+    let result = compute(&function, &compilation_result, &basic_blocks, &control_flow_graph);
 
     for (block_index, block) in basic_blocks.iter().enumerate() {
         println!("Block #{}", block_index);

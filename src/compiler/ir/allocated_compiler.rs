@@ -1,7 +1,7 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::iter::FromIterator;
 
-use crate::analysis::{AnalysisResult, liveness, VirtualRegister};
+use crate::analysis::{OptimizationResult, liveness, VirtualRegister};
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
 use crate::compiler::calling_conventions::{CallingConventions, float_register_call_arguments, get_call_register, register_call_arguments};
@@ -25,7 +25,7 @@ pub struct AllocatedInstructionIRCompiler<'a> {
     type_storage: &'a TypeStorage,
     function: &'a Function,
     compilation_result: &'a MIRCompilationResult,
-    analysis_result: &'a AnalysisResult,
+    optimization_result: &'a OptimizationResult,
     register_allocation: RegisterAllocation,
     instructions: Vec<InstructionIR>
 }
@@ -35,14 +35,14 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                type_storage: &'a TypeStorage,
                function: &'a Function,
                compilation_result: &'a MIRCompilationResult,
-               analysis_result: &'a AnalysisResult) -> AllocatedInstructionIRCompiler<'a> {
+               optimization_result: &'a OptimizationResult) -> AllocatedInstructionIRCompiler<'a> {
         AllocatedInstructionIRCompiler {
             binder,
             type_storage,
             function,
             instructions: Vec::new(),
             compilation_result,
-            analysis_result,
+            optimization_result: optimization_result,
             register_allocation: AllocatedInstructionIRCompiler::register_allocate(compilation_result)
         }
     }
@@ -640,7 +640,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
 
     fn can_be_null(&self, instruction_index: usize, register: &RegisterMIR) -> bool {
         assert!(register.value_type.is_reference());
-        self.analysis_result.instructions_register_null_status[instruction_index].get(register).cloned().unwrap_or(true)
+        self.optimization_result.instructions_register_null_status[instruction_index].get(register).cloned().unwrap_or(true)
     }
 
     fn push_alive_registers(&mut self, instruction_index: usize) -> Vec<(VirtualRegister, HardwareRegister)> {

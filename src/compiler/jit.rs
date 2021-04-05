@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::analysis::AnalysisResult;
+use crate::analysis::OptimizationResult;
 use crate::analysis::basic_block::BasicBlock;
 use crate::analysis::control_flow_graph::ControlFlowGraph;
 use crate::compiler::{FunctionCallType, FunctionCompilationData};
@@ -162,8 +162,8 @@ impl JitCompiler {
             &basic_blocks,
         );
 
-        let analysis_result = AnalysisResult {
-            instructions_register_null_status: null_check_elision::compute_null_check_elision(
+        let optimization_result = OptimizationResult {
+            instructions_register_null_status: null_check_elision::compute(
                 function,
                 &compilation_result,
                 &basic_blocks,
@@ -171,8 +171,8 @@ impl JitCompiler {
             )
         };
 
-        // let mut ir_compiler = InstructionIRCompiler::new(&binder, &type_storage, &function, &compilation_result, &analysis_result);
-        let mut ir_compiler = AllocatedInstructionIRCompiler::new(&binder, &type_storage, &function, &compilation_result, &analysis_result);
+        // let mut ir_compiler = InstructionIRCompiler::new(&binder, &type_storage, &function, &compilation_result, &optimization_result);
+        let mut ir_compiler = AllocatedInstructionIRCompiler::new(&binder, &type_storage, &function, &compilation_result, &optimization_result);
         ir_compiler.compile();
         let instructions_ir = ir_compiler.done();
         (compilation_result, instructions_ir)

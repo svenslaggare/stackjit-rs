@@ -1,4 +1,4 @@
-use crate::analysis::AnalysisResult;
+use crate::analysis::OptimizationResult;
 use crate::compiler::calling_conventions::{CallingConventions, float_register_call_arguments, register_call_arguments};
 use crate::compiler::ir::{HardwareRegister, HardwareRegisterExplicit, InstructionIR, Variable};
 use crate::compiler::stack_layout;
@@ -16,7 +16,7 @@ pub struct InstructionIRCompiler<'a> {
     type_storage: &'a TypeStorage,
     function: &'a Function,
     compilation_result: &'a MIRCompilationResult,
-    analysis_result: &'a AnalysisResult,
+    optimization_result: &'a OptimizationResult,
     instructions: Vec<InstructionIR>
 }
 
@@ -25,13 +25,13 @@ impl<'a> InstructionIRCompiler<'a> {
                type_storage: &'a TypeStorage,
                function: &'a Function,
                compilation_result: &'a MIRCompilationResult,
-               analysis_result: &'a AnalysisResult) -> InstructionIRCompiler<'a> {
+               optimization_result: &'a OptimizationResult) -> InstructionIRCompiler<'a> {
         InstructionIRCompiler {
             binder,
             type_storage,
             function,
             compilation_result,
-            analysis_result,
+            optimization_result,
             instructions: Vec::new()
         }
     }
@@ -313,7 +313,7 @@ impl<'a> InstructionIRCompiler<'a> {
 
     fn can_be_null(&self, instruction_index: usize, register: &RegisterMIR) -> bool {
         assert!(register.value_type.is_reference());
-        self.analysis_result.instructions_register_null_status[instruction_index].get(register).cloned().unwrap_or(true)
+        self.optimization_result.instructions_register_null_status[instruction_index].get(register).cloned().unwrap_or(true)
     }
 
     fn get_register_stack_offset(&self, register: &RegisterMIR) -> i32 {
