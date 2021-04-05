@@ -1,11 +1,11 @@
 use std::collections::{HashMap, HashSet};
+use std::iter::FromIterator;
 
 use crate::compiler::ir::BranchLabel;
 use crate::mir::{InstructionMIR, InstructionMIRData, RegisterMIR};
 use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::optimization::null_check_elision::InstructionsRegisterNullStatus;
 use crate::mir::compiler::{MIRCompilationResult, InstructionMIRCompiler};
-use std::iter::FromIterator;
 use crate::model::function::{Function, FunctionDeclaration};
 use crate::model::instruction::Instruction;
 use crate::model::binder::Binder;

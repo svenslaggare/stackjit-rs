@@ -866,7 +866,7 @@ pub mod register_mapping {
     use crate::compiler::ir::HardwareRegister;
 
     lazy_static! {
-       static ref mapping_i64: Vec<Register> = {
+       static ref MAPPING_I64: Vec<Register> = {
            vec![
                 Register::RDX,
                 Register::RCX,
@@ -877,7 +877,7 @@ pub mod register_mapping {
             ]
        };
 
-        static ref mapping_i32: Vec<Register> = {
+        static ref MAPPING_I32: Vec<Register> = {
             vec![
                 Register::EDX,
                 Register::ECX,
@@ -888,7 +888,7 @@ pub mod register_mapping {
             ]
         };
 
-        static ref mapping_f32: Vec<Register> = {
+        static ref MAPPING_F32: Vec<Register> = {
             vec![
                 Register::XMM1,
                 Register::XMM2,
@@ -903,9 +903,9 @@ pub mod register_mapping {
         match register {
             HardwareRegister::Int(index) => {
                 if is_64 {
-                    mapping_i64[index as usize]
+                    MAPPING_I64[index as usize]
                 } else {
-                    mapping_i32[index as usize]
+                    MAPPING_I32[index as usize]
                 }
             }
             HardwareRegister::IntSpill => {
@@ -916,7 +916,7 @@ pub mod register_mapping {
                 }
             }
             HardwareRegister::Float(index) => {
-                mapping_f32[index as usize]
+                MAPPING_F32[index as usize]
             }
             HardwareRegister::FloatSpill => {
                 Register::XMM0

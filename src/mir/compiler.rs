@@ -48,7 +48,7 @@ impl<'a> InstructionMIRCompiler<'a> {
 
         compiler.make_macro(
             FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] },
-            |compiler: &mut InstructionMIRCompiler, instruction_index: usize, instruction: &Instruction| {
+            |compiler: &mut InstructionMIRCompiler, instruction_index: usize, _instruction: &Instruction| {
                 compiler.instructions.push(InstructionMIR::new(
                     instruction_index,
                     InstructionMIRData::GarbageCollect

@@ -52,14 +52,14 @@ pub fn remove_unnecessary_locals(compilation_result: &mut MIRCompilationResult,
     let valid_instructions = HashSet::<usize>::from_iter(BasicBlock::linearize(basic_blocks).into_iter());
 
     let mut index = 0;
-    compilation_result.instructions.retain(|instruction| {
+    compilation_result.instructions.retain(|_| {
         let keep = valid_instructions.contains(&index);
         index += 1;
         keep
     });
 
     let mut index = 0;
-    compilation_result.instructions_operand_stack.retain(|instruction| {
+    compilation_result.instructions_operand_stack.retain(|_| {
         let keep = valid_instructions.contains(&index);
         index += 1;
         keep
@@ -96,7 +96,6 @@ fn remove_unnecessary_local_for_block(compilation_result: &mut MIRCompilationRes
                     }
                 }
             }
-            _ => {}
         }
 
         for use_register in instruction.data.use_registers() {
