@@ -560,21 +560,8 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
             }
             InstructionMIRData::BranchCondition(condition, compare_type, label, operand1, operand2) => {
                 let signed = match compare_type {
-                    TypeId::Int32 => {
-                        self.binary_operator(
-                            operand1,
-                            operand2,
-                            |instructions, op1, op2| {
-                                instructions.push(InstructionIR::Compare(TypeId::Int32, op1, op2));
-                            },
-                            |instructions, op1, op2| {
-                                instructions.push(InstructionIR::CompareFromFrameMemory(TypeId::Int32, op1, op2));
-                            },
-                            |instructions, op1, op2| {
-                                instructions.push(InstructionIR::CompareToFrameMemory(TypeId::Int32, op1, op2));
-                            }
-                        );
-                        true
+                    TypeId::Void => {
+                        panic!("Can't compare void.");
                     }
                     TypeId::Float32 => {
                         self.binary_operator_f32(
@@ -590,7 +577,22 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
 
                         false
                     }
-                    _ => { panic!("unexpected."); }
+                    _ => {
+                        self.binary_operator(
+                            operand1,
+                            operand2,
+                            |instructions, op1, op2| {
+                                instructions.push(InstructionIR::Compare(TypeId::Int32, op1, op2));
+                            },
+                            |instructions, op1, op2| {
+                                instructions.push(InstructionIR::CompareFromFrameMemory(TypeId::Int32, op1, op2));
+                            },
+                            |instructions, op1, op2| {
+                                instructions.push(InstructionIR::CompareToFrameMemory(TypeId::Int32, op1, op2));
+                            }
+                        );
+                        true
+                    }
                 };
 
                 self.instructions.push(InstructionIR::BranchCondition(

@@ -201,3 +201,114 @@ fn test_array1() {
         assert!(vm.memory_manager.is_owned(CLASS_RESULT.with(|result| *result.borrow()) as *const std::ffi::c_void));
     });
 }
+
+#[test]
+fn test_branch1() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Int32],
+        vec![
+            Instruction::NewObject("Point".to_owned()),
+            Instruction::LoadNull(TypeId::Class("Point".to_owned())),
+            Instruction::BranchEqual(6),
+
+            Instruction::LoadInt32(2000),
+            Instruction::StoreLocal(0),
+            Instruction::Branch(8),
+
+            Instruction::LoadInt32(1000),
+            Instruction::StoreLocal(0),
+
+            Instruction::LoadLocal(0),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    vm.type_storage.add_class(Class::new(
+        "Point".to_owned(),
+        vec![
+            Field::new("x".to_owned(), TypeId::Int32),
+            Field::new("y".to_owned(), TypeId::Int32),
+        ]
+    ));
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(2000, execution_result);
+}
+
+#[test]
+fn test_branch2() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Int32, TypeId::Class("Point".to_owned())],
+        vec![
+            Instruction::NewObject("Point".to_owned()),
+            Instruction::StoreLocal(1),
+
+            Instruction::LoadLocal(1),
+            Instruction::LoadLocal(1),
+            Instruction::BranchEqual(8),
+
+            Instruction::LoadInt32(2000),
+            Instruction::StoreLocal(0),
+            Instruction::Branch(10),
+
+            Instruction::LoadInt32(1000),
+            Instruction::StoreLocal(0),
+
+            Instruction::LoadLocal(0),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    vm.type_storage.add_class(Class::new(
+        "Point".to_owned(),
+        vec![
+            Field::new("x".to_owned(), TypeId::Int32),
+            Field::new("y".to_owned(), TypeId::Int32),
+        ]
+    ));
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(1000, execution_result);
+}
+
+#[test]
+fn test_branch3() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.add_function(Function::new(
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Int32],
+        vec![
+            Instruction::LoadNull(TypeId::Class("Point".to_owned())),
+            Instruction::LoadNull(TypeId::Class("Point".to_owned())),
+            Instruction::BranchEqual(6),
+
+            Instruction::LoadInt32(2000),
+            Instruction::StoreLocal(0),
+            Instruction::Branch(8),
+
+            Instruction::LoadInt32(1000),
+            Instruction::StoreLocal(0),
+
+            Instruction::LoadLocal(0),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    vm.type_storage.add_class(Class::new(
+        "Point".to_owned(),
+        vec![
+            Field::new("x".to_owned(), TypeId::Int32),
+            Field::new("y".to_owned(), TypeId::Int32),
+        ]
+    ));
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(1000, execution_result);
+}
