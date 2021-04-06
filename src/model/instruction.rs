@@ -30,7 +30,13 @@ pub enum Instruction {
     BranchGreaterThan(BranchTarget),
     BranchGreaterThanOrEqual(BranchTarget),
     BranchLessThan(BranchTarget),
-    BranchLessThanOrEqual(BranchTarget)
+    BranchLessThanOrEqual(BranchTarget),
+    CompareEqual,
+    CompareNotEqual,
+    CompareGreaterThan,
+    CompareGreaterThanOrEqual,
+    CompareLessThan,
+    CompareLessThanOrEqual
 }
 
 impl Instruction {
@@ -130,6 +136,24 @@ impl std::fmt::Display for Instruction {
             }
             Instruction::BranchLessThanOrEqual(target) => {
                 write!(f, "BranchLessThanOrEqual {}", target)
+            }
+            Instruction::CompareEqual => {
+                write!(f, "CompareEqual")
+            }
+            Instruction::CompareNotEqual => {
+                write!(f, "CompareNotEqual")
+            }
+            Instruction::CompareGreaterThan => {
+                write!(f, "CompareGreaterThan")
+            }
+            Instruction::CompareGreaterThanOrEqual => {
+                write!(f, "CompareGreaterThanOrEqual")
+            }
+            Instruction::CompareLessThan => {
+                write!(f, "CompareLessThan")
+            }
+            Instruction::CompareLessThanOrEqual => {
+                write!(f, "CompareLessThanOrEqual")
             }
         }
     }

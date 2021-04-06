@@ -147,6 +147,7 @@ fn compute_null_check_elision_for_block_internal(function: &Function,
             InstructionMIRData::BranchLabel(_) => {}
             InstructionMIRData::Branch(_) => {}
             InstructionMIRData::BranchCondition(_, _, _, _, _) => {}
+            InstructionMIRData::Compare(_, _, _, _, _) => {}
         }
     }
 

@@ -802,28 +802,49 @@ impl<'a> CodeGenerator<'a> {
                 }
             }
             InstructionIR::BranchCondition(condition, signed, target) => {
-                let compare_code = if !signed {
-                    match condition {
-                        Condition::Equal => Code::Je_rel32_64,
-                        Condition::NotEqual => Code::Jne_rel32_64,
-                        Condition::LessThan => Code::Jb_rel32_64,
-                        Condition::LessThanOrEqual => Code::Jbe_rel32_64,
-                        Condition::GreaterThan => Code::Ja_rel32_64,
-                        Condition::GreaterThanOrEqual => Code::Jae_rel32_64
-                    }
-                } else {
-                    match condition {
-                        Condition::Equal => Code::Je_rel32_64,
-                        Condition::NotEqual => Code::Jne_rel32_64,
-                        Condition::LessThan => Code::Jl_rel32_64,
-                        Condition::LessThanOrEqual => Code::Jle_rel32_64,
-                        Condition::GreaterThan => Code::Jg_rel32_64,
-                        Condition::GreaterThanOrEqual => Code::Jge_rel32_64
-                    }
-                };
-
-                let instruction_size = self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(compare_code, 0).unwrap());
+                let instruction_size = self.encode_x86_instruction_with_size(
+                    X86Instruction::try_with_branch(
+                        get_compare_instruction(*condition, *signed),
+                        0
+                    ).unwrap()
+                );
                 compilation_data.unresolved_branches.insert(self.encoder_offset - instruction_size, (*target, instruction_size));
+            }
+            InstructionIR::CompareResult(condition, signed, destination) => {
+                let destination = register_mapping::get(*destination, DataSize::Bytes4);
+
+                let compare_jump_start = self.encoder_offset;
+                self.encode_x86_instruction(X86Instruction::try_with_branch(get_compare_instruction(*condition, *signed), 0).unwrap());
+
+                // False branch
+                let false_branch_start = self.encoder_offset;
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(
+                    Code::Mov_r32_imm32,
+                    destination,
+                    0
+                ).unwrap());
+
+                // Jump over true branch
+                let jump_start = self.encoder_offset;
+                self.encode_x86_instruction_with_size(X86Instruction::try_with_branch(Code::Jmp_rel32_64, 0).unwrap());
+
+                // True branch
+                let true_branch_start = self.encoder_offset;
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(
+                    Code::Mov_r32_imm32,
+                    destination,
+                    1
+                ).unwrap());
+
+                // Set jump targets
+                let mut buffer = self.encoder.take_buffer();
+
+                unsafe {
+                    *(buffer.as_mut_ptr().add(jump_start + 1) as *mut i32) = (self.encoder_offset as isize - true_branch_start as isize) as i32;
+                    *(buffer.as_mut_ptr().add(compare_jump_start + 2) as *mut i32) = (true_branch_start as isize - false_branch_start as isize) as i32;
+                }
+
+                self.encoder.set_buffer(buffer);
             }
             InstructionIR::PrintStackFrame(instruction_index) => {
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(Code::Mov_r64_rm64, register_call_arguments::ARG0, Register::RBP));
@@ -971,6 +992,28 @@ pub mod register_mapping {
             HardwareRegister::FloatSpill => {
                 Register::XMM0
             }
+        }
+    }
+}
+
+fn get_compare_instruction(condition: Condition, signed: bool) -> Code {
+    if !signed {
+        match condition {
+            Condition::Equal => Code::Je_rel32_64,
+            Condition::NotEqual => Code::Jne_rel32_64,
+            Condition::LessThan => Code::Jb_rel32_64,
+            Condition::LessThanOrEqual => Code::Jbe_rel32_64,
+            Condition::GreaterThan => Code::Ja_rel32_64,
+            Condition::GreaterThanOrEqual => Code::Jae_rel32_64
+        }
+    } else {
+        match condition {
+            Condition::Equal => Code::Je_rel32_64,
+            Condition::NotEqual => Code::Jne_rel32_64,
+            Condition::LessThan => Code::Jl_rel32_64,
+            Condition::LessThanOrEqual => Code::Jle_rel32_64,
+            Condition::GreaterThan => Code::Jg_rel32_64,
+            Condition::GreaterThanOrEqual => Code::Jge_rel32_64
         }
     }
 }

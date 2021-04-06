@@ -296,6 +296,35 @@ impl<'a> InstructionMIRCompiler<'a> {
                     op2_reg
                 )));
             }
+            Instruction::CompareEqual
+            | Instruction::CompareNotEqual
+            | Instruction::CompareGreaterThan
+            | Instruction::CompareGreaterThanOrEqual
+            | Instruction::CompareLessThan
+            | Instruction::CompareLessThanOrEqual => {
+                let condition = match instruction {
+                    Instruction::CompareEqual => Condition::Equal,
+                    Instruction::CompareNotEqual => Condition::NotEqual,
+                    Instruction::CompareGreaterThan => Condition::GreaterThan,
+                    Instruction::CompareGreaterThanOrEqual => Condition::GreaterThanOrEqual,
+                    Instruction::CompareLessThan => Condition::LessThan,
+                    Instruction::CompareLessThanOrEqual => Condition::LessThanOrEqual,
+                    _ => { panic!("unexpected."); }
+                };
+
+                let compare_type = operand_types[0].clone();
+                let op2_reg = self.use_stack_register(compare_type.clone());
+                let op1_reg = self.use_stack_register(compare_type.clone());
+                let assign_reg = self.assign_stack_register(TypeId::Bool);
+
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::Compare(
+                    condition,
+                    compare_type,
+                    assign_reg,
+                    op1_reg,
+                    op2_reg
+                )));
+            }
         }
     }
 

@@ -613,6 +613,66 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     *label
                 ));
             }
+            InstructionMIRData::Compare(condition, compare_type, destination, operand1, operand2) => {
+                let alive_hardware_registers = self.register_allocation.alive_hardware_registers_at(instruction_index);
+
+                let mut temp_registers = TempRegisters::new(&self.register_allocation);
+                temp_registers.try_remove(operand1);
+                temp_registers.try_remove(operand2);
+
+                let (destination_is_stack, destination_register) = temp_registers.get_register(destination);
+                let destination_alive = self.push_if_alive(&alive_hardware_registers, destination, &destination_register, destination_is_stack);
+
+                let signed = match compare_type {
+                    TypeId::Void => {
+                        panic!("Can't compare void.");
+                    }
+                    TypeId::Float32 => {
+                        self.binary_operator_f32(
+                            operand1,
+                            operand2,
+                            |instructions, op1, op2| {
+                                instructions.push(InstructionIR::Compare(TypeId::Float32, op1, op2));
+                            },
+                            |instructions, op1, op2| {
+                                instructions.push(InstructionIR::CompareFromFrameMemory(TypeId::Float32, op1, op2));
+                            }
+                        );
+
+                        false
+                    }
+                    _ => {
+                        self.binary_operator(
+                            operand1,
+                            operand2,
+                            |instructions, op1, op2| {
+                                instructions.push(InstructionIR::Compare(TypeId::Int32, op1, op2));
+                            },
+                            |instructions, op1, op2| {
+                                instructions.push(InstructionIR::CompareFromFrameMemory(TypeId::Int32, op1, op2));
+                            },
+                            |instructions, op1, op2| {
+                                instructions.push(InstructionIR::CompareToFrameMemory(TypeId::Int32, op1, op2));
+                            }
+                        );
+                        true
+                    }
+                };
+
+                self.instructions.push(InstructionIR::CompareResult(
+                    *condition,
+                    signed,
+                    destination_register
+                ));
+
+                if destination_is_stack {
+                    self.move_from_hardware_register(destination, destination_register);
+                }
+
+                if destination_alive {
+                    self.instructions.push(InstructionIR::Pop(destination_register));
+                }
+            }
         }
     }
 

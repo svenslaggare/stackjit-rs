@@ -312,6 +312,33 @@ impl<'a> InstructionIRCompiler<'a> {
                     *label
                 ));
             }
+            InstructionMIRData::Compare(condition, compare_type, destination, operand1, operand2) => {
+                let signed = match compare_type {
+                    TypeId::Void => {
+                        panic!("Can't compare void.");
+                    }
+                    TypeId::Float32 => {
+                        self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Float(0), self.get_register_stack_offset(operand1)));
+                        self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Float(1), self.get_register_stack_offset(operand2)));
+                        self.instructions.push(InstructionIR::Compare(TypeId::Float32, HardwareRegister::Float(0), HardwareRegister::Float(1)));
+                        false
+                    }
+                    _ => {
+                        self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(operand1)));
+                        self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(1), self.get_register_stack_offset(operand2)));
+                        self.instructions.push(InstructionIR::Compare(TypeId::Int32, HardwareRegister::Int(0), HardwareRegister::Int(1)));
+                        true
+                    }
+                };
+
+                self.instructions.push(InstructionIR::CompareResult(
+                    *condition,
+                    signed,
+                    HardwareRegister::Int(2)
+                ));
+
+                self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::Int(2)));
+            }
         }
     }
 

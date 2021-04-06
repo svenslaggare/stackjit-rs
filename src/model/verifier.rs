@@ -282,6 +282,32 @@ impl<'a> Verifier<'a> {
 
                     self.branches.push((instruction_index, *target as usize, self.clone_operand_stack()));
                 }
+                Instruction::CompareEqual | Instruction::CompareNotEqual => {
+                    let op2 = self.pop_operand_stack(instruction_index)?;
+                    let op1 = self.pop_operand_stack(instruction_index)?;
+
+                    self.same_type(instruction_index, &op1, &op2)?;
+
+                    self.push_operand_stack(TypeId::Bool);
+                }
+                Instruction::CompareGreaterThan
+                | Instruction::CompareGreaterThanOrEqual
+                | Instruction::CompareLessThan
+                | Instruction::CompareLessThanOrEqual => {
+                    let op2 = self.pop_operand_stack(instruction_index)?;
+                    let op1 = self.pop_operand_stack(instruction_index)?;
+
+                    self.same_type(instruction_index, &op1, &op2)?;
+
+                    match op1 {
+                        TypeId::Int32 | TypeId::Float32 => {}
+                        _ => {
+                            return Err(VerifyError::with_index(instruction_index, VerifyErrorMessage::ExpectedComparableType));
+                        }
+                    }
+
+                    self.push_operand_stack(TypeId::Bool);
+                }
             }
         }
 

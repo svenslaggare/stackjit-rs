@@ -152,6 +152,8 @@ pub enum InstructionIR {
     Branch(BranchLabel),
     BranchCondition(Condition, bool, BranchLabel),
 
+    CompareResult(Condition, bool, HardwareRegister),
+
     PrintStackFrame(usize),
     GarbageCollect(usize)
 }

@@ -156,3 +156,111 @@ fn test_array2() {
     let execution_result = vm.execute().unwrap();
     assert_eq!(1, execution_result);
 }
+
+#[test]
+fn test_compare1() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.binder_mut().define(
+        FunctionDeclaration::with_external(
+            "convert_bool_to_int".to_owned(), vec![TypeId::Bool], TypeId::Int32,
+            convert_bool_to_int as *mut std::ffi::c_void
+        )
+    );
+
+    vm.engine.add_function(Function::new(
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Bool))],
+        vec![
+            Instruction::LoadInt32(1000),
+            Instruction::LoadInt32(1000),
+            Instruction::CompareEqual,
+            Instruction::Call(FunctionSignature { name: "convert_bool_to_int".to_string(), parameters: vec![TypeId::Bool] }),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(1, execution_result);
+}
+
+#[test]
+fn test_compare2() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.binder_mut().define(
+        FunctionDeclaration::with_external(
+            "convert_bool_to_int".to_owned(), vec![TypeId::Bool], TypeId::Int32,
+            convert_bool_to_int as *mut std::ffi::c_void
+        )
+    );
+
+    vm.engine.add_function(Function::new(
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Bool))],
+        vec![
+            Instruction::LoadInt32(1000),
+            Instruction::LoadInt32(1000),
+            Instruction::CompareNotEqual,
+            Instruction::Call(FunctionSignature { name: "convert_bool_to_int".to_string(), parameters: vec![TypeId::Bool] }),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(0, execution_result);
+}
+
+#[test]
+fn test_compare3() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.binder_mut().define(
+        FunctionDeclaration::with_external(
+            "convert_bool_to_int".to_owned(), vec![TypeId::Bool], TypeId::Int32,
+            convert_bool_to_int as *mut std::ffi::c_void
+        )
+    );
+
+    vm.engine.add_function(Function::new(
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Bool))],
+        vec![
+            Instruction::LoadInt32(1000),
+            Instruction::LoadInt32(2000),
+            Instruction::CompareNotEqual,
+            Instruction::Call(FunctionSignature { name: "convert_bool_to_int".to_string(), parameters: vec![TypeId::Bool] }),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(1, execution_result);
+}
+
+#[test]
+fn test_compare4() {
+    let mut vm = VirtualMachine::new();
+
+    vm.engine.binder_mut().define(
+        FunctionDeclaration::with_external(
+            "convert_bool_to_int".to_owned(), vec![TypeId::Bool], TypeId::Int32,
+            convert_bool_to_int as *mut std::ffi::c_void
+        )
+    );
+
+    vm.engine.add_function(Function::new(
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Array(Box::new(TypeId::Bool))],
+        vec![
+            Instruction::LoadFloat32(1000.0),
+            Instruction::LoadFloat32(1000.0),
+            Instruction::CompareEqual,
+            Instruction::Call(FunctionSignature { name: "convert_bool_to_int".to_string(), parameters: vec![TypeId::Bool] }),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(1, execution_result);
+}

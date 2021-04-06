@@ -74,7 +74,8 @@ pub enum InstructionMIRData {
     PrintStackFrame,
     BranchLabel(BranchLabel),
     Branch(BranchLabel),
-    BranchCondition(Condition, TypeId, BranchLabel, RegisterMIR, RegisterMIR)
+    BranchCondition(Condition, TypeId, BranchLabel, RegisterMIR, RegisterMIR),
+    Compare(Condition, TypeId, RegisterMIR, RegisterMIR, RegisterMIR)
 }
 
 impl InstructionMIRData {
@@ -104,7 +105,8 @@ impl InstructionMIRData {
             InstructionMIRData::StoreField(_, _, _, _) => "StoreField".to_owned(),
             InstructionMIRData::BranchLabel(_) => "BranchLabel".to_owned(),
             InstructionMIRData::Branch(_) => "Branch".to_owned(),
-            InstructionMIRData::BranchCondition(_, _, _, _, _) => "BranchCondition".to_owned()
+            InstructionMIRData::BranchCondition(_, _, _, _, _) => "BranchCondition".to_owned(),
+            InstructionMIRData::Compare(_, _, _, _, _) => "Compare".to_owned()
         }
     }
 
@@ -134,7 +136,8 @@ impl InstructionMIRData {
             InstructionMIRData::LoadArrayLength(_, register) => Some(register.clone()),
             InstructionMIRData::BranchLabel(_) => None,
             InstructionMIRData::Branch(_) => None,
-            InstructionMIRData::BranchCondition(_, _, _, _, _) => None
+            InstructionMIRData::BranchCondition(_, _, _, _, _) => None,
+            InstructionMIRData::Compare(_, _, destination, _, _) => Some(destination.clone())
         }
     }
 
@@ -164,7 +167,8 @@ impl InstructionMIRData {
             InstructionMIRData::LoadArrayLength(_, register) => Some(register),
             InstructionMIRData::BranchLabel(_) => None,
             InstructionMIRData::Branch(_) => None,
-            InstructionMIRData::BranchCondition(_, _, _, _, _) => None
+            InstructionMIRData::BranchCondition(_, _, _, _, _) => None,
+            InstructionMIRData::Compare(_, _, destination, _, _) => Some(destination)
         }
     }
 
@@ -198,7 +202,8 @@ impl InstructionMIRData {
             InstructionMIRData::PrintStackFrame => Vec::new(),
             InstructionMIRData::BranchLabel(_) => Vec::new(),
             InstructionMIRData::Branch(_) => Vec::new(),
-            InstructionMIRData::BranchCondition(_, _, _, op1, op2) => vec![op1.clone(), op2.clone()]
+            InstructionMIRData::BranchCondition(_, _, _, op1, op2) => vec![op1.clone(), op2.clone()],
+            InstructionMIRData::Compare(_, _, _, op1, op2) => vec![op1.clone(), op2.clone()]
         }
     }
 
@@ -228,7 +233,8 @@ impl InstructionMIRData {
             InstructionMIRData::PrintStackFrame => Vec::new(),
             InstructionMIRData::BranchLabel(_) => Vec::new(),
             InstructionMIRData::Branch(_) => Vec::new(),
-            InstructionMIRData::BranchCondition(_, _, _, op1, op2) => vec![op1, op2]
+            InstructionMIRData::BranchCondition(_, _, _, op1, op2) => vec![op1, op2],
+            InstructionMIRData::Compare(_, _, _, op1, op2) => vec![op1, op2]
         }
     }
 
