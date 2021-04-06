@@ -1,5 +1,6 @@
 pub mod simple;
 pub mod float;
+pub mod bool;
 pub mod call;
 pub mod array;
 pub mod class;

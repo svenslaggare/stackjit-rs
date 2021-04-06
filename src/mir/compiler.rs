@@ -116,6 +116,14 @@ impl<'a> InstructionMIRCompiler<'a> {
                 let assign_reg = self.assign_stack_register(TypeId::Float32);
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadFloat32(assign_reg, *value)));
             }
+            Instruction::LoadTrue => {
+                let assign_reg = self.assign_stack_register(TypeId::Bool);
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadBool(assign_reg, true)));
+            }
+            Instruction::LoadFalse => {
+                let assign_reg = self.assign_stack_register(TypeId::Bool);
+                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadBool(assign_reg, false)));
+            }
             Instruction::LoadLocal(index) => {
                 let local_reg = self.local_virtual_registers[*index as usize].clone();
                 let assign_reg = self.assign_stack_register(local_reg.value_type.clone());

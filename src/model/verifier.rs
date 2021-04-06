@@ -102,6 +102,12 @@ impl<'a> Verifier<'a> {
                 Instruction::LoadFloat32(_) => {
                     self.push_operand_stack(TypeId::Float32);
                 }
+                Instruction::LoadTrue => {
+                    self.push_operand_stack(TypeId::Bool);
+                }
+                Instruction::LoadFalse => {
+                    self.push_operand_stack(TypeId::Bool);
+                }
                 Instruction::LoadNull(null_type) => {
                     self.push_operand_stack(null_type.clone());
                 }

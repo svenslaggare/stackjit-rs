@@ -96,6 +96,7 @@ fn compute_null_check_elision_for_block_internal(function: &Function,
         match &instruction.data {
             InstructionMIRData::LoadInt32(_, _) => {}
             InstructionMIRData::LoadFloat32(_, _) => {}
+            InstructionMIRData::LoadBool(_, _) => {}
             InstructionMIRData::Move(destination, source) => {
                 if source.value_type.is_reference() && destination.value_type.is_reference() {
                     register_is_null.insert(destination.clone(), register_is_null[source]);

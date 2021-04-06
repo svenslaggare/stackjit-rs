@@ -52,6 +52,7 @@ impl InstructionMIR {
 pub enum InstructionMIRData {
     LoadInt32(RegisterMIR, i32),
     LoadFloat32(RegisterMIR, f32),
+    LoadBool(RegisterMIR, bool),
     Move(RegisterMIR, RegisterMIR),
     AddInt32(RegisterMIR, RegisterMIR, RegisterMIR),
     AddInt32Constant(RegisterMIR, RegisterMIR, i32),
@@ -81,6 +82,7 @@ impl InstructionMIRData {
         match self {
             InstructionMIRData::LoadInt32(_, _) => "LoadInt32".to_owned(),
             InstructionMIRData::LoadFloat32(_, _) => "LoadFloat32".to_owned(),
+            InstructionMIRData::LoadBool(_, _) => "LoadBool".to_owned(),
             InstructionMIRData::Move(_, _) => "Move".to_owned(),
             InstructionMIRData::AddInt32(_, _, _) => "AddInt32".to_owned(),
             InstructionMIRData::AddInt32Constant(_, _, _) => "AddInt32Constant".to_owned(),
@@ -110,6 +112,7 @@ impl InstructionMIRData {
         match self {
             InstructionMIRData::LoadInt32(register, _) => Some(register.clone()),
             InstructionMIRData::LoadFloat32(register, _) => Some(register.clone()),
+            InstructionMIRData::LoadBool(register, _) => Some(register.clone()),
             InstructionMIRData::Move(register, _) => Some(register.clone()),
             InstructionMIRData::AddInt32(register, _, _) => Some(register.clone()),
             InstructionMIRData::AddInt32Constant(register, _, _) => Some(register.clone()),
@@ -139,6 +142,7 @@ impl InstructionMIRData {
         match self {
             InstructionMIRData::LoadInt32(register, _) => Some(register),
             InstructionMIRData::LoadFloat32(register, _) => Some(register),
+            InstructionMIRData::LoadBool(register, _) => Some(register),
             InstructionMIRData::Move(register, _) => Some(register),
             InstructionMIRData::AddInt32(register, _, _) => Some(register),
             InstructionMIRData::AddInt32Constant(register, _, _) => Some(register),
@@ -172,6 +176,7 @@ impl InstructionMIRData {
         match self {
             InstructionMIRData::LoadInt32(_, _) => Vec::new(),
             InstructionMIRData::LoadFloat32(_, _) => Vec::new(),
+            InstructionMIRData::LoadBool(_, _) => Vec::new(),
             InstructionMIRData::Move(_, op) => vec![op.clone()],
             InstructionMIRData::AddInt32(_, op1, op2) => vec![op1.clone(), op2.clone()],
             InstructionMIRData::AddInt32Constant(_, op1, _) => vec![op1.clone()],
@@ -201,6 +206,7 @@ impl InstructionMIRData {
         match self {
             InstructionMIRData::LoadInt32(_, _) => Vec::new(),
             InstructionMIRData::LoadFloat32(_, _) => Vec::new(),
+            InstructionMIRData::LoadBool(_, _) => Vec::new(),
             InstructionMIRData::Move(_, op) => vec![op],
             InstructionMIRData::AddInt32(_, op1, op2) => vec![op1, op2],
             InstructionMIRData::AddInt32Constant(_, op1, _) => vec![op1],

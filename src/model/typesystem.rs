@@ -9,6 +9,7 @@ pub enum TypeId {
     Void,
     Int32,
     Float32,
+    Bool,
     Array(Box<TypeId>),
     Class(String)
 }
@@ -19,6 +20,7 @@ impl TypeId {
             TypeId::Void => 0,
             TypeId::Int32 => 4,
             TypeId::Float32 => 4,
+            TypeId::Bool => 1,
             TypeId::Array(_) => 8,
             TypeId::Class(_) => 8
         }
@@ -78,6 +80,8 @@ impl TypeId {
         let void_chars = TypeId::Void.to_string().chars().collect::<Vec<_>>();
         let int_chars = TypeId::Int32.to_string().chars().collect::<Vec<_>>();
         let float_chars = TypeId::Float32.to_string().chars().collect::<Vec<_>>();
+        let bool_chars = TypeId::Bool.to_string().chars().collect::<Vec<_>>();
+
         let ref_array_chars = "Ref.Array[".chars().collect::<Vec<_>>();
         let ref_chars = "Ref.".chars().collect::<Vec<_>>();
 
@@ -87,6 +91,8 @@ impl TypeId {
             Some(TypeId::Int32)
         } else if text.starts_with(&float_chars[..]) {
             Some(TypeId::Float32)
+        } else if text.starts_with(&bool_chars[..]) {
+            Some(TypeId::Bool)
         } else if text.starts_with(&ref_array_chars[..]) {
             let element_type = TypeId::parse_type(&text[ref_array_chars.len()..])?;
             Some(TypeId::Array(Box::new(element_type)))
@@ -111,6 +117,9 @@ impl std::fmt::Display for TypeId {
             TypeId::Float32 => {
                 write!(f, "Float")
             }
+            TypeId::Bool => {
+                write!(f, "Bool")
+            }
             TypeId::Array(element) => {
                 write!(f, "Ref.Array[{}]", element)
             }
@@ -126,6 +135,7 @@ fn test_parse1() {
     assert_eq!(Some(TypeId::Int32), TypeId::from_str("Int"));
     assert_eq!(Some(TypeId::Float32), TypeId::from_str("Float"));
     assert_eq!(Some(TypeId::Void), TypeId::from_str("Void"));
+    assert_eq!(Some(TypeId::Bool), TypeId::from_str("Bool"));
 }
 
 #[test]

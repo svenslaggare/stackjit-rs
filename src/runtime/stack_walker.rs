@@ -258,6 +258,10 @@ impl<'a> FrameValue<'a> {
         unsafe { *(self.value_ptr as *const u64) }
     }
 
+    pub fn value_bool(&self) -> bool {
+        self.value_u64() != 0
+    }
+
     pub fn value_ptr(&self) -> ObjectPointer {
         unsafe { *(self.value_ptr as *const ObjectPointer) }
     }
@@ -282,6 +286,13 @@ impl<'a> std::fmt::Display for FrameValue<'a> {
             }
             TypeId::Float32 => {
                 write!(f, "{}", self.value_u64())
+            }
+            TypeId::Bool => {
+                if self.value_bool() {
+                    write!(f, "true")
+                } else {
+                    write!(f, "false")
+                }
             }
             TypeId::Array(_) => {
                 write!(f, "0x{:0x}", self.value_u64())

@@ -7,6 +7,8 @@ pub type BranchTarget = u32;
 pub enum Instruction {
     LoadInt32(i32),
     LoadFloat32(f32),
+    LoadTrue,
+    LoadFalse,
     LoadNull(TypeId),
     LoadLocal(u32),
     StoreLocal(u32),
@@ -57,8 +59,14 @@ impl std::fmt::Display for Instruction {
             Instruction::LoadFloat32(value) => {
                 write!(f, "LoadFloat32 {}", value)
             }
-            Instruction::LoadNull(_) => {
-                write!(f, "LoadNull")
+            Instruction::LoadTrue => {
+                write!(f, "LoadTrue")
+            }
+            Instruction::LoadFalse => {
+                write!(f, "LoadFalse")
+            }
+            Instruction::LoadNull(null_type) => {
+                write!(f, "LoadNull {}", null_type)
             }
             Instruction::LoadLocal(index) => {
                 write!(f, "LoadLocal {}", index)

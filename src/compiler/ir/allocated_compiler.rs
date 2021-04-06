@@ -19,6 +19,7 @@ use crate::model::verifier::Verifier;
 use crate::optimization::register_allocation;
 use crate::optimization::register_allocation::{AllocatedRegister, RegisterAllocation};
 use crate::optimization::register_allocation::linear_scan::Settings;
+use crate::compiler::code_generator::register_mapping::DataSize;
 
 pub struct AllocatedInstructionIRCompiler<'a> {
     binder: &'a Binder,
@@ -140,6 +141,17 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     Some(register) => {
                         self.instructions.push(InstructionIR::PushInt32(value));
                         self.instructions.push(InstructionIR::Pop(register));
+                    }
+                    None => {
+                        self.instructions.push(InstructionIR::MoveInt32ToFrameMemory(self.get_register_stack_offset(destination), value));
+                    }
+                }
+            }
+            InstructionMIRData::LoadBool(destination, value) => {
+                let value = if *value {1} else {0};
+                match self.register_allocation.get_register(destination).hardware_register() {
+                    Some(register) => {
+                        self.instructions.push(InstructionIR::MoveInt32ToRegister(register, value));
                     }
                     None => {
                         self.instructions.push(InstructionIR::MoveInt32ToFrameMemory(self.get_register_stack_offset(destination), value));
@@ -619,7 +631,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 AllocatedRegister::Hardware { register, .. } => {
                     // We might overwrite the register value when doing moves to the register arguments,
                     // so in that case, use cached version of the register on the stack that is created as part of the save register operation
-                    if !overwritten.contains(&register_mapping::get(register.clone(), true)) {
+                    if !overwritten.contains(&register_mapping::get(register.clone(), DataSize::Bytes8)) {
                         variables.push(Variable::Register(register.clone()));
                     } else {
                         variables.push(Variable::FrameMemory(self.get_register_stack_offset(argument)));

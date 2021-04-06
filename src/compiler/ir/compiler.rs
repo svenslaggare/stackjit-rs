@@ -76,6 +76,9 @@ impl<'a> InstructionIRCompiler<'a> {
                 let value: i32 = unsafe { std::mem::transmute(*value) };
                 self.instructions.push(InstructionIR::MoveInt32ToFrameMemory(self.get_register_stack_offset(destination), value));
             }
+            InstructionMIRData::LoadBool(destination, value) => {
+                self.instructions.push(InstructionIR::MoveInt32ToFrameMemory(self.get_register_stack_offset(destination), if *value {1} else {0}));
+            }
             InstructionMIRData::Move(destination, source) => {
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(source)));
                 self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::Int(0)));
