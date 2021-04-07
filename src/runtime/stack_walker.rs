@@ -26,7 +26,7 @@ impl<'a> StackFrame<'a> {
         }
     }
 
-    pub fn parent(&self, compiler: &'a JitCompiler, binder: &'a Binder) -> Option<StackFrame<'a>> {
+    pub fn parent(&self, compiler: &'a JitCompiler) -> Option<StackFrame<'a>> {
         if self.function.declaration().name() == "main" {
             return None;
         }
@@ -39,7 +39,7 @@ impl<'a> StackFrame<'a> {
             .get_compilation_data(&parent_signature)
             .unwrap();
 
-        let parent_function_code_ptr = binder.get(&parent_signature).unwrap().address().unwrap();
+        let parent_function_code_ptr = parent_function.declaration().address().unwrap();
 
         let parent_call_point_address = unsafe { *((self.base_pointer as isize + 8) as *const u64) } as isize;
         let parent_call_offset = (parent_call_point_address - parent_function_code_ptr as isize) as usize;
@@ -57,14 +57,13 @@ impl<'a> StackFrame<'a> {
 
     pub fn walk<F: FnMut(&StackFrame<'a>)>(&self,
                                            compiler: &'a JitCompiler,
-                                           binder: &'a Binder,
                                            mut apply: F) {
         apply(self);
-        let mut parent_frame = self.parent(compiler, binder);
+        let mut parent_frame = self.parent(compiler);
 
         while let Some(frame) = parent_frame.take() {
             apply(&frame);
-            parent_frame = frame.parent(compiler, binder);
+            parent_frame = frame.parent(compiler);
         }
     }
 

@@ -48,7 +48,6 @@ impl GarbageCollector {
         println!("Stack values:");
         stack_frame.walk(
             compiler,
-            binder,
             |frame| {
                 frame.print_frame();
                 println!();
@@ -60,9 +59,9 @@ impl GarbageCollector {
         print_objects(heap);
         println!();
 
-        self.mark_objects(compiler, binder, &stack_frame);
+        self.mark_objects(compiler, &stack_frame);
         // self.sweep_objects(heap);
-        self.compact_objects(compiler, binder, heap, &stack_frame);
+        self.compact_objects(compiler, heap, &stack_frame);
 
         println!();
         println!("After heap objects:");
@@ -85,11 +84,10 @@ impl GarbageCollector {
 
     fn compact_objects(&mut self,
                        compiler: &JitCompiler,
-                       binder: &Binder,
                        heap: &mut Heap,
                        stack_frame: &StackFrame) {
         let (next_object_offset, new_locations) = self.compute_new_locations(heap);
-        self.update_references(compiler, binder, heap, stack_frame, &new_locations);
+        self.update_references(compiler, heap, stack_frame, &new_locations);
         self.move_objects(heap, &new_locations);
 
         println!("Decreased heap by {} bytes", heap.offset() as isize - next_object_offset as isize);
@@ -139,11 +137,9 @@ impl UpdateReferences for GarbageCollector {}
 pub trait MarkObjects {
     fn mark_objects(&mut self,
                     compiler: &JitCompiler,
-                    binder: &Binder,
                     stack_frame: &StackFrame) {
         stack_frame.walk(
             compiler,
-            binder,
             |frame| {
                 frame.visit_values(|value| {
                     self.mark_value(value);
@@ -199,22 +195,19 @@ pub trait MarkObjects {
 pub trait UpdateReferences {
     fn update_references(&self,
                          compiler: &JitCompiler,
-                         binder: &Binder,
                          heap: &Heap,
                          stack_frame: &StackFrame,
                          new_locations: &HashMap<ObjectPointer, ObjectPointer>) {
-        self.update_stack_references(compiler, binder, stack_frame, &new_locations);
+        self.update_stack_references(compiler, stack_frame, &new_locations);
         self.update_heap_references(heap, &new_locations);
     }
 
     fn update_stack_references(&self,
                                compiler: &JitCompiler,
-                               binder: &Binder,
                                stack_frame: &StackFrame,
                                new_locations: &HashMap<ObjectPointer, ObjectPointer>) {
         stack_frame.walk(
             compiler,
-            binder,
             |frame| {
                 frame.visit_values(|value| {
                     if value.value_type.is_reference() {

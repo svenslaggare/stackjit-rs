@@ -39,7 +39,7 @@ impl JitCompiler {
     pub fn compile_function(&mut self,
                             binder: &mut Binder,
                             type_storage: &mut TypeStorage,
-                            function: &Function) {
+                            function: &mut Function) {
         println!("func {}", function.declaration());
         println!("{{");
 
@@ -68,6 +68,7 @@ impl JitCompiler {
         self.functions_compilation_data.insert(function.declaration().signature(), compilation_data);
 
         binder.set_address(&function.declaration().signature(), function_code_ptr);
+        function.declaration_mut().set_address(function_code_ptr);
     }
 
     pub fn get_compilation_data(&self, signature: &FunctionSignature) -> Option<&FunctionCompilationData> {

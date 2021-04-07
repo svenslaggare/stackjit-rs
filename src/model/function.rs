@@ -107,6 +107,10 @@ impl Function {
         &self.declaration
     }
 
+    pub fn declaration_mut(&mut self) -> &mut FunctionDeclaration {
+        &mut self.declaration
+    }
+
     pub fn locals(&self) -> &Vec<TypeId> {
         &self.locals
     }
