@@ -37,7 +37,7 @@ fn test1() {
         )
     );
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
@@ -77,7 +77,7 @@ fn test2() {
         )
     );
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
@@ -110,7 +110,7 @@ fn test3() {
         )
     );
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("sum8".to_owned(), (0..8).map(|_| TypeId::Float32).collect(), TypeId::Float32),
         Vec::new(),
         vec![
@@ -133,7 +133,7 @@ fn test3() {
         ]
     )).unwrap();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
@@ -172,7 +172,7 @@ fn test4() {
         )
     );
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
@@ -205,7 +205,7 @@ fn test5() {
         )
     );
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Float32],
         vec![
@@ -243,7 +243,7 @@ fn test6() {
         )
     );
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Float32],
         vec![
@@ -281,7 +281,7 @@ fn test7() {
         )
     );
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Float32, TypeId::Float32],
         vec![

@@ -152,3 +152,29 @@ impl std::fmt::Display for FunctionSignature {
         write!(f, "{}({})", self.name, self.parameters.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(" "))
     }
 }
+
+pub struct FunctionStorage {
+    functions: Vec<Box<Function>>
+}
+
+impl FunctionStorage {
+    pub fn new() -> FunctionStorage {
+        FunctionStorage {
+            functions: Vec::new()
+        }
+    }
+
+    pub fn add_function(&mut self, function: Function) {
+        self.functions.push(Box::new(function));
+    }
+
+    pub fn get_function(&self, signature: &FunctionSignature) -> Option<&Function> {
+        self.functions.iter()
+            .find(|function| &function.declaration().signature() == signature)
+            .map(|function| function.as_ref())
+    }
+
+    pub fn functions_mut(&mut self) -> &mut Vec<Box<Function>> {
+        &mut self.functions
+    }
+}

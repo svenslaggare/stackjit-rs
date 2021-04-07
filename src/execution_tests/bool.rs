@@ -24,7 +24,7 @@ extern "C" fn convert_bool_to_int(value: bool) -> i32 {
 fn test_simple1() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
@@ -52,7 +52,7 @@ fn test_simple1() {
 fn test_simple2() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
@@ -87,7 +87,7 @@ fn test_array1() {
         )
     );
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Bool))],
         vec![
@@ -127,7 +127,7 @@ fn test_array2() {
         )
     );
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Bool))],
         vec![
@@ -168,7 +168,7 @@ fn test_compare1() {
         )
     );
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Bool))],
         vec![
@@ -195,7 +195,7 @@ fn test_compare2() {
         )
     );
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Bool))],
         vec![
@@ -222,7 +222,7 @@ fn test_compare3() {
         )
     );
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Bool))],
         vec![
@@ -249,7 +249,7 @@ fn test_compare4() {
         )
     );
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Bool))],
         vec![

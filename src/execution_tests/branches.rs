@@ -7,7 +7,7 @@ use crate::model::instruction::Instruction;
 fn test_branches_equality1() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
@@ -32,7 +32,7 @@ fn test_branches_equality1() {
 fn test_branches_equality2() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
@@ -57,7 +57,7 @@ fn test_branches_equality2() {
 fn test_branches_equality3() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
@@ -82,7 +82,7 @@ fn test_branches_equality3() {
 fn test_branches_equality4() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
@@ -107,7 +107,7 @@ fn test_branches_equality4() {
 fn test_branches_compare1() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
@@ -132,7 +132,7 @@ fn test_branches_compare1() {
 fn test_branches_compare2() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
@@ -157,7 +157,7 @@ fn test_branches_compare2() {
 fn test_branches_compare3() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
@@ -182,7 +182,7 @@ fn test_branches_compare3() {
 fn test_branches_compare4() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
@@ -207,7 +207,7 @@ fn test_branches_compare4() {
 fn test_branches_compare5() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
@@ -232,7 +232,7 @@ fn test_branches_compare5() {
 fn test_branches_compare6() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
@@ -257,7 +257,7 @@ fn test_branches_compare6() {
 fn test_branches_compare7() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
@@ -282,7 +282,7 @@ fn test_branches_compare7() {
 fn test_branches_compare8() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
@@ -307,7 +307,7 @@ fn test_branches_compare8() {
 fn test_branches_compare9() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
@@ -332,7 +332,7 @@ fn test_branches_compare9() {
 fn test_branches_compare10() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![

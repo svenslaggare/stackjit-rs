@@ -4,20 +4,34 @@ use crate::engine::ExecutionEngine;
 use crate::model::typesystem::{TypeStorage};
 use crate::engine::execution::{ExecutionEngineResult, ExecutionEngineError};
 use crate::runtime::memory::manager::MemoryManager;
+use crate::model::function::{Function, FunctionStorage};
+use crate::model::class::Class;
 
 pub struct VirtualMachine {
+    type_storage: TypeStorage,
+    function_storage: FunctionStorage,
     pub engine: ExecutionEngine,
-    pub type_storage: TypeStorage,
     pub memory_manager: MemoryManager
 }
 
 impl VirtualMachine {
     pub fn new() -> VirtualMachine {
         VirtualMachine {
-            engine: ExecutionEngine::new(),
             type_storage: TypeStorage::new(),
+            function_storage: FunctionStorage::new(),
+            engine: ExecutionEngine::new(),
             memory_manager: MemoryManager::new()
         }
+    }
+
+    pub fn add_function(&mut self, function: Function) -> ExecutionEngineResult<()> {
+        self.engine.binder_mut().define(function.declaration().clone());
+        self.function_storage.add_function(function);
+        Ok(())
+    }
+
+    pub fn add_class(&mut self, class: Class) {
+        self.type_storage.add_class(class);
     }
 
     pub fn execute(mut self) -> ExecutionEngineResult<i32> {
@@ -25,7 +39,7 @@ impl VirtualMachine {
     }
 
     pub fn create_execution(&mut self) -> ExecutionEngineResult<Execution> {
-        self.engine.create_execution(&mut self.type_storage)
+        self.engine.create_execution(&mut self.type_storage, &mut self.function_storage)
     }
 }
 

@@ -8,7 +8,7 @@ use crate::model::class::{Class, Field};
 fn test_stack_frame1() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("create_int_array".to_owned(), vec![TypeId::Int32], TypeId::Array(Box::new(TypeId::Int32))),
         Vec::new(),
         vec![
@@ -19,7 +19,7 @@ fn test_stack_frame1() {
         ]
     )).unwrap();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("create_array".to_owned(), vec![TypeId::Int32], TypeId::Array(Box::new(TypeId::Int32))),
         Vec::new(),
         vec![
@@ -29,7 +29,7 @@ fn test_stack_frame1() {
         ]
     )).unwrap();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Array(Box::new(TypeId::Int32))],
         vec![
@@ -56,7 +56,7 @@ fn test_stack_frame1() {
 fn test_collect1() {
     let mut vm = VirtualMachine::new();
 
-    vm.type_storage.add_class(Class::new(
+    vm.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
@@ -64,7 +64,7 @@ fn test_collect1() {
         ]
     ));
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Class("Point".to_owned())],
         vec![
@@ -102,7 +102,7 @@ fn test_collect1() {
 fn test_collect2() {
     let mut vm = VirtualMachine::new();
 
-    vm.type_storage.add_class(Class::new(
+    vm.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
@@ -112,7 +112,7 @@ fn test_collect2() {
 
     let point_type = TypeId::Class("Point".to_owned());
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Int32)), point_type.clone()],
         vec![
@@ -153,7 +153,7 @@ fn test_collect2() {
 fn test_collect3() {
     let mut vm = VirtualMachine::new();
 
-    vm.type_storage.add_class(Class::new(
+    vm.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
@@ -161,7 +161,7 @@ fn test_collect3() {
         ]
     ));
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Class("Point".to_owned())],
         vec![
@@ -191,7 +191,7 @@ fn test_collect3() {
 fn test_collect4() {
     let mut vm = VirtualMachine::new();
 
-    vm.type_storage.add_class(Class::new(
+    vm.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
@@ -201,7 +201,7 @@ fn test_collect4() {
 
     let point_type = TypeId::Class("Point".to_owned());
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(point_type.clone()))],
         vec![
@@ -233,7 +233,7 @@ fn test_collect4() {
 fn test_collect5() {
     let mut vm = VirtualMachine::new();
 
-    vm.type_storage.add_class(Class::new(
+    vm.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
@@ -243,7 +243,7 @@ fn test_collect5() {
 
     let point_type = TypeId::Class("Point".to_owned());
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(point_type.clone()))],
         vec![
@@ -280,7 +280,7 @@ fn test_collect5() {
 fn test_collect6() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
@@ -308,7 +308,7 @@ fn test_collect6() {
 fn test_collect7() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32, TypeId::Array(Box::new(TypeId::Int32))],
         vec![
@@ -337,7 +337,7 @@ fn test_collect7() {
 fn test_collect8() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("inner".to_owned(), Vec::new(), TypeId::Array(Box::new(TypeId::Int32))),
         vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Array(Box::new(TypeId::Int32))],
         vec![
@@ -354,7 +354,7 @@ fn test_collect8() {
         ]
     )).unwrap();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![

@@ -47,7 +47,7 @@ fn test_create1() {
         )
     );
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
@@ -58,7 +58,7 @@ fn test_create1() {
         ]
     )).unwrap();
 
-    vm.type_storage.add_class(Class::new(
+    vm.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
@@ -84,7 +84,7 @@ fn test_load1() {
         )
     );
 
-    vm.type_storage.add_class(Class::new(
+    vm.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
@@ -92,7 +92,7 @@ fn test_load1() {
         ]
     ));
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Class("Point".to_owned())],
         vec![
@@ -117,7 +117,7 @@ fn test_load1() {
 fn test_store1() {
     let mut vm = VirtualMachine::new();
 
-    vm.type_storage.add_class(Class::new(
+    vm.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
@@ -125,7 +125,7 @@ fn test_store1() {
         ]
     ));
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Class("Point".to_owned())],
         vec![
@@ -161,7 +161,7 @@ fn test_array1() {
         )
     );
 
-    vm.type_storage.add_class(Class::new(
+    vm.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
@@ -169,7 +169,7 @@ fn test_array1() {
         ]
     ));
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Class("Point".to_owned())))],
         vec![
@@ -206,7 +206,7 @@ fn test_array1() {
 fn test_branch1() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
@@ -226,7 +226,7 @@ fn test_branch1() {
         ]
     )).unwrap();
 
-    vm.type_storage.add_class(Class::new(
+    vm.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
@@ -242,7 +242,7 @@ fn test_branch1() {
 fn test_branch2() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32, TypeId::Class("Point".to_owned())],
         vec![
@@ -265,7 +265,7 @@ fn test_branch2() {
         ]
     )).unwrap();
 
-    vm.type_storage.add_class(Class::new(
+    vm.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),
@@ -281,7 +281,7 @@ fn test_branch2() {
 fn test_branch3() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.add_function(Function::new(
+    vm.add_function(Function::new(
         FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
@@ -301,7 +301,7 @@ fn test_branch3() {
         ]
     )).unwrap();
 
-    vm.type_storage.add_class(Class::new(
+    vm.add_class(Class::new(
         "Point".to_owned(),
         vec![
             Field::new("x".to_owned(), TypeId::Int32),

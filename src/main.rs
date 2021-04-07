@@ -29,11 +29,11 @@ pub fn main_execute(input_file: String) -> ExecutionEngineResult<i32> {
     let (functions, classes)  = parser.parse().map_err(|err| ExecutionEngineError::Other(format!("{:?}", err)))?;
 
     for function in functions {
-        vm.engine.add_function(function)?;
+        vm.add_function(function)?;
     }
 
     for class in classes {
-        vm.type_storage.add_class(class);
+        vm.add_class(class);
     }
 
     vm.execute()
