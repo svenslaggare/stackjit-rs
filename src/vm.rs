@@ -4,7 +4,7 @@ use crate::engine::ExecutionEngine;
 use crate::model::typesystem::{TypeStorage};
 use crate::engine::execution::{ExecutionEngineResult, ExecutionEngineError};
 use crate::runtime::memory::manager::MemoryManager;
-use crate::model::function::{Function, FunctionStorage};
+use crate::model::function::{Function, FunctionStorage, FunctionDeclaration};
 use crate::model::class::Class;
 
 pub struct VirtualMachine {
@@ -28,6 +28,10 @@ impl VirtualMachine {
         self.engine.binder_mut().define(function.declaration().clone());
         self.function_storage.add_function(function);
         Ok(())
+    }
+
+    pub fn add_external_function(&mut self, declaration: FunctionDeclaration) {
+        self.engine.binder_mut().define(declaration);
     }
 
     pub fn add_class(&mut self, class: Class) {

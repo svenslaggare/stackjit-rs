@@ -80,7 +80,7 @@ fn test_simple2() {
 fn test_array1() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "get_element".to_owned(), vec![TypeId::Array(Box::new(TypeId::Bool)), TypeId::Int32], TypeId::Int32,
             get_element as *mut std::ffi::c_void
@@ -120,7 +120,7 @@ fn test_array1() {
 fn test_array2() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "convert_bool_to_int".to_owned(), vec![TypeId::Bool], TypeId::Int32,
             convert_bool_to_int as *mut std::ffi::c_void
@@ -161,7 +161,7 @@ fn test_array2() {
 fn test_compare1() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "convert_bool_to_int".to_owned(), vec![TypeId::Bool], TypeId::Int32,
             convert_bool_to_int as *mut std::ffi::c_void
@@ -188,7 +188,7 @@ fn test_compare1() {
 fn test_compare2() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "convert_bool_to_int".to_owned(), vec![TypeId::Bool], TypeId::Int32,
             convert_bool_to_int as *mut std::ffi::c_void
@@ -215,7 +215,7 @@ fn test_compare2() {
 fn test_compare3() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "convert_bool_to_int".to_owned(), vec![TypeId::Bool], TypeId::Int32,
             convert_bool_to_int as *mut std::ffi::c_void
@@ -242,7 +242,7 @@ fn test_compare3() {
 fn test_compare4() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "convert_bool_to_int".to_owned(), vec![TypeId::Bool], TypeId::Int32,
             convert_bool_to_int as *mut std::ffi::c_void

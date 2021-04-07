@@ -30,7 +30,7 @@ fn test1() {
 
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
@@ -63,14 +63,14 @@ fn test2() {
 
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
         )
     );
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "add".to_owned(), vec![TypeId::Float32, TypeId::Float32], TypeId::Float32,
             add as *mut std::ffi::c_void
@@ -103,7 +103,7 @@ fn test3() {
 
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
@@ -165,7 +165,7 @@ fn test4() {
 
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
@@ -198,7 +198,7 @@ fn test5() {
 
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
@@ -236,7 +236,7 @@ fn test6() {
 
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
@@ -274,7 +274,7 @@ fn test7() {
 
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void

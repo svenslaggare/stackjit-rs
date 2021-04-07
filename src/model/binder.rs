@@ -30,8 +30,8 @@ impl Binder {
         binder
     }
 
-    pub fn define(&mut self, definition: FunctionDeclaration) {
-        self.functions.insert(definition.signature(), definition);
+    pub fn define(&mut self, declaration: FunctionDeclaration) {
+        self.functions.insert(declaration.signature(), declaration);
     }
 
     pub fn get(&self, signature: &FunctionSignature) -> Option<&FunctionDeclaration> {

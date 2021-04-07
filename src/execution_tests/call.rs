@@ -23,7 +23,7 @@ extern "C" fn sub(x: i32, y: i32) -> i32 {
 fn test_external1() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "sum".to_owned(), vec![TypeId::Int32, TypeId::Int32], TypeId::Int32,
             sum as *mut std::ffi::c_void
@@ -49,7 +49,7 @@ fn test_external1() {
 fn test_external2() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "sub".to_owned(), vec![TypeId::Int32, TypeId::Int32], TypeId::Int32,
             sub as *mut std::ffi::c_void
@@ -75,7 +75,7 @@ fn test_external2() {
 fn test_external3() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "sum8".to_owned(), (0..8).map(|_| TypeId::Int32).collect(), TypeId::Int32,
             sum8 as *mut std::ffi::c_void
@@ -107,7 +107,7 @@ fn test_external3() {
 fn test_external4() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "sum".to_owned(), (0..2).map(|_| TypeId::Int32).collect(), TypeId::Int32,
             sum as *mut std::ffi::c_void
@@ -137,7 +137,7 @@ fn test_external4() {
 fn test_external5() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "sum8_sub".to_owned(), (0..8).map(|_| TypeId::Int32).collect(), TypeId::Int32,
             sum8_sub as *mut std::ffi::c_void

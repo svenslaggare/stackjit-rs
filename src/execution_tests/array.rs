@@ -46,7 +46,7 @@ fn test_create1() {
 
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "print_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Int32))], TypeId::Void,
             print_array as *mut std::ffi::c_void
@@ -76,7 +76,7 @@ fn test_create1() {
 fn test_load1() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "set_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Int32, TypeId::Int32], TypeId::Void,
             set_array as *mut std::ffi::c_void
@@ -113,14 +113,14 @@ fn test_load2() {
 
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "set_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Float32)), TypeId::Int32, TypeId::Float32], TypeId::Void,
             set_array_float as *mut std::ffi::c_void
         )
     );
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
@@ -157,7 +157,7 @@ fn test_load2() {
 fn test_load3() {
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "set_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Int32, TypeId::Int32], TypeId::Void,
             set_array as *mut std::ffi::c_void
@@ -288,7 +288,7 @@ fn test_store3() {
 
     let mut vm = VirtualMachine::new();
 
-    vm.engine.binder_mut().define(
+    vm.add_external_function(
         FunctionDeclaration::with_external(
             "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
             print_float as *mut std::ffi::c_void
