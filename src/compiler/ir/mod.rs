@@ -3,6 +3,7 @@ use crate::model::typesystem::TypeId;
 
 pub mod compiler;
 pub mod allocated_compiler;
+pub mod helpers;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum HardwareRegister {
