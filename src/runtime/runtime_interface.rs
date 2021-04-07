@@ -85,7 +85,6 @@ pub extern "C" fn garbage_collect(base_pointer: u64, function_ptr: *const Functi
         let stack_frame = StackFrame::new(base_pointer, instruction_index, function, compilation_data);
         vm.memory_manager.garbage_collector.collect(
             vm.engine.compiler(),
-            vm.engine.binder(),
             &mut vm.memory_manager.heap,
             stack_frame
         );

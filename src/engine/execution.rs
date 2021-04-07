@@ -78,10 +78,6 @@ impl ExecutionEngine {
         &self.compiler
     }
 
-    pub fn binder(&self) -> &Binder {
-        &self.binder
-    }
-
     pub fn binder_mut(&mut self) -> &mut Binder {
         &mut self.binder
     }

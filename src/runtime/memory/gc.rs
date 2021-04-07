@@ -27,7 +27,6 @@ impl GarbageCollector {
 
     pub fn collect(&mut self,
                    compiler: &JitCompiler,
-                   binder: &Binder,
                    heap: &mut Heap,
                    stack_frame: StackFrame) {
         let print_objects = |heap: &Heap| {
