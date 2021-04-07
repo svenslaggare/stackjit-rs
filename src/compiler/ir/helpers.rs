@@ -401,7 +401,8 @@ pub trait AllocatedCompilerHelpers {
 
 pub struct TempRegisters<'a> {
     register_allocation: &'a RegisterAllocation,
-    int_registers: BTreeSet<HardwareRegister>
+    int_registers: BTreeSet<HardwareRegister>,
+    float_registers: BTreeSet<HardwareRegister>
 }
 
 impl<'a> TempRegisters<'a> {
@@ -414,21 +415,32 @@ impl<'a> TempRegisters<'a> {
         // int_registers.insert(HardwareRegister::Int(1));
         // int_registers.insert(HardwareRegister::Int(2));
 
+        let mut float_registers = BTreeSet::new();
+        float_registers.insert(HardwareRegister::Float(4));
+        float_registers.insert(HardwareRegister::Float(3));
+
         TempRegisters {
             register_allocation,
-            int_registers
+            int_registers,
+            float_registers
         }
     }
 
     pub fn try_remove(&mut self, register: &RegisterMIR) {
         if let Some(register) = self.register_allocation.get_register(register).hardware_register() {
             self.int_registers.remove(&register);
+            self.float_registers.remove(&register);
         }
     }
 
     pub fn get_register(&mut self, register: &RegisterMIR) -> (bool, HardwareRegister) {
         match self.register_allocation.get_register(register).hardware_register() {
             Some(register) => (false, register.clone()),
+            None if register.value_type.is_float() => {
+                let register = self.float_registers.iter().rev().next().unwrap().clone();
+                self.float_registers.remove(&register);
+                (true, register)
+            }
             None => {
                 let register = self.int_registers.iter().rev().next().unwrap().clone();
                 self.int_registers.remove(&register);

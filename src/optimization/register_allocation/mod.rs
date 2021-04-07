@@ -8,6 +8,11 @@ use crate::model::typesystem::TypeId;
 
 pub mod linear_scan;
 
+pub struct RegisterAllocationSettings {
+    pub num_int_registers: usize,
+    pub num_float_registers: usize
+}
+
 #[derive(Debug, Clone)]
 pub enum AllocatedRegister {
     Hardware { register: HardwareRegister, live_interval: LiveInterval },

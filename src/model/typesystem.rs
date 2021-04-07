@@ -64,6 +64,13 @@ impl TypeId {
         }
     }
 
+    pub fn is_float(&self) -> bool {
+        match self {
+            TypeId::Float32 => true,
+            _ => false,
+        }
+    }
+
     pub fn is_same_type(&self, other: &TypeId) -> bool {
         self == other
     }

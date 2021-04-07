@@ -13,14 +13,9 @@ use crate::model::function::{Function, FunctionDeclaration, FunctionSignature};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::model::verifier::Verifier;
-use crate::optimization::register_allocation::{AllocatedRegister, RegisterAllocation};
+use crate::optimization::register_allocation::{AllocatedRegister, RegisterAllocation, RegisterAllocationSettings};
 
-pub struct Settings {
-    pub num_int_registers: usize,
-    pub num_float_registers: usize
-}
-
-pub fn allocate(live_intervals: &Vec<LiveInterval>, settings: &Settings) -> RegisterAllocation {
+pub fn allocate(live_intervals: &Vec<LiveInterval>, settings: &RegisterAllocationSettings) -> RegisterAllocation {
     let mut allocated_registers = HashMap::new();
     let mut spilled_registers = Vec::new();
     let mut free_registers = FreeRegisters::new(settings);
@@ -67,7 +62,7 @@ struct FreeRegisters {
 }
 
 impl FreeRegisters {
-    pub fn new(settings: &Settings) -> FreeRegisters {
+    pub fn new(settings: &RegisterAllocationSettings) -> FreeRegisters {
         FreeRegisters {
             int_registers: BTreeSet::from_iter(0 as u32..settings.num_int_registers as u32),
             max_int: settings.num_int_registers,
@@ -133,9 +128,14 @@ fn split_at_interval(allocated_registers: &mut HashMap<LiveInterval, u32>,
                      current_interval: &LiveInterval) {
     let spill = active.iter()
         .filter(|register| &register.0.register.register_type == &current_interval.register.register_type)
-        .last()
-        .unwrap()
-        .clone();
+        .last();
+
+    if spill.is_none() {
+        spilled_registers.push(current_interval.clone());
+        return;
+    }
+
+    let spill = spill.unwrap().clone();
 
     if spill.0.end > current_interval.end {
         allocated_registers.insert(current_interval.clone(), allocated_registers[&spill.0].clone());
@@ -247,7 +247,7 @@ fn test_allocate1() {
 
     let allocation = allocate(
         &live_intervals,
-        &Settings { num_int_registers: 1, num_float_registers: 0 }
+        &RegisterAllocationSettings { num_int_registers: 1, num_float_registers: 0 }
     );
 
     assert_eq!(1, allocation.num_allocated_registers());
@@ -288,7 +288,7 @@ fn test_allocate2() {
 
     let allocation = allocate(
         &live_intervals,
-        &Settings { num_int_registers: 1, num_float_registers: 0 }
+        &RegisterAllocationSettings { num_int_registers: 1, num_float_registers: 0 }
     );
 
     assert_eq!(2, allocation.num_allocated_registers());
@@ -334,7 +334,7 @@ fn test_allocate3() {
 
     let allocation = allocate(
         &live_intervals,
-        &Settings { num_int_registers: 0, num_float_registers: 1 }
+        &RegisterAllocationSettings { num_int_registers: 0, num_float_registers: 1 }
     );
 
     assert_eq!(1, allocation.num_allocated_registers());
@@ -375,7 +375,7 @@ fn test_allocate4() {
 
     let allocation = allocate(
         &live_intervals,
-        &Settings { num_int_registers: 0, num_float_registers: 1 }
+        &RegisterAllocationSettings { num_int_registers: 0, num_float_registers: 1 }
     );
 
     assert_eq!(2, allocation.num_allocated_registers());
@@ -431,7 +431,7 @@ fn test_allocate5() {
 
     let allocation = allocate(
         &live_intervals,
-        &Settings { num_int_registers: 1, num_float_registers: 1 }
+        &RegisterAllocationSettings { num_int_registers: 1, num_float_registers: 1 }
     );
 
     assert_eq!(3, allocation.num_allocated_registers());
@@ -466,7 +466,7 @@ fn test_allocate6() {
 
     let allocation = allocate(
         &live_intervals,
-        &Settings { num_int_registers: 2, num_float_registers: 2 }
+        &RegisterAllocationSettings { num_int_registers: 2, num_float_registers: 2 }
     );
 
     assert_eq!(2, allocation.num_allocated_registers());

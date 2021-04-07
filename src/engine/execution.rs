@@ -1,10 +1,11 @@
-use crate::compiler::jit::{JitCompiler};
+use crate::compiler::jit::{JitCompiler, JitSettings};
 use crate::model::function::{Function, FunctionSignature, FunctionAddress, FunctionStorage};
 use crate::model::verifier::{Verifier, VerifyError};
 use crate::model::typesystem::TypeStorage;
 use crate::model::binder::Binder;
 use crate::vm::Execution;
 use crate::model::class::{Class};
+use crate::optimization::register_allocation::RegisterAllocationSettings;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ExecutionEngineError {
@@ -32,8 +33,40 @@ pub struct ExecutionEngine {
 
 impl ExecutionEngine {
     pub fn new() -> ExecutionEngine {
+        let mut jit_settings = JitSettings {
+            register_allocate: true,
+            register_allocation: RegisterAllocationSettings { num_int_registers: 2, num_float_registers: 2 }
+        };
+
+        let mut test_profile = std::env::var("TEST_PROFILE");
+        test_profile = Ok("1".to_owned());
+
+        if let Ok(test_profile) = test_profile {
+            if test_profile == "2" {
+                jit_settings = JitSettings {
+                    register_allocate: false,
+                    register_allocation: RegisterAllocationSettings { num_int_registers: 0, num_float_registers: 0 }
+                };
+            } else if test_profile == "3" {
+                jit_settings = JitSettings {
+                    register_allocate: true,
+                    register_allocation: RegisterAllocationSettings { num_int_registers: 0, num_float_registers: 0 }
+                };
+            } else if test_profile == "4" {
+                jit_settings = JitSettings {
+                    register_allocate: true,
+                    register_allocation: RegisterAllocationSettings { num_int_registers: 1, num_float_registers: 1 }
+                };
+            } else if test_profile == "5" {
+                jit_settings = JitSettings {
+                    register_allocate: true,
+                    register_allocation: RegisterAllocationSettings { num_int_registers: 3, num_float_registers: 3 }
+                };
+            }
+        }
+
         ExecutionEngine {
-            compiler: JitCompiler::new(),
+            compiler: JitCompiler::new(jit_settings),
             binder: Binder::new(),
             runtime_error: RuntimeErrorManager::new()
         }

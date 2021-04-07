@@ -17,8 +17,7 @@ use crate::model::instruction::Instruction;
 use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::model::verifier::Verifier;
 use crate::optimization::register_allocation;
-use crate::optimization::register_allocation::{AllocatedRegister, RegisterAllocation};
-use crate::optimization::register_allocation::linear_scan::Settings;
+use crate::optimization::register_allocation::{AllocatedRegister, RegisterAllocation, RegisterAllocationSettings};
 use crate::compiler::code_generator::register_mapping::DataSize;
 use crate::compiler::ir::helpers::{AllocatedCompilerHelpers, TempRegisters};
 
@@ -37,7 +36,8 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                type_storage: &'a TypeStorage,
                function: &'a Function,
                compilation_result: &'a MIRCompilationResult,
-               optimization_result: &'a OptimizationResult) -> AllocatedInstructionIRCompiler<'a> {
+               optimization_result: &'a OptimizationResult,
+               register_allocation_settings: &RegisterAllocationSettings) -> AllocatedInstructionIRCompiler<'a> {
         AllocatedInstructionIRCompiler {
             binder,
             type_storage,
@@ -45,7 +45,7 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
             instructions: Vec::new(),
             compilation_result,
             optimization_result,
-            register_allocation: AllocatedInstructionIRCompiler::register_allocate(compilation_result)
+            register_allocation: AllocatedInstructionIRCompiler::register_allocate(register_allocation_settings, compilation_result)
         }
     }
 
@@ -61,14 +61,15 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
         }
     }
 
-    fn register_allocate(compilation_result: &MIRCompilationResult) -> RegisterAllocation {
+    fn register_allocate(register_allocation_settings: &RegisterAllocationSettings,
+                         compilation_result: &MIRCompilationResult) -> RegisterAllocation {
         let instructions = &compilation_result.instructions;
         let basic_blocks = BasicBlock::create_blocks(instructions);
         let control_flow_graph = ControlFlowGraph::new(&instructions, &basic_blocks);
         let live_intervals = liveness::compute(compilation_result, &basic_blocks, &control_flow_graph);
         register_allocation::linear_scan::allocate(
             &live_intervals,
-            &Settings { num_int_registers: 1, num_float_registers: 2 }
+            register_allocation_settings
         )
     }
 

@@ -17,19 +17,27 @@ use crate::model::binder::Binder;
 use crate::model::function::{Function, FunctionDeclaration, FunctionSignature};
 use crate::model::typesystem::TypeStorage;
 use crate::optimization::{null_check_elision, peephole};
+use crate::optimization::register_allocation::RegisterAllocationSettings;
+
+pub struct JitSettings {
+    pub register_allocate: bool,
+    pub register_allocation: RegisterAllocationSettings
+}
 
 pub struct JitCompiler {
+    settings: JitSettings,
     memory_allocator: ExecutableMemoryAllocator,
     error_handling: ErrorHandling,
     functions_compilation_data: HashMap<FunctionSignature, FunctionCompilationData>,
 }
 
 impl JitCompiler {
-    pub fn new() -> JitCompiler {
+    pub fn new(settings: JitSettings) -> JitCompiler {
         let mut memory_allocator = ExecutableMemoryAllocator::new();
         let error_handling = ErrorHandling::new(&mut memory_allocator);
 
         JitCompiler {
+            settings,
             memory_allocator,
             error_handling,
             functions_compilation_data: HashMap::new(),
@@ -157,10 +165,31 @@ impl JitCompiler {
 
         let optimization_result = self.optimize_ir(function, &mut compilation_result);
 
-        // let mut ir_compiler = InstructionIRCompiler::new(&binder, &type_storage, &function, &compilation_result, &optimization_result);
-        let mut ir_compiler = AllocatedInstructionIRCompiler::new(&binder, &type_storage, &function, &compilation_result, &optimization_result);
-        ir_compiler.compile();
-        let instructions_ir = ir_compiler.done();
+        let instructions_ir = if self.settings.register_allocate {
+            let mut ir_compiler = AllocatedInstructionIRCompiler::new(
+                &binder,
+                &type_storage,
+                &function,
+                &compilation_result,
+                &optimization_result,
+                &self.settings.register_allocation
+            );
+
+            ir_compiler.compile();
+            ir_compiler.done()
+        } else {
+            let mut ir_compiler = InstructionIRCompiler::new(
+                &binder,
+                &type_storage,
+                &function,
+                &compilation_result,
+                &optimization_result
+            );
+
+            ir_compiler.compile();
+            ir_compiler.done()
+        };
+
         (compilation_result, instructions_ir)
     }
 
