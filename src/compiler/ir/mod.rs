@@ -120,14 +120,39 @@ pub enum InstructionIR {
     AddInt32ToFrameMemory(i32, HardwareRegister),
     AddInt32Constant(HardwareRegister, i32),
     AddInt32ConstantToFrameMemory(i32, i32),
+
     SubInt32(HardwareRegister, HardwareRegister),
     SubInt32FromFrameMemory(HardwareRegister, i32),
     SubInt32ToFrameMemory(i32, HardwareRegister),
+    SubInt32Constant(HardwareRegister, i32),
+    SubInt32ConstantToFrameMemory(i32, i32),
+
+    MultiplyInt32(HardwareRegister, HardwareRegister),
+    MultiplyInt32FromFrameMemory(HardwareRegister, i32),
+
+    AndInt32(HardwareRegister, HardwareRegister),
+    AndInt32FromFrameMemory(HardwareRegister, i32),
+    AndInt32ToFrameMemory(i32, HardwareRegister),
+    AndInt32Constant(HardwareRegister, i32),
+    AndInt32ConstantToFrameMemory(i32, i32),
+
+    OrInt32(HardwareRegister, HardwareRegister),
+    OrInt32FromFrameMemory(HardwareRegister, i32),
+    OrInt32ToFrameMemory(i32, HardwareRegister),
+    OrInt32Constant(HardwareRegister, i32),
+    OrInt32ConstantToFrameMemory(i32, i32),
 
     AddFloat32(HardwareRegister, HardwareRegister),
     AddFloat32FromFrameMemory(HardwareRegister, i32),
+
     SubFloat32(HardwareRegister, HardwareRegister),
     SubFloat32FromFrameMemory(HardwareRegister, i32),
+
+    MultiplyFloat32(HardwareRegister, HardwareRegister),
+    MultiplyFloat32FromFrameMemory(HardwareRegister, i32),
+
+    DivideFloat32(HardwareRegister, HardwareRegister),
+    DivideFloat32FromFrameMemory(HardwareRegister, i32),
 
     Call(FunctionSignature, Vec<Variable>, usize),
     Return,

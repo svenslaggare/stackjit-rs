@@ -34,6 +34,7 @@ pub enum VerifyErrorMessage {
     ArgumentIndexOutOfRange,
     WrongType(TypeId, TypeId),
     WrongArithmeticOperands,
+    WrongLogicalOperands,
     FunctionNotDefined(FunctionSignature),
     ExpectedNumberOfOperands(usize),
     ParameterCannotBeVoid,
@@ -126,7 +127,7 @@ impl<'a> Verifier<'a> {
 
                     self.same_type(instruction_index, &local_type, &operand)?;
                 }
-                Instruction::Add | Instruction::Sub => {
+                Instruction::Add | Instruction::Sub | Instruction::Multiply | Instruction::Divide => {
                     let op2 = self.pop_operand_stack(instruction_index)?;
                     let op1 = self.pop_operand_stack(instruction_index)?;
                     match (&op1, &op2) {
@@ -138,6 +139,18 @@ impl<'a> Verifier<'a> {
                         }
                         _ => {
                             return Err(VerifyError::with_index(instruction_index, VerifyErrorMessage::WrongArithmeticOperands));
+                        }
+                    }
+                }
+                Instruction::And | Instruction::Or => {
+                    let op2 = self.pop_operand_stack(instruction_index)?;
+                    let op1 = self.pop_operand_stack(instruction_index)?;
+                    match (&op1, &op2) {
+                        (TypeId::Bool, TypeId::Bool) => {
+                            self.push_operand_stack(op1);
+                        }
+                        _ => {
+                            return Err(VerifyError::with_index(instruction_index, VerifyErrorMessage::WrongLogicalOperands));
                         }
                     }
                 }

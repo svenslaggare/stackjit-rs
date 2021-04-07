@@ -165,6 +165,12 @@ fn remove_unnecessary_load_constant_for_block(compilation_result: &mut MIRCompil
                     instructions_to_remove.insert(load_constant_index);
                 }
             }
+            InstructionMIRData::SubInt32(destination, op1, op2) => {
+                if let Some((load_constant_index, constant_value)) = load_constants.remove(op2) {
+                    compilation_result.instructions[instruction_index].data = InstructionMIRData::SubInt32Constant(destination.clone(), op1.clone(), constant_value);
+                    instructions_to_remove.insert(load_constant_index);
+                }
+            }
             _ => {}
         }
 

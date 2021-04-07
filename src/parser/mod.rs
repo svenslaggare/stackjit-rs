@@ -311,6 +311,10 @@ impl Parser {
             "ldlen" => { Ok(Instruction::LoadArrayLength) }
             "add" => { Ok(Instruction::Add) }
             "sub" => { Ok(Instruction::Sub) }
+            "mul" => { Ok(Instruction::Multiply) }
+            "div" => { Ok(Instruction::Divide) }
+            "and" => { Ok(Instruction::And) }
+            "or" => { Ok(Instruction::Or) }
             "ldarg" => {
                 let argument = self.next_i32()?;
                 Ok(Instruction::LoadArgument(argument as u32))
@@ -410,6 +414,12 @@ impl Parser {
                 let target = self.next_i32()? as u32;
                 Ok(Instruction::BranchLessThanOrEqual(target))
             }
+            "cmpeq" => { Ok(Instruction::CompareEqual) }
+            "cmpne" => { Ok(Instruction::CompareNotEqual) }
+            "cmpgt" => { Ok(Instruction::CompareGreaterThan) }
+            "cmpge" => { Ok(Instruction::CompareGreaterThanOrEqual) }
+            "cmplt" => { Ok(Instruction::CompareLessThan) }
+            "cmple" => { Ok(Instruction::CompareLessThanOrEqual) }
             _ => { return Err(ParserError::NotDefinedInstruction(identifier.to_owned())); }
         }
     }

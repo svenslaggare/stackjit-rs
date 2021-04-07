@@ -166,6 +166,64 @@ impl<'a> InstructionMIRCompiler<'a> {
                     _ => { panic!("unexpected."); }
                 }
             }
+            Instruction::Multiply => {
+                let value_type = &operand_types[0];
+                let op2_reg = self.use_stack_register(value_type.clone());
+                let op1_reg = self.use_stack_register(value_type.clone());
+                let assign_reg = self.assign_stack_register(value_type.clone());
+
+                match value_type {
+                    TypeId::Int32 => {
+                        self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::MultiplyInt32(assign_reg, op1_reg, op2_reg)));
+                    }
+                    TypeId::Float32 => {
+                        self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::MultiplyFloat32(assign_reg, op1_reg, op2_reg)));
+                    }
+                    _ => { panic!("unexpected."); }
+                }
+            }
+            Instruction::Divide => {
+                let value_type = &operand_types[0];
+                let op2_reg = self.use_stack_register(value_type.clone());
+                let op1_reg = self.use_stack_register(value_type.clone());
+                let assign_reg = self.assign_stack_register(value_type.clone());
+
+                match value_type {
+                    TypeId::Int32 => {
+                        unimplemented!();
+                    }
+                    TypeId::Float32 => {
+                        self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::DivideFloat32(assign_reg, op1_reg, op2_reg)));
+                    }
+                    _ => { panic!("unexpected."); }
+                }
+            }
+            Instruction::And => {
+                let value_type = &operand_types[0];
+                let op2_reg = self.use_stack_register(value_type.clone());
+                let op1_reg = self.use_stack_register(value_type.clone());
+                let assign_reg = self.assign_stack_register(value_type.clone());
+
+                match value_type {
+                    TypeId::Bool => {
+                        self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::AndBool(assign_reg, op1_reg, op2_reg)));
+                    }
+                    _ => { panic!("unexpected."); }
+                }
+            }
+            Instruction::Or => {
+                let value_type = &operand_types[0];
+                let op2_reg = self.use_stack_register(value_type.clone());
+                let op1_reg = self.use_stack_register(value_type.clone());
+                let assign_reg = self.assign_stack_register(value_type.clone());
+
+                match value_type {
+                    TypeId::Bool => {
+                        self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::OrBool(assign_reg, op1_reg, op2_reg)));
+                    }
+                    _ => { panic!("unexpected."); }
+                }
+            }
             Instruction::Return => {
                 let return_value = if self.function.declaration().return_type() != &TypeId::Void {
                     Some(self.use_stack_register(self.function.declaration().return_type().clone()))

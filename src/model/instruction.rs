@@ -14,6 +14,10 @@ pub enum Instruction {
     StoreLocal(u32),
     Add,
     Sub,
+    Multiply,
+    Divide,
+    And,
+    Or,
     Call(FunctionSignature),
     LoadArgument(u32),
     Return,
@@ -85,6 +89,18 @@ impl std::fmt::Display for Instruction {
             }
             Instruction::Sub => {
                 write!(f, "Sub")
+            }
+            Instruction::Multiply => {
+                write!(f, "Multiply")
+            }
+            Instruction::Divide => {
+                write!(f, "Divide")
+            }
+            Instruction::And => {
+                write!(f, "And")
+            }
+            Instruction::Or => {
+                write!(f, "Or")
             }
             Instruction::Call(signature) => {
                 write!(f, "Call {}", signature)

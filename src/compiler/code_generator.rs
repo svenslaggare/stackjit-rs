@@ -381,6 +381,104 @@ impl<'a> CodeGenerator<'a> {
                     register_mapping::get(*source, DataSize::Bytes4)
                 ));
             }
+            InstructionIR::SubInt32Constant(destination, value) => {
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(
+                    Code::Sub_rm32_imm32,
+                    register_mapping::get(*destination, DataSize::Bytes4),
+                    *value
+                ).unwrap());
+            }
+            InstructionIR::SubInt32ConstantToFrameMemory(destination_offset, value) => {
+                self.encode_x86_instruction(X86Instruction::try_with_mem_i32(
+                    Code::Sub_rm32_imm32,
+                    MemoryOperand::with_base_displ(Register::RBP, *destination_offset),
+                    *value
+                ).unwrap());
+            }
+            InstructionIR::MultiplyInt32(destination, source) => {
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(
+                    Code::Imul_r32_rm32,
+                    register_mapping::get(*destination, DataSize::Bytes4),
+                    register_mapping::get(*source, DataSize::Bytes4)
+                ));
+            }
+            InstructionIR::MultiplyInt32FromFrameMemory(destination, source_offset) => {
+                self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                    Code::Imul_r32_rm32,
+                    register_mapping::get(*destination, DataSize::Bytes4),
+                    MemoryOperand::with_base_displ(Register::RBP, *source_offset)
+                ));
+            }
+            InstructionIR::AndInt32(destination, source) => {
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(
+                    Code::And_r32_rm32,
+                    register_mapping::get(*destination, DataSize::Bytes4),
+                    register_mapping::get(*source, DataSize::Bytes4)
+                ));
+            }
+            InstructionIR::AndInt32FromFrameMemory(destination, source_offset) => {
+                self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                    Code::And_r32_rm32,
+                    register_mapping::get(*destination, DataSize::Bytes4),
+                    MemoryOperand::with_base_displ(Register::RBP, *source_offset)
+                ));
+            }
+            InstructionIR::AndInt32ToFrameMemory(destination_offset, source) => {
+                self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                    Code::And_rm32_r32,
+                    MemoryOperand::with_base_displ(Register::RBP, *destination_offset),
+                    register_mapping::get(*source, DataSize::Bytes4)
+                ));
+            }
+            InstructionIR::AndInt32Constant(destination, value) => {
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(
+                    Code::And_rm32_imm32,
+                    register_mapping::get(*destination, DataSize::Bytes4),
+                    *value
+                ).unwrap());
+            }
+            InstructionIR::AndInt32ConstantToFrameMemory(destination_offset, value) => {
+                self.encode_x86_instruction(X86Instruction::try_with_mem_i32(
+                    Code::And_rm32_imm32,
+                    MemoryOperand::with_base_displ(Register::RBP, *destination_offset),
+                    *value
+                ).unwrap());
+            }
+            InstructionIR::OrInt32(destination, source) => {
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(
+                    Code::Or_r32_rm32,
+                    register_mapping::get(*destination, DataSize::Bytes4),
+                    register_mapping::get(*source, DataSize::Bytes4)
+                ));
+            }
+            InstructionIR::OrInt32FromFrameMemory(destination, source_offset) => {
+                self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                    Code::Or_r32_rm32,
+                    register_mapping::get(*destination, DataSize::Bytes4),
+                    MemoryOperand::with_base_displ(Register::RBP, *source_offset)
+                ));
+            }
+            InstructionIR::OrInt32ToFrameMemory(destination_offset, source) => {
+                self.encode_x86_instruction(X86Instruction::with_mem_reg(
+                    Code::Or_rm32_r32,
+                    MemoryOperand::with_base_displ(Register::RBP, *destination_offset),
+                    register_mapping::get(*source, DataSize::Bytes4)
+                ));
+            }
+            InstructionIR::OrInt32Constant(destination, value) => {
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(
+                    Code::Or_rm32_imm32,
+                    register_mapping::get(*destination, DataSize::Bytes4),
+                    *value
+                ).unwrap());
+            }
+            InstructionIR::OrInt32ConstantToFrameMemory(destination_offset, value) => {
+                self.encode_x86_instruction(X86Instruction::try_with_mem_i32(
+                    Code::Or_rm32_imm32,
+                    MemoryOperand::with_base_displ(Register::RBP, *destination_offset),
+                    *value
+                ).unwrap());
+            }
             InstructionIR::AddFloat32(destination, source) => {
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(
                     Code::Addss_xmm_xmmm32,
@@ -405,6 +503,34 @@ impl<'a> CodeGenerator<'a> {
             InstructionIR::SubFloat32FromFrameMemory(destination, source_offset) => {
                 self.encode_x86_instruction(X86Instruction::with_reg_mem(
                     Code::Subss_xmm_xmmm32,
+                    register_mapping::get(*destination, DataSize::Bytes4),
+                    MemoryOperand::with_base_displ(Register::RBP, *source_offset)
+                ));
+            }
+            InstructionIR::MultiplyFloat32(destination, source) => {
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(
+                    Code::Mulss_xmm_xmmm32,
+                    register_mapping::get(*destination, DataSize::Bytes4),
+                    register_mapping::get(*source, DataSize::Bytes4)
+                ));
+            }
+            InstructionIR::MultiplyFloat32FromFrameMemory(destination, source_offset) => {
+                self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                    Code::Mulss_xmm_xmmm32,
+                    register_mapping::get(*destination, DataSize::Bytes4),
+                    MemoryOperand::with_base_displ(Register::RBP, *source_offset)
+                ));
+            }
+            InstructionIR::DivideFloat32(destination, source) => {
+                self.encode_x86_instruction(X86Instruction::with_reg_reg(
+                    Code::Divss_xmm_xmmm32,
+                    register_mapping::get(*destination, DataSize::Bytes4),
+                    register_mapping::get(*source, DataSize::Bytes4)
+                ));
+            }
+            InstructionIR::DivideFloat32FromFrameMemory(destination, source_offset) => {
+                self.encode_x86_instruction(X86Instruction::with_reg_mem(
+                    Code::Divss_xmm_xmmm32,
                     register_mapping::get(*destination, DataSize::Bytes4),
                     MemoryOperand::with_base_displ(Register::RBP, *source_offset)
                 ));

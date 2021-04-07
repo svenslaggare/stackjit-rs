@@ -23,7 +23,7 @@ extern "C" fn add(x: f32, y: f32) -> f32 {
 }
 
 #[test]
-fn test1() {
+fn test_arithmetic1() {
     FLOAT_RESULT.with(|result| {
         *result.borrow_mut() = 0.0;
     });
@@ -56,7 +56,106 @@ fn test1() {
 }
 
 #[test]
-fn test2() {
+fn test_arithmetic2() {
+    FLOAT_RESULT.with(|result| {
+        *result.borrow_mut() = 0.0;
+    });
+
+    let mut vm = VirtualMachine::new();
+
+    vm.add_external_function(
+        FunctionDeclaration::with_external(
+            "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
+            print_float as *mut std::ffi::c_void
+        )
+    );
+
+    vm.add_function(Function::new(
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![],
+        vec![
+            Instruction::LoadFloat32(13.37),
+            Instruction::LoadFloat32(47.11),
+            Instruction::Sub,
+            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
+            Instruction::LoadInt32(0),
+            Instruction::Return
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(0, execution_result);
+    assert_eq!(13.37 - 47.11, FLOAT_RESULT.with(|result| *result.borrow()));
+}
+
+#[test]
+fn test_arithmetic3() {
+    FLOAT_RESULT.with(|result| {
+        *result.borrow_mut() = 0.0;
+    });
+
+    let mut vm = VirtualMachine::new();
+
+    vm.add_external_function(
+        FunctionDeclaration::with_external(
+            "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
+            print_float as *mut std::ffi::c_void
+        )
+    );
+
+    vm.add_function(Function::new(
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![],
+        vec![
+            Instruction::LoadFloat32(13.37),
+            Instruction::LoadFloat32(47.11),
+            Instruction::Multiply,
+            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
+            Instruction::LoadInt32(0),
+            Instruction::Return
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(0, execution_result);
+    assert_eq!(13.37 * 47.11, FLOAT_RESULT.with(|result| *result.borrow()));
+}
+
+#[test]
+fn test_arithmetic4() {
+    FLOAT_RESULT.with(|result| {
+        *result.borrow_mut() = 0.0;
+    });
+
+    let mut vm = VirtualMachine::new();
+
+    vm.add_external_function(
+        FunctionDeclaration::with_external(
+            "print".to_owned(), vec![TypeId::Float32], TypeId::Void,
+            print_float as *mut std::ffi::c_void
+        )
+    );
+
+    vm.add_function(Function::new(
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![],
+        vec![
+            Instruction::LoadFloat32(13.37),
+            Instruction::LoadFloat32(47.11),
+            Instruction::Divide,
+            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
+            Instruction::LoadInt32(0),
+            Instruction::Return
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(0, execution_result);
+    assert_eq!(13.37 / 47.11, FLOAT_RESULT.with(|result| *result.borrow()));
+}
+
+#[test]
+fn test_call1() {
     FLOAT_RESULT.with(|result| {
         *result.borrow_mut() = 0.0;
     });
@@ -96,7 +195,7 @@ fn test2() {
 }
 
 #[test]
-fn test3() {
+fn test_call2() {
     FLOAT_RESULT.with(|result| {
         *result.borrow_mut() = 0.0;
     });
@@ -158,7 +257,7 @@ fn test3() {
 }
 
 #[test]
-fn test4() {
+fn test_call3() {
     FLOAT_RESULT.with(|result| {
         *result.borrow_mut() = 0.0;
     });
@@ -191,7 +290,7 @@ fn test4() {
 }
 
 #[test]
-fn test5() {
+fn test_local1() {
     FLOAT_RESULT.with(|result| {
         *result.borrow_mut() = 0.0;
     });
@@ -229,7 +328,7 @@ fn test5() {
 }
 
 #[test]
-fn test6() {
+fn test_local2() {
     FLOAT_RESULT.with(|result| {
         *result.borrow_mut() = 0.0;
     });
@@ -267,7 +366,7 @@ fn test6() {
 }
 
 #[test]
-fn test7() {
+fn test_local3() {
     FLOAT_RESULT.with(|result| {
         *result.borrow_mut() = 0.0;
     });

@@ -100,6 +100,17 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::SubInt32(HardwareRegister::Int(0), HardwareRegister::Int(1)));
                 self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::Int(0)));
             }
+            InstructionMIRData::SubInt32Constant(destination, operand1, operand2) => {
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(operand1)));
+                self.instructions.push(InstructionIR::SubInt32Constant(HardwareRegister::Int(0), *operand2));
+                self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::Int(0)));
+            }
+            InstructionMIRData::MultiplyInt32(destination, operand1, operand2) => {
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(operand1)));
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(1), self.get_register_stack_offset(operand2)));
+                self.instructions.push(InstructionIR::MultiplyInt32(HardwareRegister::Int(0), HardwareRegister::Int(1)));
+                self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::Int(0)));
+            }
             InstructionMIRData::AddFloat32(destination, operand1, operand2) => {
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Float(0), self.get_register_stack_offset(operand1)));
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Float(1), self.get_register_stack_offset(operand2)));
@@ -111,6 +122,30 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Float(1), self.get_register_stack_offset(operand2)));
                 self.instructions.push(InstructionIR::SubFloat32(HardwareRegister::Float(0), HardwareRegister::Float(1)));
                 self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::Float(0)));
+            }
+            InstructionMIRData::MultiplyFloat32(destination, operand1, operand2) => {
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Float(0), self.get_register_stack_offset(operand1)));
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Float(1), self.get_register_stack_offset(operand2)));
+                self.instructions.push(InstructionIR::MultiplyFloat32(HardwareRegister::Float(0), HardwareRegister::Float(1)));
+                self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::Float(0)));
+            }
+            InstructionMIRData::DivideFloat32(destination, operand1, operand2) => {
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Float(0), self.get_register_stack_offset(operand1)));
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Float(1), self.get_register_stack_offset(operand2)));
+                self.instructions.push(InstructionIR::DivideFloat32(HardwareRegister::Float(0), HardwareRegister::Float(1)));
+                self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::Float(0)));
+            }
+            InstructionMIRData::AndBool(destination, operand1, operand2) => {
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(operand1)));
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(1), self.get_register_stack_offset(operand2)));
+                self.instructions.push(InstructionIR::AndInt32(HardwareRegister::Int(0), HardwareRegister::Int(1)));
+                self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::Int(0)));
+            }
+            InstructionMIRData::OrBool(destination, operand1, operand2) => {
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(operand1)));
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(1), self.get_register_stack_offset(operand2)));
+                self.instructions.push(InstructionIR::OrInt32(HardwareRegister::Int(0), HardwareRegister::Int(1)));
+                self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::Int(0)));
             }
             InstructionMIRData::Return(source) => {
                 if let Some(source) = source {
