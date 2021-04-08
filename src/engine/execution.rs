@@ -39,7 +39,8 @@ impl ExecutionEngine {
         };
 
         let mut test_profile = std::env::var("TEST_PROFILE");
-        test_profile = Ok("1".to_owned());
+        // test_profile = Ok("4".to_owned());
+        // test_profile = Ok("2".to_owned());
 
         if let Ok(test_profile) = test_profile {
             if test_profile == "2" {

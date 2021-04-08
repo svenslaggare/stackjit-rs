@@ -1,10 +1,11 @@
+use std::collections::BTreeSet;
+
 use crate::mir::RegisterMIR;
-use crate::compiler::ir::{InstructionIR, HardwareRegister};
+use crate::compiler::ir::{InstructionIR, HardwareRegister, HardwareRegisterExplicit};
 use crate::optimization::register_allocation::{AllocatedRegister, RegisterAllocation};
 use crate::analysis::VirtualRegister;
 use crate::compiler::stack_layout;
 use crate::model::function::Function;
-use std::collections::BTreeSet;
 
 pub trait AllocatedCompilerHelpers {
     fn function(&self) -> &Function;

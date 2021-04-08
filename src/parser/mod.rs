@@ -315,6 +315,7 @@ impl Parser {
             "div" => { Ok(Instruction::Divide) }
             "and" => { Ok(Instruction::And) }
             "or" => { Ok(Instruction::Or) }
+            "not" => { Ok(Instruction::Not) }
             "ldarg" => {
                 let argument = self.next_i32()?;
                 Ok(Instruction::LoadArgument(argument as u32))

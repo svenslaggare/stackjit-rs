@@ -190,7 +190,7 @@ impl<'a> InstructionMIRCompiler<'a> {
 
                 match value_type {
                     TypeId::Int32 => {
-                        unimplemented!();
+                        self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::DivideInt32(assign_reg, op1_reg, op2_reg)));
                     }
                     TypeId::Float32 => {
                         self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::DivideFloat32(assign_reg, op1_reg, op2_reg)));

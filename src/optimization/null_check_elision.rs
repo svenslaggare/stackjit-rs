@@ -107,6 +107,7 @@ fn compute_null_check_elision_for_block_internal(function: &Function,
             InstructionMIRData::SubInt32(_, _, _) => {}
             InstructionMIRData::SubInt32Constant(_, _, _) => {}
             InstructionMIRData::MultiplyInt32(_, _, _) => {}
+            InstructionMIRData::DivideInt32(_, _, _) => {}
             InstructionMIRData::AddFloat32(_, _, _) => {}
             InstructionMIRData::SubFloat32(_, _, _) => {}
             InstructionMIRData::MultiplyFloat32(_, _, _) => {}

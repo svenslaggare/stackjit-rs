@@ -59,3 +59,44 @@ fn test3() {
     let execution_result = vm.execute().unwrap();
     assert_eq!(4711 * 1337, execution_result);
 }
+
+#[test]
+fn test4() {
+    let mut vm = VirtualMachine::new();
+
+    vm.add_function(Function::new(
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        Vec::new(),
+        vec![
+            Instruction::LoadInt32(4711),
+            Instruction::LoadInt32(1337),
+            Instruction::Divide,
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(4711 / 1337, execution_result);
+}
+
+#[test]
+fn test5() {
+    let mut vm = VirtualMachine::new();
+
+    vm.add_function(Function::new(
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Int32],
+        vec![
+            Instruction::LoadInt32(1337),
+            Instruction::StoreLocal(0),
+            Instruction::LoadInt32(4711),
+            Instruction::LoadLocal(0),
+            Instruction::Divide,
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(4711 / 1337, execution_result);
+}
+

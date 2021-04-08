@@ -131,6 +131,9 @@ pub enum InstructionIR {
     MultiplyInt32(HardwareRegister, HardwareRegister),
     MultiplyInt32FromFrameMemory(HardwareRegister, i32),
 
+    DivideInt32(HardwareRegister, HardwareRegister),
+    DivideInt32FromFrameMemory(HardwareRegister, i32),
+
     AndInt32(HardwareRegister, HardwareRegister),
     AndInt32FromFrameMemory(HardwareRegister, i32),
     AndInt32ToFrameMemory(i32, HardwareRegister),

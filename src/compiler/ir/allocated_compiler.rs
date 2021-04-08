@@ -20,6 +20,7 @@ use crate::optimization::register_allocation;
 use crate::optimization::register_allocation::{AllocatedRegister, RegisterAllocation, RegisterAllocationSettings};
 use crate::compiler::code_generator::register_mapping::DataSize;
 use crate::compiler::ir::helpers::{AllocatedCompilerHelpers, TempRegisters};
+use iced_x86::Register;
 
 pub struct AllocatedInstructionIRCompiler<'a> {
     binder: &'a Binder,
@@ -233,6 +234,16 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                         instructions.push(InstructionIR::MultiplyInt32FromFrameMemory(op1, op2));
                     }
                 );
+            }
+            InstructionMIRData::DivideInt32(destination, operand1, operand2) => {
+                let alive_registers = self.push_alive_registers(instruction_index);
+
+                self.move_to_hardware_register(HardwareRegister::IntSpill, operand1);
+                self.move_to_hardware_register(HardwareRegister::Int(5), operand2);
+                self.instructions.push(InstructionIR::DivideInt32(HardwareRegister::IntSpill, HardwareRegister::Int(5)));
+
+                self.pop_alive_registers(&alive_registers, Some(HardwareRegister::IntSpill));
+                self.move_from_hardware_register(destination, HardwareRegister::IntSpill);
             }
             InstructionMIRData::AndBool(destination, operand1, operand2) => {
                 self.binary_operator_with_destination(

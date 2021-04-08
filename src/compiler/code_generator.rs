@@ -409,6 +409,58 @@ impl<'a> CodeGenerator<'a> {
                     MemoryOperand::with_base_displ(Register::RBP, *source_offset)
                 ));
             }
+            InstructionIR::DivideInt32(destination, source) => {
+                let destination_register = register_mapping::get(*destination, DataSize::Bytes8);
+
+                if destination_register != Register::RAX {
+                    self.encode_x86_instruction(X86Instruction::with_reg_reg(
+                        Code::Mov_rm64_r64,
+                        Register::RAX,
+                        destination_register
+                    ));
+                }
+
+                self.encode_x86_instruction(X86Instruction::with(Code::Cdq));
+
+                self.encode_x86_instruction(X86Instruction::with_reg(
+                    Code::Idiv_rm32,
+                    register_mapping::get(*source, DataSize::Bytes4)
+                ));
+
+                if destination_register != Register::RAX {
+                    self.encode_x86_instruction(X86Instruction::with_reg_reg(
+                        Code::Mov_rm64_r64,
+                        destination_register,
+                        Register::RAX,
+                    ));
+                }
+            }
+            InstructionIR::DivideInt32FromFrameMemory(destination, source_offset) => {
+                let destination_register = register_mapping::get(*destination, DataSize::Bytes8);
+
+                if destination_register != Register::RAX {
+                    self.encode_x86_instruction(X86Instruction::with_reg_reg(
+                        Code::Mov_rm64_r64,
+                        Register::RAX,
+                        destination_register
+                    ));
+                }
+
+                self.encode_x86_instruction(X86Instruction::with(Code::Cdq));
+
+                self.encode_x86_instruction(X86Instruction::with_mem(
+                    Code::Idiv_rm32,
+                    MemoryOperand::with_base_displ(Register::RBP, *source_offset)
+                ));
+
+                if destination_register != Register::RAX {
+                    self.encode_x86_instruction(X86Instruction::with_reg_reg(
+                        Code::Mov_rm64_r64,
+                        destination_register,
+                        Register::RAX,
+                    ));
+                }
+            }
             InstructionIR::AndInt32(destination, source) => {
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(
                     Code::And_r32_rm32,

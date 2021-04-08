@@ -111,6 +111,12 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::MultiplyInt32(HardwareRegister::Int(0), HardwareRegister::Int(1)));
                 self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::Int(0)));
             }
+            InstructionMIRData::DivideInt32(destination, operand1, operand2) => {
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(operand1)));
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(1), self.get_register_stack_offset(operand2)));
+                self.instructions.push(InstructionIR::DivideInt32(HardwareRegister::Int(0), HardwareRegister::Int(1)));
+                self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::Int(0)));
+            }
             InstructionMIRData::AddFloat32(destination, operand1, operand2) => {
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Float(0), self.get_register_stack_offset(operand1)));
                 self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Float(1), self.get_register_stack_offset(operand2)));
