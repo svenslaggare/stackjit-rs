@@ -59,7 +59,7 @@ fn test_create1() {
         vec![
             Instruction::LoadInt32(4711),
             Instruction::NewArray(TypeId::Int32),
-            Instruction::Call(FunctionSignature { name: "print_array".to_owned(), parameters: vec![TypeId::Array(Box::new(TypeId::Int32))] }),
+            Instruction::Call(FunctionSignature::new("print_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Int32))])),
             Instruction::LoadInt32(0),
             Instruction::Return,
         ]
@@ -93,7 +93,7 @@ fn test_load1() {
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
             Instruction::LoadInt32(i32::MIN),
-            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Int32, TypeId::Int32] }),
+            Instruction::Call(FunctionSignature::new("set_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Int32, TypeId::Int32])),
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
             Instruction::LoadElement(TypeId::Int32),
@@ -137,11 +137,11 @@ fn test_load2() {
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
             Instruction::LoadFloat32(1337.0),
-            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![TypeId::Array(Box::new(TypeId::Float32)), TypeId::Int32, TypeId::Float32] }),
+            Instruction::Call(FunctionSignature::new("set_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Float32)), TypeId::Int32, TypeId::Float32])),
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
             Instruction::LoadElement(TypeId::Float32),
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
+            Instruction::Call(FunctionSignature::new("print".to_owned(), vec![TypeId::Float32])),
 
             Instruction::LoadInt32(0),
             Instruction::Return,
@@ -175,12 +175,12 @@ fn test_load3() {
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
             Instruction::LoadInt32(1000),
-            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Int32, TypeId::Int32] }),
+            Instruction::Call(FunctionSignature::new("set_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Int32, TypeId::Int32])),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(1),
             Instruction::LoadInt32(2000),
-            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Int32, TypeId::Int32] }),
+            Instruction::Call(FunctionSignature::new("set_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Int32)), TypeId::Int32, TypeId::Int32])),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
@@ -316,7 +316,7 @@ fn test_store3() {
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(1),
             Instruction::LoadElement(TypeId::Float32),
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
+            Instruction::Call(FunctionSignature::new("print".to_owned(), vec![TypeId::Float32])),
 
             Instruction::LoadInt32(0),
             Instruction::Return
@@ -413,7 +413,7 @@ fn test_checks2() {
         vec![],
         vec![
             Instruction::LoadInt32(2000),
-            Instruction::Call(FunctionSignature { name: "new_array".to_owned(), parameters: vec![] }),
+            Instruction::Call(FunctionSignature::new("new_array".to_owned(), vec![])),
             Instruction::Add,
             Instruction::Return
         ]

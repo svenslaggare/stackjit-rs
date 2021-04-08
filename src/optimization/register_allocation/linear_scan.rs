@@ -396,11 +396,11 @@ fn test_allocate5() {
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
             Instruction::LoadFloat32(1337.0),
-            Instruction::Call(FunctionSignature { name: "set_array".to_owned(), parameters: vec![TypeId::Array(Box::new(TypeId::Float32)), TypeId::Int32, TypeId::Float32] }),
+            Instruction::Call(FunctionSignature::new("set_array".to_owned(), vec![TypeId::Array(Box::new(TypeId::Float32)), TypeId::Int32, TypeId::Float32])),
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
             Instruction::LoadElement(TypeId::Float32),
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
+            Instruction::Call(FunctionSignature::new("print".to_owned(), vec![TypeId::Float32])),
 
             Instruction::LoadInt32(0),
             Instruction::Return,

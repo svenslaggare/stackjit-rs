@@ -52,7 +52,7 @@ fn test_create1() {
         Vec::new(),
         vec![
             Instruction::NewObject("Point".to_owned()),
-            Instruction::Call(FunctionSignature { name: "print_point".to_owned(), parameters: vec![TypeId::Class("Point".to_owned())] }),
+            Instruction::Call(FunctionSignature::new("print_point".to_owned(), vec![TypeId::Class("Point".to_owned())])),
             Instruction::LoadInt32(0),
             Instruction::Return,
         ]
@@ -101,7 +101,7 @@ fn test_load1() {
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(i32::MIN),
-            Instruction::Call(FunctionSignature { name: "set_point_x".to_owned(), parameters: vec![TypeId::Class("Point".to_owned()), TypeId::Int32] }),
+            Instruction::Call(FunctionSignature::new("set_point_x".to_owned(), vec![TypeId::Class("Point".to_owned()), TypeId::Int32])),
 
             Instruction::LoadLocal(0),
             Instruction::LoadField("Point".to_owned(), "x".to_owned()),
@@ -184,10 +184,10 @@ fn test_array1() {
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(0),
-            Instruction::Call(FunctionSignature {
-                name: "print_array_element".to_string(),
-                parameters: vec![TypeId::Array(Box::new(TypeId::Class("Point".to_owned()))), TypeId::Int32]
-            }),
+            Instruction::Call(FunctionSignature::new(
+                "print_array_element".to_string(),
+                vec![TypeId::Array(Box::new(TypeId::Class("Point".to_owned()))), TypeId::Int32]
+            )),
 
             Instruction::LoadInt32(0),
             Instruction::Return,

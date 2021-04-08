@@ -47,7 +47,7 @@ impl<'a> InstructionMIRCompiler<'a> {
         };
 
         compiler.make_macro(
-            FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] },
+            FunctionSignature::new("std.gc.collect".to_string(), vec![]),
             |compiler: &mut InstructionMIRCompiler, instruction_index: usize, _instruction: &Instruction| {
                 compiler.instructions.push(InstructionMIR::new(
                     instruction_index,
@@ -57,7 +57,7 @@ impl<'a> InstructionMIRCompiler<'a> {
         );
 
         compiler.make_macro(
-            FunctionSignature { name: "std.gc.print_stack_frame".to_string(), parameters: vec![] },
+            FunctionSignature::new("std.gc.print_stack_frame".to_string(), vec![]),
             |compiler: &mut InstructionMIRCompiler, instruction_index: usize, _instruction: &Instruction| {
                 compiler.instructions.push(InstructionMIR::new(
                     instruction_index,

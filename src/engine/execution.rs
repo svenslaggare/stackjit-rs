@@ -102,7 +102,7 @@ impl ExecutionEngine {
 
     fn get_entrypoint(&self) -> ExecutionEngineResult<FunctionAddress> {
         self.binder
-            .get(&FunctionSignature { name: "main".to_owned(), parameters: Vec::new() })
+            .get(&FunctionSignature::new("main".to_owned(), Vec::new()))
             .ok_or(ExecutionEngineError::NoMainFunction)?
             .address()
             .ok_or(ExecutionEngineError::NoMainFunctionCompiled)

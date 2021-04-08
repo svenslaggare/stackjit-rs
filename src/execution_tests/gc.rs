@@ -13,7 +13,7 @@ fn test_stack_frame1() {
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),
-            Instruction::Call(FunctionSignature { name: "std.gc.print_stack_frame".to_string(), parameters: vec![] }),
+            Instruction::Call(FunctionSignature::new("std.gc.print_stack_frame".to_string(), vec![])),
             Instruction::NewArray(TypeId::Int32),
             Instruction::Return,
         ]
@@ -24,7 +24,7 @@ fn test_stack_frame1() {
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),
-            Instruction::Call(FunctionSignature { name: "create_int_array".to_string(), parameters: vec![TypeId::Int32] }),
+            Instruction::Call(FunctionSignature::new("create_int_array".to_string(), vec![TypeId::Int32])),
             Instruction::Return,
         ]
     )).unwrap();
@@ -36,12 +36,12 @@ fn test_stack_frame1() {
             Instruction::LoadInt32(1000),
 
             Instruction::LoadInt32(4711),
-            Instruction::Call(FunctionSignature { name: "std.gc.print_stack_frame".to_string(), parameters: vec![] }),
+            Instruction::Call(FunctionSignature::new("std.gc.print_stack_frame".to_string(), vec![])),
             Instruction::NewArray(TypeId::Int32),
             Instruction::StoreLocal(0),
 
             Instruction::LoadInt32(1337),
-            Instruction::Call(FunctionSignature { name: "create_array".to_string(), parameters: vec![TypeId::Int32] }),
+            Instruction::Call(FunctionSignature::new("create_array".to_string(), vec![TypeId::Int32])),
             Instruction::StoreLocal(1),
 
             Instruction::Return,
@@ -81,7 +81,7 @@ fn test_collect1() {
             Instruction::LoadInt32(4711),
             Instruction::StoreField("Point".to_owned(), "x".to_owned()),
 
-            Instruction::Call(FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] }),
+            Instruction::Call(FunctionSignature::new("std.gc.collect".to_string(), vec![])),
 
             Instruction::LoadLocal(1),
             Instruction::LoadField("Point".to_owned(), "x".to_owned()),
@@ -130,7 +130,7 @@ fn test_collect2() {
             Instruction::LoadNull(TypeId::Class("Point".to_owned())),
             Instruction::StoreLocal(1),
 
-            Instruction::Call(FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] }),
+            Instruction::Call(FunctionSignature::new("std.gc.collect".to_string(), vec![])),
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(100),
@@ -172,7 +172,7 @@ fn test_collect3() {
             Instruction::NewObject("Point".to_owned()),
             Instruction::StoreLocal(1),
 
-            Instruction::Call(FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] }),
+            Instruction::Call(FunctionSignature::new("std.gc.collect".to_string(), vec![])),
 
             Instruction::LoadInt32(0),
             Instruction::Return,
@@ -214,7 +214,7 @@ fn test_collect4() {
             Instruction::NewObject("Point".to_owned()),
             Instruction::StoreElement(point_type.clone()),
 
-            Instruction::Call(FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] }),
+            Instruction::Call(FunctionSignature::new("std.gc.collect".to_string(), vec![])),
 
             Instruction::LoadInt32(0),
             Instruction::Return,
@@ -259,7 +259,7 @@ fn test_collect5() {
             Instruction::LoadNull(TypeId::Array(Box::new(point_type.clone()))),
             Instruction::StoreLocal(0),
 
-            Instruction::Call(FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] }),
+            Instruction::Call(FunctionSignature::new("std.gc.collect".to_string(), vec![])),
 
             Instruction::LoadInt32(0),
             Instruction::Return,
@@ -287,7 +287,7 @@ fn test_collect6() {
             Instruction::LoadInt32(4711),
             Instruction::NewArray(TypeId::Int32),
 
-            Instruction::Call(FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] }),
+            Instruction::Call(FunctionSignature::new("std.gc.collect".to_string(), vec![])),
 
             Instruction::StoreLocal(0),
 
@@ -317,7 +317,7 @@ fn test_collect7() {
             Instruction::LoadInt32(4711),
             Instruction::NewArray(TypeId::Int32),
 
-            Instruction::Call(FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] }),
+            Instruction::Call(FunctionSignature::new("std.gc.collect".to_string(), vec![])),
 
             Instruction::StoreLocal(1),
 
@@ -346,7 +346,7 @@ fn test_collect8() {
             Instruction::LoadInt32(4711),
             Instruction::NewArray(TypeId::Int32),
 
-            Instruction::Call(FunctionSignature { name: "std.gc.collect".to_string(), parameters: vec![] }),
+            Instruction::Call(FunctionSignature::new("std.gc.collect".to_string(), vec![])),
 
             Instruction::StoreLocal(1),
 
@@ -358,7 +358,7 @@ fn test_collect8() {
         FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Int32))],
         vec![
-            Instruction::Call(FunctionSignature { name: "inner".to_string(), parameters: vec![] }),
+            Instruction::Call(FunctionSignature::new("inner".to_string(), vec![])),
             Instruction::StoreLocal(0),
 
             Instruction::LoadInt32(0),

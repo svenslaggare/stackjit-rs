@@ -95,7 +95,7 @@ fn test_operator1() {
             Instruction::LoadFalse,
             Instruction::And,
 
-            Instruction::Call(FunctionSignature { name: "convert_bool_to_int".to_string(), parameters: vec![TypeId::Bool] }),
+            Instruction::Call(FunctionSignature::new("convert_bool_to_int".to_string(), vec![TypeId::Bool])),
             Instruction::Return,
         ]
     )).unwrap();
@@ -123,7 +123,7 @@ fn test_operator2() {
             Instruction::LoadTrue,
             Instruction::And,
 
-            Instruction::Call(FunctionSignature { name: "convert_bool_to_int".to_string(), parameters: vec![TypeId::Bool] }),
+            Instruction::Call(FunctionSignature::new("convert_bool_to_int".to_string(), vec![TypeId::Bool])),
             Instruction::Return,
         ]
     )).unwrap();
@@ -151,7 +151,7 @@ fn test_operator3() {
             Instruction::LoadFalse,
             Instruction::Or,
 
-            Instruction::Call(FunctionSignature { name: "convert_bool_to_int".to_string(), parameters: vec![TypeId::Bool] }),
+            Instruction::Call(FunctionSignature::new("convert_bool_to_int".to_string(), vec![TypeId::Bool])),
             Instruction::Return,
         ]
     )).unwrap();
@@ -178,7 +178,7 @@ fn test_operator4() {
             Instruction::LoadTrue,
             Instruction::Not,
 
-            Instruction::Call(FunctionSignature { name: "convert_bool_to_int".to_string(), parameters: vec![TypeId::Bool] }),
+            Instruction::Call(FunctionSignature::new("convert_bool_to_int".to_string(), vec![TypeId::Bool])),
             Instruction::Return,
         ]
     )).unwrap();
@@ -205,7 +205,7 @@ fn test_operator5() {
             Instruction::LoadFalse,
             Instruction::Not,
 
-            Instruction::Call(FunctionSignature { name: "convert_bool_to_int".to_string(), parameters: vec![TypeId::Bool] }),
+            Instruction::Call(FunctionSignature::new("convert_bool_to_int".to_string(), vec![TypeId::Bool])),
             Instruction::Return,
         ]
     )).unwrap();
@@ -245,7 +245,7 @@ fn test_array1() {
 
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(1),
-            Instruction::Call(FunctionSignature { name: "get_element".to_string(), parameters: vec![TypeId::Array(Box::new(TypeId::Bool)), TypeId::Int32] }),
+            Instruction::Call(FunctionSignature::new("get_element".to_string(), vec![TypeId::Array(Box::new(TypeId::Bool)), TypeId::Int32])),
             Instruction::Return,
         ]
     )).unwrap();
@@ -286,7 +286,7 @@ fn test_array2() {
             Instruction::LoadLocal(0),
             Instruction::LoadInt32(1),
             Instruction::LoadElement(TypeId::Bool),
-            Instruction::Call(FunctionSignature { name: "convert_bool_to_int".to_string(), parameters: vec![TypeId::Bool] }),
+            Instruction::Call(FunctionSignature::new("convert_bool_to_int".to_string(), vec![TypeId::Bool])),
             Instruction::Return,
         ]
     )).unwrap();
@@ -313,7 +313,7 @@ fn test_compare1() {
             Instruction::LoadInt32(1000),
             Instruction::LoadInt32(1000),
             Instruction::CompareEqual,
-            Instruction::Call(FunctionSignature { name: "convert_bool_to_int".to_string(), parameters: vec![TypeId::Bool] }),
+            Instruction::Call(FunctionSignature::new("convert_bool_to_int".to_string(), vec![TypeId::Bool])),
             Instruction::Return,
         ]
     )).unwrap();
@@ -340,7 +340,7 @@ fn test_compare2() {
             Instruction::LoadInt32(1000),
             Instruction::LoadInt32(1000),
             Instruction::CompareNotEqual,
-            Instruction::Call(FunctionSignature { name: "convert_bool_to_int".to_string(), parameters: vec![TypeId::Bool] }),
+            Instruction::Call(FunctionSignature::new("convert_bool_to_int".to_string(), vec![TypeId::Bool])),
             Instruction::Return,
         ]
     )).unwrap();
@@ -367,7 +367,7 @@ fn test_compare3() {
             Instruction::LoadInt32(1000),
             Instruction::LoadInt32(2000),
             Instruction::CompareNotEqual,
-            Instruction::Call(FunctionSignature { name: "convert_bool_to_int".to_string(), parameters: vec![TypeId::Bool] }),
+            Instruction::Call(FunctionSignature::new("convert_bool_to_int".to_string(), vec![TypeId::Bool])),
             Instruction::Return,
         ]
     )).unwrap();
@@ -394,7 +394,7 @@ fn test_compare4() {
             Instruction::LoadFloat32(1000.0),
             Instruction::LoadFloat32(1000.0),
             Instruction::CompareEqual,
-            Instruction::Call(FunctionSignature { name: "convert_bool_to_int".to_string(), parameters: vec![TypeId::Bool] }),
+            Instruction::Call(FunctionSignature::new("convert_bool_to_int".to_string(), vec![TypeId::Bool])),
             Instruction::Return,
         ]
     )).unwrap();

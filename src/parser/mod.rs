@@ -594,7 +594,7 @@ fn test_parse_function3() {
 
     assert_eq!(Instruction::LoadInt32(100), function.instructions()[0]);
     assert_eq!(Instruction::LoadLocal(0), function.instructions()[1]);
-    assert_eq!(Instruction::Call(FunctionSignature { name: "addInt".to_string(), parameters: vec![TypeId::Int32, TypeId::Int32] }), function.instructions()[2]);
+    assert_eq!(Instruction::Call(FunctionSignature::new("addInt".to_string(), vec![TypeId::Int32, TypeId::Int32])), function.instructions()[2]);
     assert_eq!(Instruction::Return, function.instructions()[3]);
 }
 

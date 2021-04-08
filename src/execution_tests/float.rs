@@ -44,7 +44,7 @@ fn test_arithmetic1() {
             Instruction::LoadFloat32(13.37),
             Instruction::LoadFloat32(47.11),
             Instruction::Add,
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
+            Instruction::Call(FunctionSignature::new("print".to_owned(), vec![TypeId::Float32])),
             Instruction::LoadInt32(0),
             Instruction::Return
         ]
@@ -77,7 +77,7 @@ fn test_arithmetic2() {
             Instruction::LoadFloat32(13.37),
             Instruction::LoadFloat32(47.11),
             Instruction::Sub,
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
+            Instruction::Call(FunctionSignature::new("print".to_owned(), vec![TypeId::Float32])),
             Instruction::LoadInt32(0),
             Instruction::Return
         ]
@@ -110,7 +110,7 @@ fn test_arithmetic3() {
             Instruction::LoadFloat32(13.37),
             Instruction::LoadFloat32(47.11),
             Instruction::Multiply,
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
+            Instruction::Call(FunctionSignature::new("print".to_owned(), vec![TypeId::Float32])),
             Instruction::LoadInt32(0),
             Instruction::Return
         ]
@@ -143,7 +143,7 @@ fn test_arithmetic4() {
             Instruction::LoadFloat32(13.37),
             Instruction::LoadFloat32(47.11),
             Instruction::Divide,
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
+            Instruction::Call(FunctionSignature::new("print".to_owned(), vec![TypeId::Float32])),
             Instruction::LoadInt32(0),
             Instruction::Return
         ]
@@ -182,8 +182,8 @@ fn test_call1() {
         vec![
             Instruction::LoadFloat32(13.37),
             Instruction::LoadFloat32(47.11),
-            Instruction::Call(FunctionSignature { name: "add".to_owned(), parameters: vec![TypeId::Float32, TypeId::Float32] }),
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
+            Instruction::Call(FunctionSignature::new("add".to_owned(), vec![TypeId::Float32, TypeId::Float32])),
+            Instruction::Call(FunctionSignature::new("print".to_owned(), vec![TypeId::Float32])),
             Instruction::LoadInt32(0),
             Instruction::Return
         ]
@@ -245,7 +245,7 @@ fn test_call2() {
             Instruction::LoadFloat32(7.1),
             Instruction::LoadFloat32(8.1),
             Instruction::Call(FunctionSignature::new("sum8".to_owned(), (0..8).map(|_| TypeId::Float32).collect())),
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
+            Instruction::Call(FunctionSignature::new("print".to_owned(), vec![TypeId::Float32])),
             Instruction::LoadInt32(0),
             Instruction::Return,
         ]
@@ -278,7 +278,7 @@ fn test_call3() {
             Instruction::LoadFloat32(13.37),
             Instruction::LoadFloat32(47.11),
             Instruction::Sub,
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
+            Instruction::Call(FunctionSignature::new("print".to_owned(), vec![TypeId::Float32])),
             Instruction::LoadInt32(0),
             Instruction::Return
         ]
@@ -315,7 +315,7 @@ fn test_local1() {
             Instruction::LoadFloat32(3000.0),
             Instruction::LoadLocal(0),
             Instruction::Add,
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
+            Instruction::Call(FunctionSignature::new("print".to_owned(), vec![TypeId::Float32])),
 
             Instruction::LoadInt32(0),
             Instruction::Return
@@ -353,7 +353,7 @@ fn test_local2() {
             Instruction::LoadLocal(0),
             Instruction::LoadFloat32(3000.0),
             Instruction::Add,
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
+            Instruction::Call(FunctionSignature::new("print".to_owned(), vec![TypeId::Float32])),
 
             Instruction::LoadInt32(0),
             Instruction::Return
@@ -396,7 +396,7 @@ fn test_local3() {
             Instruction::LoadLocal(0),
             Instruction::Add,
 
-            Instruction::Call(FunctionSignature { name: "print".to_owned(), parameters: vec![TypeId::Float32] }),
+            Instruction::Call(FunctionSignature::new("print".to_owned(), vec![TypeId::Float32])),
             Instruction::LoadInt32(0),
             Instruction::Return,
         ]

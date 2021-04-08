@@ -36,7 +36,7 @@ fn test_external1() {
         vec![
             Instruction::LoadInt32(4711),
             Instruction::LoadInt32(1337),
-            Instruction::Call(FunctionSignature { name: "sum".to_owned(), parameters: vec![TypeId::Int32, TypeId::Int32] }),
+            Instruction::Call(FunctionSignature::new("sum".to_owned(), vec![TypeId::Int32, TypeId::Int32])),
             Instruction::Return,
         ]
     )).unwrap();
@@ -62,7 +62,7 @@ fn test_external2() {
         vec![
             Instruction::LoadInt32(4711),
             Instruction::LoadInt32(1337),
-            Instruction::Call(FunctionSignature { name: "sub".to_owned(), parameters: vec![TypeId::Int32, TypeId::Int32] }),
+            Instruction::Call(FunctionSignature::new("sub".to_owned(), vec![TypeId::Int32, TypeId::Int32])),
             Instruction::Return,
         ]
     )).unwrap();
@@ -186,7 +186,7 @@ fn test_managed1() {
         vec![
             Instruction::LoadInt32(4711),
             Instruction::LoadInt32(1337),
-            Instruction::Call(FunctionSignature { name: "sum".to_owned(), parameters: vec![TypeId::Int32, TypeId::Int32] }),
+            Instruction::Call(FunctionSignature::new("sum".to_owned(), vec![TypeId::Int32, TypeId::Int32])),
             Instruction::Return,
         ]
     )).unwrap();
@@ -218,7 +218,7 @@ fn test_managed2() {
         vec![
             Instruction::LoadInt32(4711),
             Instruction::LoadInt32(1337),
-            Instruction::Call(FunctionSignature { name: "sum".to_owned(), parameters: vec![TypeId::Int32, TypeId::Int32] }),
+            Instruction::Call(FunctionSignature::new("sum".to_owned(), vec![TypeId::Int32, TypeId::Int32])),
             Instruction::Return,
         ]
     )).unwrap();
@@ -364,7 +364,7 @@ fn test_managed5() {
         vec![
             Instruction::LoadInt32(4711),
             Instruction::LoadInt32(1337),
-            Instruction::Call(FunctionSignature { name: "sum".to_owned(), parameters: vec![TypeId::Int32, TypeId::Int32] }),
+            Instruction::Call(FunctionSignature::new("sum".to_owned(), vec![TypeId::Int32, TypeId::Int32])),
             Instruction::Return,
         ]
     )).unwrap();
@@ -410,7 +410,7 @@ fn test_managed6() {
 
             Instruction::LoadLocal(0),
             Instruction::LoadLocal(1),
-            Instruction::Call(FunctionSignature { name: "sum".to_owned(), parameters: vec![TypeId::Int32, TypeId::Int32] }),
+            Instruction::Call(FunctionSignature::new("sum".to_owned(), vec![TypeId::Int32, TypeId::Int32])),
             Instruction::Return,
         ]
     )).unwrap();
