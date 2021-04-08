@@ -215,7 +215,7 @@ fn test_combine_load_local1() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let mut compilation_result = compiler.done();
 
@@ -257,7 +257,7 @@ fn test_combine_load_local2() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let mut compilation_result = compiler.done();
 
@@ -299,7 +299,7 @@ fn test_combine_load_local3() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let mut compilation_result = compiler.done();
 
@@ -350,7 +350,7 @@ fn test_combine_load_local4() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let mut compilation_result = compiler.done();
 
@@ -402,7 +402,7 @@ fn test_combine_load_local5() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let mut compilation_result = compiler.done();
 
@@ -451,7 +451,7 @@ fn test_combine_load_local6() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let mut compilation_result = compiler.done();
 
@@ -489,7 +489,7 @@ fn test_combine_store_local1() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let mut compilation_result = compiler.done();
 
@@ -537,7 +537,7 @@ fn test_combine_load_store_local1() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let mut compilation_result = compiler.done();
 
@@ -579,7 +579,7 @@ fn test_combine_load_constant1() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let mut compilation_result = compiler.done();
 
@@ -623,7 +623,7 @@ fn test_combine_load_constant2() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let mut compilation_result = compiler.done();
 

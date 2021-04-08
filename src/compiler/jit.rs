@@ -159,7 +159,7 @@ impl JitCompiler {
                   binder: &Binder,
                   type_storage: &TypeStorage,
                   function: &Function) -> (MIRCompilationResult, Vec<InstructionIR>) {
-        let mut mir_compiler = InstructionMIRCompiler::new(&binder, &function);
+        let mut mir_compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
         mir_compiler.compile(function.instructions());
         let mut compilation_result = mir_compiler.done();
 

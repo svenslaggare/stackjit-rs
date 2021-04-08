@@ -268,6 +268,31 @@ impl<'a> Verifier<'a> {
                     self.same_type(instruction_index, &TypeId::Class(class.name().to_owned()), &class_reference)?;
                     self.same_type(instruction_index, field.type_id(), &value_type)?;
                 }
+                Instruction::CallInstance(signature) => {
+                    let class_type = signature.class.as_ref().unwrap();
+                    self.type_storage.get(class_type)
+                        .ok_or_else(|| VerifyError::with_index(instruction_index, VerifyErrorMessage::ClassTypeNotDefined(class_type.class_name().unwrap().to_owned())))?
+                        .class.as_ref().unwrap();
+
+                    let func_to_call = self.binder.get(signature)
+                        .ok_or(VerifyError::with_index(instruction_index, VerifyErrorMessage::FunctionNotDefined(signature.clone())))?;
+
+                    if self.operand_stack.len() < func_to_call.parameters().len() {
+                        return Err(VerifyError::with_index(
+                            instruction_index,
+                            VerifyErrorMessage::ExpectedNumberOfOperands(func_to_call.parameters().len())
+                        ));
+                    }
+
+                    for parameter in func_to_call.parameters().iter().rev() {
+                        let operand = self.pop_operand_stack(instruction_index)?;
+                        self.same_type(instruction_index, parameter, &operand)?;
+                    }
+
+                    if func_to_call.return_type() != &TypeId::Void {
+                        self.push_operand_stack(func_to_call.return_type().clone());
+                    }
+                }
                 Instruction::Branch(target) => {
                     if *target >= self.function.instructions().len() as u32 {
                         return Err(VerifyError::with_index(instruction_index, VerifyErrorMessage::InvalidBranchTarget));
@@ -1051,4 +1076,66 @@ fn test_class3() {
         Err(VerifyError::with_index(1, VerifyErrorMessage::FieldNotDefined("Point".to_owned(), "z".to_owned()))),
         verifier.verify()
     );
+}
+
+#[test]
+fn test_class_member_function1() {
+    let mut function = Function::new(
+        FunctionDeclaration::with_managed_member("sum".to_owned(), TypeId::Class("Point".to_owned()), Vec::new(), TypeId::Int32),
+        vec![],
+        vec![
+            Instruction::LoadArgument(0),
+            Instruction::LoadField("Point".to_owned(), "x".to_owned()),
+            Instruction::LoadArgument(0),
+            Instruction::LoadField("Point".to_owned(), "y".to_owned()),
+            Instruction::Add,
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let mut type_storage = TypeStorage::new();
+    type_storage.add_class(Class::new(
+        "Point".to_owned(),
+        vec![
+            Field::new("x".to_owned(), TypeId::Int32),
+            Field::new("y".to_owned(), TypeId::Int32)
+        ]
+    ));
+
+    let mut verifier = Verifier::new(&binder, &type_storage, &mut function);
+    assert_eq!(Ok(()), verifier.verify());
+}
+
+#[test]
+fn test_class_member_function2() {
+    let mut function = Function::new(
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Class("Point".to_owned())],
+        vec![
+            Instruction::NewObject("Point".to_owned()),
+            Instruction::CallInstance(FunctionSignature::with_class("sum".to_owned(), TypeId::Class("Point".to_owned()), Vec::new())),
+            Instruction::Return,
+        ]
+    );
+
+    let mut binder = Binder::new();
+    binder.define(FunctionDeclaration::with_managed_member(
+        "sum".to_owned(),
+        TypeId::Class("Point".to_owned()),
+        vec![],
+        TypeId::Int32
+    ));
+
+    let mut type_storage = TypeStorage::new();
+    type_storage.add_class(Class::new(
+        "Point".to_owned(),
+        vec![
+            Field::new("x".to_owned(), TypeId::Int32),
+            Field::new("y".to_owned(), TypeId::Int32)
+        ]
+    ));
+
+    let mut verifier = Verifier::new(&binder, &type_storage, &mut function);
+    assert_eq!(Ok(()), verifier.verify());
 }

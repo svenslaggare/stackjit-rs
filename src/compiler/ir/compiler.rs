@@ -331,6 +331,31 @@ impl<'a> InstructionIRCompiler<'a> {
                     value_register,
                 ));
             }
+            InstructionMIRData::CallInstance(signature, return_value, arguments) => {
+                let func_to_call = self.binder.get(signature).unwrap();
+
+                let arguments_source = arguments
+                    .iter()
+                    .map(|argument| Variable::FrameMemory(self.get_register_stack_offset(argument)))
+                    .collect::<Vec<_>>();
+
+                let class_reference = &arguments[0];
+                if self.can_be_null(instruction_index, class_reference) {
+                    self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(class_reference)));
+                    self.instructions.push(InstructionIR::NullReferenceCheck(HardwareRegister::Int(0)));
+                }
+
+                self.instructions.push(InstructionIR::Call(signature.clone(), arguments_source, 0));
+
+                if let Some(return_value) = return_value {
+                    CallingConventions::new().handle_return_value(
+                        self.function,
+                        &Variable::FrameMemory(self.get_register_stack_offset(return_value)),
+                        func_to_call,
+                        &mut self.instructions
+                    );
+                }
+            }
             InstructionMIRData::GarbageCollect => {
                 self.instructions.push(InstructionIR::GarbageCollect(instruction_index));
             }

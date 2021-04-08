@@ -21,6 +21,7 @@ pub struct MIRCompilationResult {
 }
 
 pub struct InstructionMIRCompiler<'a> {
+    type_storage: &'a TypeStorage,
     binder: &'a Binder,
     function: &'a Function,
     instructions: Vec<InstructionMIR>,
@@ -33,8 +34,11 @@ pub struct InstructionMIRCompiler<'a> {
 }
 
 impl<'a> InstructionMIRCompiler<'a> {
-    pub fn new(binder: &'a Binder, function: &'a Function) -> InstructionMIRCompiler<'a> {
+    pub fn new(type_storage: &'a TypeStorage,
+               binder: &'a Binder,
+               function: &'a Function) -> InstructionMIRCompiler<'a> {
         let mut compiler = InstructionMIRCompiler {
+            type_storage,
             binder,
             function,
             branch_manager: BranchManager::new(),
@@ -317,22 +321,48 @@ impl<'a> InstructionMIRCompiler<'a> {
                 let assign_reg = self.assign_stack_register(class_type.clone());
                 self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::NewObject(class_type, assign_reg)));
             }
-            Instruction::LoadField(class_type, field_name) => {
-                let class_type = TypeId::Class(class_type.clone());
+            Instruction::LoadField(class_name, field_name) => {
+                let class_type = TypeId::Class(class_name.clone());
+                let class = self.type_storage.get(&class_type).unwrap().class.as_ref().unwrap();
+                let field = class.get_field(field_name).unwrap();
+
                 let class_ref_reg = self.use_stack_register(class_type.clone());
-                let assign_reg = self.assign_stack_register(class_type.clone());
+                let assign_reg = self.assign_stack_register(field.type_id().clone());
                 self.instructions.push(InstructionMIR::new(
                     instruction_index,
                     InstructionMIRData::LoadField(class_type, field_name.clone(), assign_reg, class_ref_reg)
                 ));
             }
-            Instruction::StoreField(class_type, field_name) => {
-                let class_type = TypeId::Class(class_type.clone());
-                let value_reg = self.use_stack_register(class_type.clone());
+            Instruction::StoreField(class_name, field_name) => {
+                let class_type = TypeId::Class(class_name.clone());
+                let class = self.type_storage.get(&class_type).unwrap().class.as_ref().unwrap();
+                let field = class.get_field(field_name).unwrap();
+
+                let value_reg = self.use_stack_register(field.type_id().clone());
                 let class_ref_reg = self.use_stack_register(class_type.clone());
                 self.instructions.push(InstructionMIR::new(
                     instruction_index,
                     InstructionMIRData::StoreField(class_type, field_name.clone(), class_ref_reg, value_reg)
+                ));
+            }
+            Instruction::CallInstance(signature) => {
+                let func_to_call = self.binder.get(signature).unwrap();
+
+                let mut arguments_regs = func_to_call.parameters()
+                    .iter().rev()
+                    .map(|parameter| self.use_stack_register(parameter.clone()))
+                    .collect::<Vec<_>>();
+                arguments_regs.reverse();
+
+                let return_value_reg = if func_to_call.return_type() != &TypeId::Void {
+                    Some(self.assign_stack_register(func_to_call.return_type().clone()))
+                } else {
+                    None
+                };
+
+                self.instructions.push(InstructionMIR::new(
+                    instruction_index,
+                    InstructionMIRData::CallInstance(func_to_call.signature(), return_value_reg, arguments_regs)
                 ));
             }
             Instruction::Branch(target) => {
@@ -445,7 +475,7 @@ fn test_simple1() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
 
     println_vec(function.instructions(), &compiler.done().instructions);
@@ -470,7 +500,7 @@ fn test_simple2() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
 
     println_vec(function.instructions(), &compiler.done().instructions);
@@ -499,7 +529,7 @@ fn test_simple3() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
 
     println_vec(function.instructions(), &compiler.done().instructions);
@@ -524,7 +554,7 @@ fn test_simple4() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
 
     println_vec(function.instructions(), &compiler.done().instructions);
@@ -553,7 +583,7 @@ fn test_simple5() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
 
     println_vec(function.instructions(), &compiler.done().instructions);

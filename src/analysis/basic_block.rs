@@ -120,7 +120,7 @@ fn test_no_branches1() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let instructions = compiler.done().instructions;
 
@@ -153,7 +153,7 @@ fn test_branches1() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let instructions = compiler.done().instructions;
 

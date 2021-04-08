@@ -103,7 +103,7 @@ fn test_determine_instructions_operand_stack1() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let result = compiler.done();
 
@@ -137,7 +137,7 @@ fn test_determine_instructions_operand_stack2() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let result = compiler.done();
 

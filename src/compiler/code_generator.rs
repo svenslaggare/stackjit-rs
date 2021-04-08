@@ -625,7 +625,7 @@ impl<'a> CodeGenerator<'a> {
 
                 let mut call_argument_instructions = Vec::new();
                 calling_conventions.call_function_arguments(
-                    signature,
+                    func_to_call,
                     &arguments,
                     &mut call_argument_instructions
                 );

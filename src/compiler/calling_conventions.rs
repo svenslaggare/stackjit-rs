@@ -18,10 +18,10 @@ impl CallingConventions {
     }
 
     pub fn call_function_arguments(&self,
-                                   function_to_call: &FunctionSignature,
+                                   function_to_call: &FunctionDeclaration,
                                    arguments: &Vec<Variable>,
                                    instructions: &mut Vec<InstructionIR>) {
-        for argument_index in (0..function_to_call.parameters.len()).rev() {
+        for argument_index in (0..function_to_call.parameters().len()).rev() {
             self.call_function_argument(
                 function_to_call,
                 arguments,
@@ -32,15 +32,15 @@ impl CallingConventions {
     }
 
     pub fn call_function_argument(&self,
-                                  function_to_call: &FunctionSignature,
+                                  function_to_call: &FunctionDeclaration,
                                   arguments: &Vec<Variable>,
                                   argument_index: usize,
                                   instructions: &mut Vec<InstructionIR>) {
         let argument_source = &arguments[argument_index];
 
-        match &function_to_call.parameters[argument_index] {
+        match &function_to_call.parameters()[argument_index] {
             TypeId::Float32 => {
-                let relative_index = float_register_call_arguments::get_relative_index(&function_to_call.parameters, argument_index);
+                let relative_index = float_register_call_arguments::get_relative_index(&function_to_call.parameters(), argument_index);
                 if relative_index >= float_register_call_arguments::NUM_ARGUMENTS {
                     argument_source.move_to_stack(instructions);
                 } else {
@@ -51,7 +51,7 @@ impl CallingConventions {
                 }
             }
             _ => {
-                let relative_index = register_call_arguments::get_relative_index(&function_to_call.parameters, argument_index);
+                let relative_index = register_call_arguments::get_relative_index(&function_to_call.parameters(), argument_index);
                 if relative_index >= register_call_arguments::NUM_ARGUMENTS {
                     argument_source.move_to_stack(instructions);
                 } else {

@@ -1,5 +1,6 @@
 use crate::model::typesystem::TypeId;
 use crate::model::instruction::Instruction;
+use crate::model::class::Class;
 
 pub type FunctionAddress = *mut std::ffi::c_void;
 
@@ -13,6 +14,7 @@ pub enum FunctionType {
 pub struct FunctionDeclaration {
     function_type: FunctionType,
     name: String,
+    class: Option<TypeId>,
     parameters: Vec<TypeId>,
     return_type: TypeId,
     address: Option<FunctionAddress>,
@@ -23,6 +25,7 @@ impl FunctionDeclaration {
         FunctionDeclaration {
             function_type: FunctionType::External,
             name,
+            class: None,
             parameters,
             return_type,
             address: Some(address)
@@ -33,6 +36,19 @@ impl FunctionDeclaration {
         FunctionDeclaration {
             function_type: FunctionType::Managed,
             name,
+            class: None,
+            parameters,
+            return_type,
+            address: None
+        }
+    }
+
+    pub fn with_managed_member(name: String, class: TypeId, mut parameters: Vec<TypeId>, return_type: TypeId) -> FunctionDeclaration {
+        parameters.insert(0, class.clone());
+        FunctionDeclaration {
+            function_type: FunctionType::Managed,
+            name,
+            class: Some(class),
             parameters,
             return_type,
             address: None
@@ -45,6 +61,10 @@ impl FunctionDeclaration {
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    pub fn class(&self) -> &Option<TypeId> {
+        &self.class
     }
 
     pub fn parameters(&self) -> &Vec<TypeId> {
@@ -60,7 +80,16 @@ impl FunctionDeclaration {
     }
 
     pub fn signature(&self) -> FunctionSignature {
-        FunctionSignature::new(self.name.clone(), self.parameters.clone())
+        match &self.class {
+            Some(class) => {
+                let mut parameters = self.parameters.clone();
+                parameters.remove(0);
+                FunctionSignature::with_class(self.name.clone(), class.clone(), parameters)
+            }
+            None => {
+                FunctionSignature::new(self.name.clone(), self.parameters.clone())
+            }
+        }
     }
 
     pub fn set_address(&mut self, address: FunctionAddress) {
@@ -139,6 +168,7 @@ impl Function {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FunctionSignature {
     pub name: String,
+    pub class: Option<TypeId>,
     pub parameters: Vec<TypeId>
 }
 
@@ -146,6 +176,15 @@ impl FunctionSignature {
     pub fn new(name: String, parameters: Vec<TypeId>) -> FunctionSignature {
         FunctionSignature {
             name,
+            class: None,
+            parameters
+        }
+    }
+
+    pub fn with_class(name: String, class: TypeId, parameters: Vec<TypeId>) -> FunctionSignature {
+        FunctionSignature {
+            name,
+            class: Some(class),
             parameters
         }
     }
@@ -153,7 +192,14 @@ impl FunctionSignature {
 
 impl std::fmt::Display for FunctionSignature {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}({})", self.name, self.parameters.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(" "))
+        match &self.class {
+            Some(class) => {
+                write!(f, "{}::{}({})", class.class_name().unwrap(), self.name, self.parameters.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(" "))
+            }
+            None => {
+                write!(f, "{}({})", self.name, self.parameters.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(" "))
+            }
+        }
     }
 }
 

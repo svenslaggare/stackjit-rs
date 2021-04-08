@@ -695,6 +695,50 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     self.instructions.push(InstructionIR::Pop(class_ref_register));
                 }
             }
+            InstructionMIRData::CallInstance(signature, return_value, arguments) => {
+                let func_to_call = self.binder.get(signature).unwrap();
+
+                let alive_registers = self.push_alive_registers(instruction_index);
+
+                let class_ref = &arguments[0];
+                if self.can_be_null(instruction_index, class_ref) {
+                    let alive_hardware_registers = alive_registers.iter().map(|(_, register)| register.clone()).collect::<Vec<_>>();
+
+                    let mut temp_registers = TempRegisters::new(&self.register_allocation);
+                    temp_registers.try_remove(class_ref);
+
+                    let (class_ref_is_stack, class_ref_register) = temp_registers.get_register(class_ref);
+                    let class_ref_alive = self.push_if_alive(&alive_hardware_registers, class_ref, &class_ref_register, class_ref_is_stack);
+
+                    self.move_to_hardware_register(class_ref_register, class_ref);
+                    self.instructions.push(InstructionIR::NullReferenceCheck(class_ref_register));
+
+                    if class_ref_alive {
+                        self.instructions.push(InstructionIR::Pop(class_ref_register));
+                    }
+                }
+
+                let arguments_source = self.get_call_argument_sources(func_to_call, arguments);
+                self.instructions.push(InstructionIR::Call(signature.clone(), arguments_source, 0));
+
+                let return_register = if let Some(return_value) = return_value {
+                    CallingConventions::new().handle_return_value(
+                        self.function,
+                        &match self.register_allocation.get_register(return_value).hardware_register() {
+                            Some(register) => Variable::Register(register.clone()),
+                            None => Variable::FrameMemory(self.get_register_stack_offset(return_value))
+                        },
+                        func_to_call,
+                        &mut self.instructions
+                    );
+
+                    self.register_allocation.get_register(return_value).hardware_register()
+                } else {
+                    None
+                };
+
+                self.pop_alive_registers(&alive_registers, return_register);
+            }
             InstructionMIRData::GarbageCollect => {
                 let alive_registers = self.push_alive_registers(instruction_index);
                 self.instructions.push(InstructionIR::GarbageCollect(instruction_index));

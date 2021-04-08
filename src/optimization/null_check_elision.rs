@@ -9,6 +9,7 @@ use crate::model::function::{Function, FunctionDeclaration};
 use crate::model::instruction::Instruction;
 use crate::model::typesystem::{TypeId, TypeStorage};
 use crate::model::verifier::Verifier;
+use crate::model::class::{Field, Class};
 
 pub type RegisterNullStatus = HashMap<RegisterMIR, bool>;
 pub type InstructionsRegisterNullStatus = Vec<RegisterNullStatus>;
@@ -17,6 +18,8 @@ pub fn compute(function: &Function,
                compilation_result: &MIRCompilationResult,
                basic_blocks: &Vec<BasicBlock>,
                control_flow_graph: &ControlFlowGraph) -> InstructionsRegisterNullStatus {
+    // return compilation_result.instructions.iter().map(|_| HashMap::new()).collect();
+
     if basic_blocks.len() == 1 {
         compute_null_check_elision_for_block(function, compilation_result, &basic_blocks[0]).0
     } else {
@@ -127,7 +130,11 @@ fn compute_null_check_elision_for_block_internal(function: &Function,
             }
             InstructionMIRData::LoadArgument(index, destination) => {
                 if function.declaration().parameters()[*index as usize].is_reference() {
-                    register_is_null.insert(destination.clone(), true);
+                    if function.declaration().class().is_some() && *index == 0 {
+                        register_is_null.insert(destination.clone(), false);
+                    } else {
+                        register_is_null.insert(destination.clone(), true);
+                    }
                 }
             }
             InstructionMIRData::LoadNull(destination) => {
@@ -152,6 +159,13 @@ fn compute_null_check_elision_for_block_internal(function: &Function,
                 }
             }
             InstructionMIRData::StoreField(_, _, _, _) => {}
+            InstructionMIRData::CallInstance(_, destination, _) => {
+                if let Some(destination) = destination {
+                    if destination.value_type.is_reference() {
+                        register_is_null.insert(destination.clone(), true);
+                    }
+                }
+            }
             InstructionMIRData::GarbageCollect => {}
             InstructionMIRData::PrintStackFrame => {}
             InstructionMIRData::BranchLabel(_) => {}
@@ -208,7 +222,7 @@ fn test_no_branches1() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
@@ -239,7 +253,7 @@ fn test_no_branches2() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
@@ -272,7 +286,7 @@ fn test_no_branches3() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
@@ -310,7 +324,7 @@ fn test_no_branches4() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
@@ -358,7 +372,7 @@ fn test_no_branches5() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
@@ -421,7 +435,7 @@ fn test_no_branches6() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
@@ -487,7 +501,7 @@ fn test_no_branches7() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
@@ -507,6 +521,50 @@ fn test_no_branches7() {
     assert_eq!(2, result[4].len());
     assert_eq!(false, result[4][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Array(Box::new(TypeId::Int32)))))]);
     assert_eq!(true, result[4][&RegisterMIR::new(0, TypeId::Array(Box::new(TypeId::Int32)))]);
+}
+
+#[test]
+fn test_member_function1() {
+    let mut function = Function::new(
+        FunctionDeclaration::with_managed_member("sum".to_owned(), TypeId::Class("Point".to_owned()), Vec::new(), TypeId::Int32),
+        vec![],
+        vec![
+            Instruction::LoadArgument(0),
+            Instruction::LoadField("Point".to_owned(), "x".to_owned()),
+            Instruction::Return,
+        ]
+    );
+
+    let binder = Binder::new();
+    let mut type_storage = TypeStorage::new();
+    type_storage.add_class(Class::new(
+        "Point".to_owned(),
+        vec![
+            Field::new("x".to_owned(), TypeId::Int32),
+            Field::new("y".to_owned(), TypeId::Int32),
+        ]
+    ));
+
+    Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
+
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
+    compiler.compile(function.instructions());
+    let compilation_result = compiler.done();
+    let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
+
+    let (result, _) = compute_null_check_elision_for_block(&function, &compilation_result, &basic_blocks[0]);
+
+    for instruction in &result {
+        println!("{:?}", instruction);
+    }
+
+    assert_eq!(0, result[0].len());
+
+    assert_eq!(1, result[1].len());
+    assert_eq!(false, result[1][&RegisterMIR::new(0, TypeId::Class("Point".to_owned()))]);
+
+    assert_eq!(1, result[2].len());
+    assert_eq!(false, result[2][&RegisterMIR::new(0, TypeId::Class("Point".to_owned()))]);
 }
 
 #[test]
@@ -536,7 +594,7 @@ fn test_branches1() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);
@@ -583,7 +641,7 @@ fn test_branches2() {
     let type_storage = TypeStorage::new();
     Verifier::new(&binder, &type_storage, &mut function).verify().unwrap();
 
-    let mut compiler = InstructionMIRCompiler::new(&binder, &function);
+    let mut compiler = InstructionMIRCompiler::new(&type_storage, &binder, &function);
     compiler.compile(function.instructions());
     let compilation_result = compiler.done();
     let basic_blocks = BasicBlock::create_blocks(&compilation_result.instructions);

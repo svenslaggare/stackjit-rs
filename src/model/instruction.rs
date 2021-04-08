@@ -29,6 +29,7 @@ pub enum Instruction {
     NewObject(String),
     LoadField(String, String),
     StoreField(String, String),
+    CallInstance(FunctionSignature),
     Branch(BranchTarget),
     BranchEqual(BranchTarget),
     BranchNotEqual(BranchTarget),
@@ -126,6 +127,9 @@ impl std::fmt::Display for Instruction {
             }
             Instruction::NewObject(class_type) => {
                 write!(f, "NewObject {}", class_type)
+            }
+            Instruction::CallInstance(signature) => {
+                write!(f, "CallInstance {}", signature)
             }
             Instruction::LoadField(class_type, field) => {
                 write!(f, "LoadField {}::{}", class_type, field)
