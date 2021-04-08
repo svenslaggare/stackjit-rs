@@ -250,6 +250,19 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     }
                 );
             }
+            InstructionMIRData::AndBoolConstant(destination, operand1, operand2) => {
+                self.binary_operator_with_constant_and_destination(
+                    destination,
+                    operand1,
+                    if *operand2 {1} else {0},
+                    |instructions, op1, op2| {
+                        instructions.push(InstructionIR::AndInt32Constant(op1, op2));
+                    },
+                    |instructions, op1, op2| {
+                        instructions.push(InstructionIR::AndInt32ConstantToFrameMemory(op1, op2));
+                    }
+                );
+            }
             InstructionMIRData::OrBool(destination, operand1, operand2) => {
                 self.binary_operator_with_destination(
                     destination,
@@ -263,6 +276,19 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     },
                     |instructions: &mut Vec<InstructionIR>, op1, op2| {
                         instructions.push(InstructionIR::OrInt32ToFrameMemory(op1, op2));
+                    }
+                );
+            }
+            InstructionMIRData::OrBoolConstant(destination, operand1, operand2) => {
+                self.binary_operator_with_constant_and_destination(
+                    destination,
+                    operand1,
+                    if *operand2 {1} else {0},
+                    |instructions, op1, op2| {
+                        instructions.push(InstructionIR::OrInt32Constant(op1, op2));
+                    },
+                    |instructions, op1, op2| {
+                        instructions.push(InstructionIR::OrInt32ConstantToFrameMemory(op1, op2));
                     }
                 );
             }

@@ -147,27 +147,43 @@ fn remove_unnecessary_load_constant_for_block(compilation_result: &mut MIRCompil
     }
 
     let mut instructions_to_remove = HashSet::new();
-    let mut load_constants = HashMap::new();
+    let mut load_i32_constants = HashMap::new();
+    let mut load_bool_constants = HashMap::new();
 
     for &instruction_index in &basic_block.instructions {
         let instruction = &compilation_result.instructions[instruction_index];
         match &instruction.data {
             InstructionMIRData::LoadInt32(destination, value) if !local_registers.contains(destination) => {
-                load_constants.insert(destination.clone(), (instruction_index, *value));
+                load_i32_constants.insert(destination.clone(), (instruction_index, *value));
+            }
+            InstructionMIRData::LoadBool(destination, value) if !local_registers.contains(destination) => {
+                load_bool_constants.insert(destination.clone(), (instruction_index, *value));
             }
             _ => {}
         }
 
         match &instruction.data {
             InstructionMIRData::AddInt32(destination, op1, op2) => {
-                if let Some((load_constant_index, constant_value)) = load_constants.remove(op2) {
+                if let Some((load_constant_index, constant_value)) = load_i32_constants.remove(op2) {
                     compilation_result.instructions[instruction_index].data = InstructionMIRData::AddInt32Constant(destination.clone(), op1.clone(), constant_value);
                     instructions_to_remove.insert(load_constant_index);
                 }
             }
             InstructionMIRData::SubInt32(destination, op1, op2) => {
-                if let Some((load_constant_index, constant_value)) = load_constants.remove(op2) {
+                if let Some((load_constant_index, constant_value)) = load_i32_constants.remove(op2) {
                     compilation_result.instructions[instruction_index].data = InstructionMIRData::SubInt32Constant(destination.clone(), op1.clone(), constant_value);
+                    instructions_to_remove.insert(load_constant_index);
+                }
+            }
+            InstructionMIRData::AndBool(destination, op1, op2) => {
+                if let Some((load_constant_index, constant_value)) = load_bool_constants.remove(op2) {
+                    compilation_result.instructions[instruction_index].data = InstructionMIRData::AndBoolConstant(destination.clone(), op1.clone(), constant_value);
+                    instructions_to_remove.insert(load_constant_index);
+                }
+            }
+            InstructionMIRData::OrBool(destination, op1, op2) => {
+                if let Some((load_constant_index, constant_value)) = load_bool_constants.remove(op2) {
+                    compilation_result.instructions[instruction_index].data = InstructionMIRData::OrBoolConstant(destination.clone(), op1.clone(), constant_value);
                     instructions_to_remove.insert(load_constant_index);
                 }
             }
@@ -176,7 +192,8 @@ fn remove_unnecessary_load_constant_for_block(compilation_result: &mut MIRCompil
 
         let instruction = &compilation_result.instructions[instruction_index];
         for use_register in instruction.data.use_registers() {
-            load_constants.remove(&use_register);
+            load_i32_constants.remove(&use_register);
+            load_bool_constants.remove(&use_register);
         }
     }
 

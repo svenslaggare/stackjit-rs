@@ -111,8 +111,10 @@ fn compute_null_check_elision_for_block_internal(function: &Function,
             InstructionMIRData::SubFloat32(_, _, _) => {}
             InstructionMIRData::MultiplyFloat32(_, _, _) => {}
             InstructionMIRData::DivideFloat32(_, _, _) => {}
+            InstructionMIRData::AndBoolConstant(_, _, _) => {}
             InstructionMIRData::AndBool(_, _, _) => {}
             InstructionMIRData::OrBool(_, _, _) => {}
+            InstructionMIRData::OrBoolConstant(_, _, _) => {}
             InstructionMIRData::Return(_) => {}
             InstructionMIRData::Call(_, destination, _) => {
                 if let Some(destination) = destination {
