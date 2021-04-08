@@ -292,6 +292,22 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                     }
                 );
             }
+            InstructionMIRData::NotBool(destination, operand) => {
+                if destination == operand {
+                    match self.register_allocation().get_register(destination).hardware_register() {
+                        Some(register) => {
+                            self.instructions.push(InstructionIR::NotInt32(register));
+                        }
+                        None => {
+                            self.instructions.push(InstructionIR::NotInt32FrameMemory(self.get_register_stack_offset(destination)));
+                        }
+                    }
+                } else {
+                    self.move_to_hardware_register(HardwareRegister::IntSpill, operand);
+                    self.instructions.push(InstructionIR::NotInt32(HardwareRegister::IntSpill));
+                    self.move_from_hardware_register(destination, HardwareRegister::IntSpill);
+                }
+            }
             InstructionMIRData::AddFloat32(destination, operand1, operand2) => {
                 self.binary_operator_with_destination_f32(
                     destination,

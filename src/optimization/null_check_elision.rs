@@ -115,6 +115,7 @@ fn compute_null_check_elision_for_block_internal(function: &Function,
             InstructionMIRData::AndBool(_, _, _) => {}
             InstructionMIRData::OrBool(_, _, _) => {}
             InstructionMIRData::OrBoolConstant(_, _, _) => {}
+            InstructionMIRData::NotBool(_, _) => {}
             InstructionMIRData::Return(_) => {}
             InstructionMIRData::Call(_, destination, _) => {
                 if let Some(destination) = destination {

@@ -224,6 +224,18 @@ impl<'a> InstructionMIRCompiler<'a> {
                     _ => { panic!("unexpected."); }
                 }
             }
+            Instruction::Not => {
+                let value_type = &operand_types[0];
+                let op_reg = self.use_stack_register(value_type.clone());
+                let assign_reg = self.assign_stack_register(value_type.clone());
+
+                match value_type {
+                    TypeId::Bool => {
+                        self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::NotBool(assign_reg, op_reg)));
+                    }
+                    _ => { panic!("unexpected."); }
+                }
+            }
             Instruction::Return => {
                 let return_value = if self.function.declaration().return_type() != &TypeId::Void {
                     Some(self.use_stack_register(self.function.declaration().return_type().clone()))

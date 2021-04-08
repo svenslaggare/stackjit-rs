@@ -161,6 +161,60 @@ fn test_operator3() {
 }
 
 #[test]
+fn test_operator4() {
+    let mut vm = VirtualMachine::new();
+
+    vm.add_external_function(
+        FunctionDeclaration::with_external(
+            "convert_bool_to_int".to_owned(), vec![TypeId::Bool], TypeId::Int32,
+            convert_bool_to_int as *mut std::ffi::c_void
+        )
+    );
+
+    vm.add_function(Function::new(
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Int32],
+        vec![
+            Instruction::LoadTrue,
+            Instruction::Not,
+
+            Instruction::Call(FunctionSignature { name: "convert_bool_to_int".to_string(), parameters: vec![TypeId::Bool] }),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(0, execution_result);
+}
+
+#[test]
+fn test_operator5() {
+    let mut vm = VirtualMachine::new();
+
+    vm.add_external_function(
+        FunctionDeclaration::with_external(
+            "convert_bool_to_int".to_owned(), vec![TypeId::Bool], TypeId::Int32,
+            convert_bool_to_int as *mut std::ffi::c_void
+        )
+    );
+
+    vm.add_function(Function::new(
+        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Int32],
+        vec![
+            Instruction::LoadFalse,
+            Instruction::Not,
+
+            Instruction::Call(FunctionSignature { name: "convert_bool_to_int".to_string(), parameters: vec![TypeId::Bool] }),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(1, execution_result);
+}
+
+#[test]
 fn test_array1() {
     let mut vm = VirtualMachine::new();
 

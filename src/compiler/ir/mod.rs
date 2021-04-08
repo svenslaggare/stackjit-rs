@@ -143,6 +143,9 @@ pub enum InstructionIR {
     OrInt32Constant(HardwareRegister, i32),
     OrInt32ConstantToFrameMemory(i32, i32),
 
+    NotInt32(HardwareRegister),
+    NotInt32FrameMemory(i32),
+
     AddFloat32(HardwareRegister, HardwareRegister),
     AddFloat32FromFrameMemory(HardwareRegister, i32),
 

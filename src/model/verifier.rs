@@ -154,6 +154,18 @@ impl<'a> Verifier<'a> {
                         }
                     }
                 }
+                Instruction::Not => {
+                    let op = self.pop_operand_stack(instruction_index)?;
+
+                    match op {
+                        TypeId::Bool => {
+                            self.push_operand_stack(op);
+                        }
+                        _ => {
+                            return Err(VerifyError::with_index(instruction_index, VerifyErrorMessage::WrongLogicalOperands));
+                        }
+                    }
+                }
                 Instruction::Call(signature) => {
                     let func_to_call = self.binder.get(signature)
                         .ok_or(VerifyError::with_index(instruction_index, VerifyErrorMessage::FunctionNotDefined(signature.clone())))?;

@@ -18,6 +18,7 @@ pub enum Instruction {
     Divide,
     And,
     Or,
+    Not,
     Call(FunctionSignature),
     LoadArgument(u32),
     Return,
@@ -101,6 +102,9 @@ impl std::fmt::Display for Instruction {
             }
             Instruction::Or => {
                 write!(f, "Or")
+            }
+            Instruction::Not => {
+                write!(f, "Not")
             }
             Instruction::Call(signature) => {
                 write!(f, "Call {}", signature)

@@ -157,6 +157,11 @@ impl<'a> InstructionIRCompiler<'a> {
                 self.instructions.push(InstructionIR::OrInt32Constant(HardwareRegister::Int(0), if *operand2 {1} else {0}));
                 self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::Int(0)));
             }
+            InstructionMIRData::NotBool(destination, operand) => {
+                self.instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::Int(0), self.get_register_stack_offset(operand)));
+                self.instructions.push(InstructionIR::NotInt32(HardwareRegister::Int(0)));
+                self.instructions.push(InstructionIR::StoreFrameMemory(self.get_register_stack_offset(destination), HardwareRegister::Int(0)));
+            }
             InstructionMIRData::Return(source) => {
                 if let Some(source) = source {
                     CallingConventions::new().make_return_value(

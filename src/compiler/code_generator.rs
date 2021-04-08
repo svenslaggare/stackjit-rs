@@ -479,6 +479,32 @@ impl<'a> CodeGenerator<'a> {
                     *value
                 ).unwrap());
             }
+            InstructionIR::NotInt32(register) => {
+                self.encode_x86_instruction(X86Instruction::with_reg(
+                    Code::Not_rm32,
+                    register_mapping::get(*register, DataSize::Bytes4)
+                ));
+
+                // Make sure value is 1 or 0
+                self.encode_x86_instruction(X86Instruction::try_with_reg_i32(
+                    Code::And_rm32_imm8,
+                    register_mapping::get(*register, DataSize::Bytes4),
+                    1
+                ).unwrap());
+            }
+            InstructionIR::NotInt32FrameMemory(offset) => {
+                self.encode_x86_instruction(X86Instruction::with_mem(
+                    Code::Not_rm32,
+                    MemoryOperand::with_base_displ(Register::RBP, *offset)
+                ));
+
+                // Make sure value is 1 or 0
+                self.encode_x86_instruction(X86Instruction::try_with_mem_i32(
+                    Code::And_rm32_imm8,
+                    MemoryOperand::with_base_displ(Register::RBP, *offset),
+                    1
+                ).unwrap());
+            }
             InstructionIR::AddFloat32(destination, source) => {
                 self.encode_x86_instruction(X86Instruction::with_reg_reg(
                     Code::Addss_xmm_xmmm32,
