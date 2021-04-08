@@ -17,6 +17,7 @@ pub enum Token {
     DefineNumberOfLocals,
     DefineLocal,
     Function,
+    MemberFunction,
     Class,
     Colon,
     End
@@ -67,9 +68,11 @@ pub fn tokenize(text: &str) -> ParserResult<Vec<Token>> {
 
             if identifier == "func" {
                 tokens.push(Token::Function);
+            } else if identifier == "member" {
+                tokens.push(Token::MemberFunction);
             } else if identifier == "class" {
                 tokens.push(Token::Class);
-            } else {
+            }  else {
                 tokens.push(Token::Identifier(identifier));
             }
         } else if current.is_numeric() {
@@ -178,7 +181,12 @@ impl Parser {
         let current = self.current().clone();
         match current {
             Token::Function => {
-                let function = self.parse_function()?;
+                let function = self.parse_function(false)?;
+                self.functions.push(function);
+                Ok(())
+            }
+            Token::MemberFunction => {
+                let function = self.parse_function(true)?;
                 self.functions.push(function);
                 Ok(())
             }
@@ -191,8 +199,17 @@ impl Parser {
         }
     }
 
-    fn parse_function(&mut self) -> ParserResult<Function> {
+    fn parse_function(&mut self, is_member: bool) -> ParserResult<Function> {
         self.next()?;
+
+        let class_name = if is_member {
+            let class_name = self.next_identifier()?;
+            self.next_double_colon()?;
+            Some(class_name)
+        } else {
+            None
+        };
+
         let name = self.next_identifier()?;
 
         match self.current() {
@@ -261,12 +278,26 @@ impl Parser {
             }
         }
 
+        let function_declaration = match class_name {
+            Some(class_name) => {
+                FunctionDeclaration::with_managed_member(
+                    name,
+                    TypeId::Class(class_name),
+                    parameters,
+                    return_type
+                )
+            }
+            None => {
+                FunctionDeclaration::with_managed(
+                    name,
+                    parameters,
+                    return_type
+                )
+            }
+        };
+
         Ok(Function::new(
-            FunctionDeclaration::with_managed(
-                name,
-                parameters,
-                return_type
-            ),
+            function_declaration,
             locals_checked,
             instructions
         ))
@@ -358,15 +389,7 @@ impl Parser {
             "ldfield" => {
                 let class_name = self.next_identifier()?;
 
-                match self.current() {
-                    Token::Colon => { self.next()?; }
-                    _ => { return Err(ParserError::ExpectedColon); }
-                }
-
-                match self.current() {
-                    Token::Colon => { self.next()?; }
-                    _ => { return Err(ParserError::ExpectedColon); }
-                }
+                self.next_double_colon()?;
 
                 let field_name = self.next_identifier()?;
                 Ok(Instruction::LoadField(class_name, field_name))
@@ -374,15 +397,7 @@ impl Parser {
             "stfield" => {
                 let class_name = self.next_identifier()?;
 
-                match self.current() {
-                    Token::Colon => { self.next()?; }
-                    _ => { return Err(ParserError::ExpectedColon); }
-                }
-
-                match self.current() {
-                    Token::Colon => { self.next()?; }
-                    _ => { return Err(ParserError::ExpectedColon); }
-                }
+                self.next_double_colon()?;
 
                 let field_name = self.next_identifier()?;
                 Ok(Instruction::StoreField(class_name, field_name))
@@ -488,6 +503,20 @@ impl Parser {
             }
             _ => { return Err(ParserError::ExpectedFloat32); }
         }
+    }
+
+    fn next_double_colon(&mut self) -> ParserResult<()> {
+        match self.current() {
+            Token::Colon => { self.next()?; }
+            _ => { return Err(ParserError::ExpectedColon); }
+        }
+
+        match self.current() {
+            Token::Colon => { self.next()?; }
+            _ => { return Err(ParserError::ExpectedColon); }
+        }
+
+        Ok(())
     }
 
     fn current(&self) -> &Token {
@@ -807,6 +836,55 @@ fn test_parse_classes1() {
 
     let mut parser = Parser::new(tokenize(text).unwrap());
     let (_, classes) = parser.parse().unwrap();
+
+    assert_eq!(1, classes.len());
+
+    let class = &classes[0];
+    assert_eq!("Point", class.name());
+    assert_eq!("x", class.fields()[0].name());
+    assert_eq!(&TypeId::Int32, class.fields()[0].type_id());
+
+    assert_eq!("y", class.fields()[1].name());
+    assert_eq!(&TypeId::Float32, class.fields()[1].type_id());
+}
+
+#[test]
+fn test_parse_member_function1() {
+    let text = r"
+    class Point
+    {
+        x Int
+        y Float
+    }
+
+    member Point::sum() Int
+    {
+        LDARG 0
+        LDFIELD Point::x
+        LDARG 0
+        LDFIELD Point::y
+        ADD
+        RET
+    }
+    ";
+
+    let mut parser = Parser::new(tokenize(text).unwrap());
+    let (functions, classes) = parser.parse().unwrap();
+
+    assert_eq!(1, functions.len());
+
+    let function = &functions[0];
+    assert_eq!("sum", function.declaration().name());
+    assert_eq!(&Some(TypeId::Class("Point".to_owned())), function.declaration().class());
+    assert_eq!(&vec![TypeId::Class("Point".to_owned())], function.declaration().parameters());
+    assert_eq!(&TypeId::Int32, function.declaration().return_type());
+
+    assert_eq!(Instruction::LoadArgument(0), function.instructions()[0]);
+    assert_eq!(Instruction::LoadField("Point".to_owned(), "x".to_owned()), function.instructions()[1]);
+    assert_eq!(Instruction::LoadArgument(0), function.instructions()[2]);
+    assert_eq!(Instruction::LoadField("Point".to_owned(), "y".to_owned()), function.instructions()[3]);
+    assert_eq!(Instruction::Add, function.instructions()[4]);
+    assert_eq!(Instruction::Return, function.instructions()[5]);
 
     assert_eq!(1, classes.len());
 
