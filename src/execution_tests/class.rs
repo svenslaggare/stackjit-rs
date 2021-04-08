@@ -48,7 +48,7 @@ fn test_create1() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::NewObject("Point".to_owned()),
@@ -93,7 +93,7 @@ fn test_load1() {
     ));
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Class("Point".to_owned())],
         vec![
             Instruction::NewObject("Point".to_owned()),
@@ -126,7 +126,7 @@ fn test_store1() {
     ));
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Class("Point".to_owned())],
         vec![
             Instruction::NewObject("Point".to_owned()),
@@ -170,7 +170,7 @@ fn test_array1() {
     ));
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Class("Point".to_owned())))],
         vec![
             Instruction::LoadInt32(10),
@@ -207,7 +207,7 @@ fn test_branch1() {
     let mut vm = VirtualMachine::new();
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::NewObject("Point".to_owned()),
@@ -243,7 +243,7 @@ fn test_branch2() {
     let mut vm = VirtualMachine::new();
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32, TypeId::Class("Point".to_owned())],
         vec![
             Instruction::NewObject("Point".to_owned()),
@@ -282,7 +282,7 @@ fn test_branch3() {
     let mut vm = VirtualMachine::new();
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadNull(TypeId::Class("Point".to_owned())),

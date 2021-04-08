@@ -29,7 +29,7 @@ impl FunctionDeclaration {
         }
     }
 
-    pub fn with_manager(name: String, parameters: Vec<TypeId>, return_type: TypeId) -> FunctionDeclaration {
+    pub fn with_managed(name: String, parameters: Vec<TypeId>, return_type: TypeId) -> FunctionDeclaration {
         FunctionDeclaration {
             function_type: FunctionType::Managed,
             name,

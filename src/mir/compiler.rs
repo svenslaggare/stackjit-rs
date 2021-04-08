@@ -429,7 +429,7 @@ impl<'a> InstructionMIRCompiler<'a> {
 #[test]
 fn test_simple1() {
     let mut function = Function::new(
-        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1),
@@ -454,7 +454,7 @@ fn test_simple1() {
 #[test]
 fn test_simple2() {
     let mut function = Function::new(
-        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadInt32(1),
@@ -479,7 +479,7 @@ fn test_simple2() {
 #[test]
 fn test_simple3() {
     let mut function = Function::new(
-        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32, TypeId::Int32],
         vec![
             Instruction::LoadInt32(1000),
@@ -508,7 +508,7 @@ fn test_simple3() {
 #[test]
 fn test_simple4() {
     let mut function = Function::new(
-        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1000),
@@ -533,7 +533,7 @@ fn test_simple4() {
 #[test]
 fn test_simple5() {
     let mut function = Function::new(
-        FunctionDeclaration::with_manager("test".to_owned(), vec![], TypeId::Int32),
+        FunctionDeclaration::with_managed("test".to_owned(), vec![], TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1000),
@@ -544,7 +544,7 @@ fn test_simple5() {
     );
 
     let mut binder = Binder::new();
-    binder.define(FunctionDeclaration::with_manager(
+    binder.define(FunctionDeclaration::with_managed(
         "add".to_owned(),
         vec![TypeId::Int32, TypeId::Float32],
         TypeId::Int32

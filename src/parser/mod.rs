@@ -262,7 +262,7 @@ impl Parser {
         }
 
         Ok(Function::new(
-            FunctionDeclaration::with_manager(
+            FunctionDeclaration::with_managed(
                 name,
                 parameters,
                 return_type

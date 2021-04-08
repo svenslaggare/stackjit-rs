@@ -8,7 +8,7 @@ fn test1() {
     let mut vm = VirtualMachine::new();
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -27,7 +27,7 @@ fn test2() {
     let mut vm = VirtualMachine::new();
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -46,7 +46,7 @@ fn test3() {
     let mut vm = VirtualMachine::new();
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -65,7 +65,7 @@ fn test4() {
     let mut vm = VirtualMachine::new();
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadInt32(4711),
@@ -84,7 +84,7 @@ fn test5() {
     let mut vm = VirtualMachine::new();
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadInt32(1337),

@@ -25,7 +25,7 @@ fn test_simple1() {
     let mut vm = VirtualMachine::new();
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadTrue,
@@ -53,7 +53,7 @@ fn test_simple2() {
     let mut vm = VirtualMachine::new();
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadTrue,
@@ -88,7 +88,7 @@ fn test_operator1() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadTrue,
@@ -116,7 +116,7 @@ fn test_operator2() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadTrue,
@@ -144,7 +144,7 @@ fn test_operator3() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadTrue,
@@ -172,7 +172,7 @@ fn test_operator4() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadTrue,
@@ -199,7 +199,7 @@ fn test_operator5() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Int32],
         vec![
             Instruction::LoadFalse,
@@ -226,7 +226,7 @@ fn test_array1() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Bool))],
         vec![
             Instruction::LoadInt32(1000),
@@ -266,7 +266,7 @@ fn test_array2() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Bool))],
         vec![
             Instruction::LoadInt32(1000),
@@ -307,7 +307,7 @@ fn test_compare1() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Bool))],
         vec![
             Instruction::LoadInt32(1000),
@@ -334,7 +334,7 @@ fn test_compare2() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Bool))],
         vec![
             Instruction::LoadInt32(1000),
@@ -361,7 +361,7 @@ fn test_compare3() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Bool))],
         vec![
             Instruction::LoadInt32(1000),
@@ -388,7 +388,7 @@ fn test_compare4() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Array(Box::new(TypeId::Bool))],
         vec![
             Instruction::LoadFloat32(1000.0),

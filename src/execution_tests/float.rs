@@ -38,7 +38,7 @@ fn test_arithmetic1() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadFloat32(13.37),
@@ -71,7 +71,7 @@ fn test_arithmetic2() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadFloat32(13.37),
@@ -104,7 +104,7 @@ fn test_arithmetic3() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadFloat32(13.37),
@@ -137,7 +137,7 @@ fn test_arithmetic4() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadFloat32(13.37),
@@ -177,7 +177,7 @@ fn test_call1() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadFloat32(13.37),
@@ -210,7 +210,7 @@ fn test_call2() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("sum8".to_owned(), (0..8).map(|_| TypeId::Float32).collect(), TypeId::Float32),
+        FunctionDeclaration::with_managed("sum8".to_owned(), (0..8).map(|_| TypeId::Float32).collect(), TypeId::Float32),
         Vec::new(),
         vec![
             Instruction::LoadArgument(0),
@@ -233,7 +233,7 @@ fn test_call2() {
     )).unwrap();
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         Vec::new(),
         vec![
             Instruction::LoadFloat32(1.1),
@@ -272,7 +272,7 @@ fn test_call3() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![],
         vec![
             Instruction::LoadFloat32(13.37),
@@ -305,7 +305,7 @@ fn test_local1() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Float32],
         vec![
             Instruction::LoadFloat32(1000.0),
@@ -343,7 +343,7 @@ fn test_local2() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Float32],
         vec![
             Instruction::LoadFloat32(1000.0),
@@ -381,7 +381,7 @@ fn test_local3() {
     );
 
     vm.add_function(Function::new(
-        FunctionDeclaration::with_manager("main".to_owned(), Vec::new(), TypeId::Int32),
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
         vec![TypeId::Float32, TypeId::Float32],
         vec![
             Instruction::LoadFloat32(1337.0),
