@@ -1139,3 +1139,55 @@ fn test_class_member_function2() {
     let mut verifier = Verifier::new(&binder, &type_storage, &mut function);
     assert_eq!(Ok(()), verifier.verify());
 }
+
+#[test]
+fn test_class_member_function3() {
+    let mut function = Function::new(
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Class("Point".to_owned())],
+        vec![
+            Instruction::NewObject("Point".to_owned()),
+            Instruction::CallInstance(FunctionSignature::with_class("sum".to_owned(), TypeId::Class("Point3".to_owned()), Vec::new())),
+            Instruction::Return,
+        ]
+    );
+
+    let mut binder = Binder::new();
+    binder.define(FunctionDeclaration::with_managed_member(
+        "sum".to_owned(),
+        TypeId::Class("Point".to_owned()),
+        vec![],
+        TypeId::Int32
+    ));
+
+    binder.define(FunctionDeclaration::with_managed_member(
+        "sum".to_owned(),
+        TypeId::Class("Point3".to_owned()),
+        vec![],
+        TypeId::Int32
+    ));
+
+    let mut type_storage = TypeStorage::new();
+    type_storage.add_class(Class::new(
+        "Point".to_owned(),
+        vec![
+            Field::new("x".to_owned(), TypeId::Int32),
+            Field::new("y".to_owned(), TypeId::Int32)
+        ]
+    ));
+
+    type_storage.add_class(Class::new(
+        "Point3".to_owned(),
+        vec![
+            Field::new("x".to_owned(), TypeId::Int32),
+            Field::new("y".to_owned(), TypeId::Int32),
+            Field::new("z".to_owned(), TypeId::Int32)
+        ]
+    ));
+
+    let mut verifier = Verifier::new(&binder, &type_storage, &mut function);
+    assert_eq!(
+        Err(VerifyError::with_index(1, VerifyErrorMessage::WrongType(TypeId::Class("Point3".to_owned()), TypeId::Class("Point".to_owned())))),
+        verifier.verify()
+    );
+}
