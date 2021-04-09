@@ -293,6 +293,21 @@ impl<'a> CodeGenerator<'a> {
                     ));
                 }
             }
+            InstructionIR::MoveExplicit(destination, source) => {
+                if source.0.is_xmm() {
+                    self.encode_x86_instruction(X86Instruction::with_reg_reg(
+                        Code::Movss_xmm_xmmm32,
+                        destination.0,
+                        source.0
+                    ));
+                } else {
+                    self.encode_x86_instruction(X86Instruction::with_reg_reg(
+                        Code::Mov_r64_rm64,
+                        destination.0,
+                        source.0
+                    ));
+                }
+            }
             InstructionIR::MoveImplicitToExplicit(destination, source) => {
                 if destination.0.is_xmm() {
                     self.encode_x86_instruction(X86Instruction::with_reg_reg(

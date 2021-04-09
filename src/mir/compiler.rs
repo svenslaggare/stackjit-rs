@@ -20,6 +20,12 @@ pub struct MIRCompilationResult {
     pub instructions_operand_stack: Vec<Vec<RegisterMIR>>
 }
 
+impl MIRCompilationResult {
+    pub fn member_this_register(&self, function: &Function) -> Option<&RegisterMIR> {
+        function.declaration().class().as_ref().map(|_| self.local_virtual_registers.last()).flatten()
+    }
+}
+
 pub struct InstructionMIRCompiler<'a> {
     type_storage: &'a TypeStorage,
     binder: &'a Binder,
@@ -27,6 +33,7 @@ pub struct InstructionMIRCompiler<'a> {
     instructions: Vec<InstructionMIR>,
     branch_manager: BranchManager,
     local_virtual_registers: Vec<RegisterMIR>,
+    need_zero_initialize_registers: Vec<RegisterMIR>,
     next_operand_virtual_register: u32,
     max_num_virtual_register: usize,
     instructions_operands: Vec<Vec<RegisterMIR>>,
@@ -44,6 +51,7 @@ impl<'a> InstructionMIRCompiler<'a> {
             branch_manager: BranchManager::new(),
             instructions: Vec::new(),
             local_virtual_registers: Vec::new(),
+            need_zero_initialize_registers: Vec::new(),
             next_operand_virtual_register: 0,
             max_num_virtual_register: 0,
             instructions_operands: Vec::new(),
@@ -84,7 +92,15 @@ impl<'a> InstructionMIRCompiler<'a> {
             self.local_virtual_registers.push(
                 RegisterMIR::new(self.next_operand_virtual_register, local_type.clone())
             );
+            self.need_zero_initialize_registers.push(self.local_virtual_registers.last().unwrap().clone());
 
+            self.next_operand_virtual_register += 1;
+        }
+
+        if let Some(class) = self.function.declaration().class() {
+            self.local_virtual_registers.push(
+                RegisterMIR::new(self.next_operand_virtual_register, class.clone())
+            );
             self.next_operand_virtual_register += 1;
         }
 
@@ -278,8 +294,16 @@ impl<'a> InstructionMIRCompiler<'a> {
                 }
             }
             Instruction::LoadArgument(argument_index) => {
-                let assign_reg = self.assign_stack_register(self.function.declaration().parameters()[*argument_index as usize].clone());
-                self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadArgument(*argument_index, assign_reg)));
+                if *argument_index == 0 && self.function.declaration().class().is_some() {
+                    let assign_reg = self.assign_stack_register(self.function.declaration().class().as_ref().unwrap().clone());
+                    self.instructions.push(InstructionMIR::new(
+                        instruction_index,
+                        InstructionMIRData::Move(assign_reg, self.local_virtual_registers.last().unwrap().clone())
+                    ));
+                } else {
+                    let assign_reg = self.assign_stack_register(self.function.declaration().parameters()[*argument_index as usize].clone());
+                    self.instructions.push(InstructionMIR::new(instruction_index, InstructionMIRData::LoadArgument(*argument_index, assign_reg)));
+                }
             }
             Instruction::LoadNull(null_type) => {
                 let assign_reg = self.assign_stack_register(null_type.clone());
@@ -449,8 +473,8 @@ impl<'a> InstructionMIRCompiler<'a> {
         MIRCompilationResult {
             instructions: self.instructions,
             num_virtual_registers: self.max_num_virtual_register,
-            local_virtual_registers: self.local_virtual_registers.clone(),
-            need_zero_initialize_registers: self.local_virtual_registers.clone(),
+            local_virtual_registers: self.local_virtual_registers,
+            need_zero_initialize_registers: self.need_zero_initialize_registers,
             instructions_operand_stack: self.instructions_operands
         }
     }

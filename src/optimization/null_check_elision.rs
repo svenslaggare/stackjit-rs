@@ -82,6 +82,10 @@ fn compute_null_check_elision_for_block(function: &Function,
         register_is_null.insert(register.clone(), true);
     }
 
+    if let Some(this_reference) = compilation_result.member_this_register(function) {
+        register_is_null.insert(this_reference.clone(), false);
+    }
+
     compute_null_check_elision_for_block_internal(function, compilation_result, basic_block, register_is_null)
 }
 
@@ -558,13 +562,16 @@ fn test_member_function1() {
         println!("{:?}", instruction);
     }
 
-    assert_eq!(0, result[0].len());
+    assert_eq!(1, result[0].len());
+    assert_eq!(false, result[0][&RegisterMIR::new(0, TypeId::Class("Point".to_owned()))]);
 
-    assert_eq!(1, result[1].len());
+    assert_eq!(2, result[1].len());
     assert_eq!(false, result[1][&RegisterMIR::new(0, TypeId::Class("Point".to_owned()))]);
+    assert_eq!(false, result[1][&RegisterMIR::new(1, TypeId::Class("Point".to_owned()))]);
 
-    assert_eq!(1, result[2].len());
+    assert_eq!(2, result[2].len());
     assert_eq!(false, result[2][&RegisterMIR::new(0, TypeId::Class("Point".to_owned()))]);
+    assert_eq!(false, result[2][&RegisterMIR::new(1, TypeId::Class("Point".to_owned()))]);
 }
 
 #[test]

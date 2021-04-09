@@ -1,12 +1,11 @@
 use std::collections::BTreeSet;
 
 use crate::mir::RegisterMIR;
-use crate::compiler::ir::{InstructionIR, HardwareRegister, HardwareRegisterExplicit};
+use crate::compiler::ir::{InstructionIR, HardwareRegister, HardwareRegisterExplicit, Variable};
 use crate::optimization::register_allocation::{AllocatedRegister, RegisterAllocation};
 use crate::analysis::VirtualRegister;
 use crate::compiler::stack_layout;
 use crate::model::function::Function;
-use iced_x86::OpCodeOperandKind::al;
 
 pub trait AllocatedCompilerHelpers {
     fn function(&self) -> &Function;
@@ -83,6 +82,21 @@ pub trait AllocatedCompilerHelpers {
         }
     }
 
+    fn move_from_hardware_register_explicit(&mut self,
+                                            destination: &RegisterMIR,
+                                            source: HardwareRegisterExplicit) {
+        let destination_allocation = self.register_allocation().get_register(destination).clone();
+        match destination_allocation.hardware_register() {
+            Some(destination_register) => {
+                self.instructions().push(InstructionIR::MoveExplicitToImplicit(destination_register, source));
+            }
+            None => {
+                let destination_offset = self.get_register_stack_offset(destination);
+                self.instructions().push(InstructionIR::StoreFrameMemoryExplicit(destination_offset, source));
+            }
+        }
+    }
+
     fn move_to_hardware_register(&mut self,
                                  destination: HardwareRegister,
                                  source: &RegisterMIR) {
@@ -97,6 +111,22 @@ pub trait AllocatedCompilerHelpers {
             }
         }
     }
+
+    fn move_from_variable(&mut self,
+                          destination: &RegisterMIR,
+                          source: &Variable) {
+        let destination_allocation = self.register_allocation().get_register(destination).clone();
+        match destination_allocation.hardware_register() {
+            Some(destination_register) => {
+                source.move_to_register(destination_register, self.instructions());
+            }
+            None => {
+                let destination_offset = self.get_register_stack_offset(destination);
+                source.move_to_stack_frame(destination_offset, self.instructions());
+            }
+        }
+    }
+
 
     fn binary_operator_with_destination<
         F1: Fn(&mut Vec<InstructionIR>, HardwareRegister, HardwareRegister),

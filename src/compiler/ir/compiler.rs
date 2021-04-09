@@ -52,7 +52,13 @@ impl<'a> InstructionIRCompiler<'a> {
             self.instructions.push(InstructionIR::SubFromStackPointer(stack_size));
         }
 
-        CallingConventions::new().move_arguments_to_stack(self.function, &mut self.instructions);
+        let argument_sources = CallingConventions::new().move_arguments_to_stack(self.function, &mut self.instructions);
+        if let Some(this_reference) = self.compilation_result.member_this_register(self.function) {
+            argument_sources[0].move_to_stack_frame(
+                self.get_register_stack_offset(this_reference),
+                &mut self.instructions
+            );
+        }
 
         if !self.compilation_result.need_zero_initialize_registers.is_empty() {
             self.instructions.push(InstructionIR::LoadZeroToRegister(HardwareRegister::IntSpill));

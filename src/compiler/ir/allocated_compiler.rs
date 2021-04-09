@@ -82,7 +82,12 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
             self.instructions.push(InstructionIR::SubFromStackPointer(stack_size));
         }
 
-        CallingConventions::new().move_arguments_to_stack(self.function, &mut self.instructions);
+        let argument_sources = CallingConventions::new().move_arguments_to_stack(self.function, &mut self.instructions);
+        if let Some(this_reference) = self.compilation_result.member_this_register(self.function) {
+            if self.register_allocation.is_used(this_reference) {
+                self.move_from_variable(this_reference, &argument_sources[0])
+            }
+        }
 
         if !self.compilation_result.need_zero_initialize_registers.is_empty() {
             let mut int_initialized = false;
