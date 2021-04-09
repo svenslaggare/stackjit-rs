@@ -65,31 +65,36 @@ impl CallingConventions {
     }
 
     pub fn move_arguments_to_stack(&self, function: &Function, instructions: &mut Vec<InstructionIR>) -> Vec<Variable> {
-        let mut sources = Vec::new();
+        let mut argument_sources = Vec::new();
 
         for argument_index in (0..function.declaration().parameters().len()).rev() {
-            match function.declaration().parameters()[argument_index] {
+            let argument_source = match function.declaration().parameters()[argument_index] {
                 TypeId::Float32 => {
-                    sources.push(self.move_float_arguments_to_stack(
+                    self.move_float_arguments_to_stack(
                         function,
                         argument_index,
-                        float_register_call_arguments::get_relative_index(function.declaration().parameters(), argument_index),
-                        instructions
-                    ));
+                        float_register_call_arguments::get_relative_index(function.declaration().parameters(), argument_index)
+                    )
                 }
                 _ => {
-                    sources.push(self.move_non_float_arguments_to_stack(
+                    self.move_non_float_arguments_to_stack(
                         function,
                         argument_index,
-                        register_call_arguments::get_relative_index(function.declaration().parameters(), argument_index),
-                        instructions
-                    ));
+                        register_call_arguments::get_relative_index(function.declaration().parameters(), argument_index)
+                    )
                 }
-            }
+            };
+
+            argument_source.move_to_stack_frame(
+                stack_layout::argument_stack_offset(function, argument_index as u32),
+                instructions
+            );
+
+            argument_sources.push(argument_source);
         }
 
-        sources.reverse();
-        sources
+        argument_sources.reverse();
+        argument_sources
     }
 
     pub fn handle_return_value(&self,
@@ -138,19 +143,13 @@ impl CallingConventions {
     fn move_non_float_arguments_to_stack(&self,
                                          function: &Function,
                                          argument_index: usize,
-                                         relative_argument_index: usize,
-                                         instructions: &mut Vec<InstructionIR>) -> Variable {
-        let argument_destination_offset = stack_layout::argument_stack_offset(function, argument_index as u32);
+                                         relative_argument_index: usize) -> Variable {
         if relative_argument_index >= register_call_arguments::NUM_ARGUMENTS {
             let stack_argument_index = self.get_stack_argument_index(function, argument_index);
             let argument_source_offset = STACK_ENTRY_SIZE * (STACK_OFFSET as usize + stack_argument_index + 1) as i32;
-
-            instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::IntSpill, argument_source_offset));
-            instructions.push(InstructionIR::StoreFrameMemory(argument_destination_offset, HardwareRegister::IntSpill));
             Variable::FrameMemory(argument_source_offset)
         } else {
             let argument_source_register = HardwareRegisterExplicit(register_call_arguments::get_argument(relative_argument_index));
-            instructions.push(InstructionIR::StoreFrameMemoryExplicit(argument_destination_offset, argument_source_register));
             Variable::RegisterExplicit(argument_source_register)
         }
     }
@@ -158,19 +157,13 @@ impl CallingConventions {
     fn move_float_arguments_to_stack(&self,
                                      function: &Function,
                                      argument_index: usize,
-                                     relative_argument_index: usize,
-                                     instructions: &mut Vec<InstructionIR>) -> Variable {
-        let argument_destination_offset = stack_layout::argument_stack_offset(function, argument_index as u32);
+                                     relative_argument_index: usize) -> Variable {
         if relative_argument_index >= float_register_call_arguments::NUM_ARGUMENTS {
             let stack_argument_index = self.get_stack_argument_index(function, argument_index);
             let argument_source_offset = STACK_ENTRY_SIZE * (STACK_OFFSET as usize + stack_argument_index + 1) as i32;
-
-            instructions.push(InstructionIR::LoadFrameMemory(HardwareRegister::IntSpill, argument_source_offset));
-            instructions.push(InstructionIR::StoreFrameMemory(argument_destination_offset, HardwareRegister::IntSpill));
             Variable::FrameMemory(argument_source_offset)
         } else {
             let argument_source_register = HardwareRegisterExplicit(float_register_call_arguments::get_argument(relative_argument_index));
-            instructions.push(InstructionIR::StoreFrameMemoryExplicit(argument_destination_offset, argument_source_register));
             Variable::RegisterExplicit(argument_source_register)
         }
     }
