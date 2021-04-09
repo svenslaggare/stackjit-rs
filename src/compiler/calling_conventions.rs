@@ -88,6 +88,7 @@ impl CallingConventions {
             }
         }
 
+        sources.reverse();
         sources
     }
 

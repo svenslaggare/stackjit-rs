@@ -637,3 +637,58 @@ fn test_call_member5() {
     let execution_result = vm.execute().unwrap();
     assert_eq!(4711 + 1314 + 1337, execution_result);
 }
+
+#[test]
+fn test_call_member6() {
+    let mut vm = VirtualMachine::new();
+
+    vm.add_class(Class::new(
+        "Point".to_owned(),
+        vec![
+            Field::new("x".to_owned(), TypeId::Int32),
+            Field::new("y".to_owned(), TypeId::Int32),
+        ]
+    ));
+
+    vm.add_function(Function::new(
+        FunctionDeclaration::with_managed_member("sum".to_owned(), TypeId::Class("Point".to_owned()), vec![TypeId::Int32], TypeId::Int32),
+        vec![TypeId::Int32],
+        vec![
+            Instruction::LoadArgument(1),
+            Instruction::StoreLocal(0),
+            Instruction::LoadArgument(0),
+            Instruction::LoadField("Point".to_owned(), "x".to_owned()),
+            Instruction::LoadLocal(0),
+            Instruction::Add,
+            Instruction::LoadArgument(0),
+            Instruction::LoadField("Point".to_owned(), "y".to_owned()),
+            Instruction::Add,
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    vm.add_function(Function::new(
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Class("Point".to_owned())],
+        vec![
+            Instruction::NewObject("Point".to_owned()),
+            Instruction::StoreLocal(0),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(4711),
+            Instruction::StoreField("Point".to_owned(), "x".to_owned()),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(1337),
+            Instruction::StoreField("Point".to_owned(), "y".to_owned()),
+
+            Instruction::LoadLocal(0),
+            Instruction::LoadInt32(1314),
+            Instruction::CallInstance(FunctionSignature::with_class("sum".to_owned(), TypeId::Class("Point".to_owned()), vec![TypeId::Int32])),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(4711 + 1314 + 1337, execution_result);
+}
