@@ -82,21 +82,6 @@ pub trait AllocatedCompilerHelpers {
         }
     }
 
-    fn move_from_hardware_register_explicit(&mut self,
-                                            destination: &RegisterMIR,
-                                            source: HardwareRegisterExplicit) {
-        let destination_allocation = self.register_allocation().get_register(destination).clone();
-        match destination_allocation.hardware_register() {
-            Some(destination_register) => {
-                self.instructions().push(InstructionIR::MoveExplicitToImplicit(destination_register, source));
-            }
-            None => {
-                let destination_offset = self.get_register_stack_offset(destination);
-                self.instructions().push(InstructionIR::StoreFrameMemoryExplicit(destination_offset, source));
-            }
-        }
-    }
-
     fn move_to_hardware_register(&mut self,
                                  destination: HardwareRegister,
                                  source: &RegisterMIR) {
@@ -126,7 +111,6 @@ pub trait AllocatedCompilerHelpers {
             }
         }
     }
-
 
     fn binary_operator_with_destination<
         F1: Fn(&mut Vec<InstructionIR>, HardwareRegister, HardwareRegister),
