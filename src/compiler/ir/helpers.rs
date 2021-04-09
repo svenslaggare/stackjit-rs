@@ -6,6 +6,7 @@ use crate::optimization::register_allocation::{AllocatedRegister, RegisterAlloca
 use crate::analysis::VirtualRegister;
 use crate::compiler::stack_layout;
 use crate::model::function::Function;
+use iced_x86::OpCodeOperandKind::al;
 
 pub trait AllocatedCompilerHelpers {
     fn function(&self) -> &Function;
@@ -38,26 +39,6 @@ pub trait AllocatedCompilerHelpers {
                 self.instructions().push(InstructionIR::LoadFrameMemory(register.clone(), source_offset));
             }
         }
-    }
-
-    fn push_if_alive(&mut self,
-                     alive_registers: &Vec<HardwareRegister>,
-                     register_ir: &RegisterMIR,
-                     register: &HardwareRegister,
-                     is_stack: bool) -> bool {
-        let alive = if is_stack && alive_registers.contains(&register) {
-            self.instructions().push(InstructionIR::Push(register.clone()));
-            true
-        } else {
-            false
-        };
-
-        if is_stack {
-            let source_offset = self.get_register_stack_offset(register_ir);
-            self.instructions().push(InstructionIR::LoadFrameMemory(register.clone(), source_offset));
-        }
-
-        alive
     }
 
     fn move_register(&mut self,
@@ -373,19 +354,19 @@ pub trait AllocatedCompilerHelpers {
 
         match (operand1_allocation, operand2_allocation) {
             (Some(operand1_register), Some(operand2_register)) => {
-                reg_reg(&mut self.instructions(), operand1_register, operand2_register);
+                reg_reg(self.instructions(), operand1_register, operand2_register);
             }
             (Some(operand1_register), None) => {
-                reg_mem(&mut self.instructions(), operand1_register, operand2_offset);
+                reg_mem(self.instructions(), operand1_register, operand2_offset);
             }
             (None, Some(operand2_register)) => {
                 self.instructions().push(InstructionIR::LoadFrameMemory(HardwareRegister::FloatSpill, operand1_offset));
-                reg_reg(&mut self.instructions(), HardwareRegister::FloatSpill, operand2_register);
+                reg_reg(self.instructions(), HardwareRegister::FloatSpill, operand2_register);
                 self.instructions().push(InstructionIR::StoreFrameMemory(operand1_offset, HardwareRegister::FloatSpill));
             }
             (None, None) => {
                 self.instructions().push(InstructionIR::LoadFrameMemory(HardwareRegister::FloatSpill, operand1_offset));
-                reg_mem(&mut self.instructions(), HardwareRegister::FloatSpill, operand2_offset);
+                reg_mem(self.instructions(), HardwareRegister::FloatSpill, operand2_offset);
                 self.instructions().push(InstructionIR::StoreFrameMemory(operand1_offset, HardwareRegister::FloatSpill));
             }
         }
@@ -402,12 +383,14 @@ pub trait AllocatedCompilerHelpers {
 
 pub struct TempRegisters<'a> {
     register_allocation: &'a RegisterAllocation,
+    alive_registers: Vec<HardwareRegister>,
     int_registers: BTreeSet<HardwareRegister>,
-    float_registers: BTreeSet<HardwareRegister>
+    float_registers: BTreeSet<HardwareRegister>,
+    saved_registers: Vec<HardwareRegister>
 }
 
 impl<'a> TempRegisters<'a> {
-    pub fn new(register_allocation: &'a RegisterAllocation) -> TempRegisters<'a> {
+    pub fn new(register_allocation: &'a RegisterAllocation, instruction_index: usize) -> TempRegisters<'a> {
         let mut int_registers = BTreeSet::new();
         int_registers.insert(HardwareRegister::Int(5));
         int_registers.insert(HardwareRegister::Int(4));
@@ -422,8 +405,10 @@ impl<'a> TempRegisters<'a> {
 
         TempRegisters {
             register_allocation,
+            alive_registers: register_allocation.alive_hardware_registers_at(instruction_index),
             int_registers,
-            float_registers
+            float_registers,
+            saved_registers: Vec::new()
         }
     }
 
@@ -434,7 +419,28 @@ impl<'a> TempRegisters<'a> {
         }
     }
 
-    pub fn get_register(&mut self, register: &RegisterMIR) -> (bool, HardwareRegister) {
+    pub fn get(&mut self,
+               function: &Function,
+               instructions: &mut Vec<InstructionIR>,
+               register: &RegisterMIR) -> HardwareRegister {
+        self.get_with_status(function, instructions, register).0
+    }
+
+    pub fn get_with_status(&mut self,
+                           function: &Function,
+                           instructions: &mut Vec<InstructionIR>,
+                           register: &RegisterMIR) -> (HardwareRegister, bool, bool) {
+        let (is_stack, hardware_register) = self.get_raw(register);
+        let alive = self.push_if_alive(function, instructions, register, &hardware_register, is_stack);
+
+        if alive {
+            self.saved_registers.push(hardware_register);
+        }
+
+        (hardware_register, is_stack, alive)
+    }
+
+    pub fn get_raw(&mut self, register: &RegisterMIR) -> (bool, HardwareRegister) {
         match self.register_allocation.get_register(register).hardware_register() {
             Some(register) => (false, register.clone()),
             None if register.value_type.is_float() => {
@@ -447,6 +453,37 @@ impl<'a> TempRegisters<'a> {
                 self.int_registers.remove(&register);
                 (true, register)
             }
+        }
+    }
+
+    pub fn push_if_alive(&mut self,
+                         function: &Function,
+                         instructions: &mut Vec<InstructionIR>,
+                         register_ir: &RegisterMIR,
+                         register: &HardwareRegister,
+                         is_stack: bool) -> bool {
+        let alive = if is_stack && self.alive_registers.contains(&register) {
+            instructions.push(InstructionIR::Push(register.clone()));
+            true
+        } else {
+            false
+        };
+
+        if is_stack {
+            let source_offset = stack_layout::virtual_register_stack_offset(function, register_ir.number);
+            instructions.push(InstructionIR::LoadFrameMemory(register.clone(), source_offset));
+        }
+
+        alive
+    }
+
+    pub fn clear(mut self) {
+        self.saved_registers.clear();
+    }
+
+    pub fn done(self, instructions: &mut Vec<InstructionIR>) {
+        for register in self.saved_registers.into_iter().rev() {
+            instructions.push(InstructionIR::Pop(register));
         }
     }
 }

@@ -210,6 +210,40 @@ fn test_store2() {
     assert_eq!(1337.0 + 4711.0, FLOAT_RESULT.with(|result| *result.borrow()));
 }
 
+#[test]
+fn test_store3() {
+    let mut vm = VirtualMachine::new();
+
+    vm.add_class(Class::new(
+        "Point".to_owned(),
+        vec![
+            Field::new("x".to_owned(), TypeId::Int32),
+            Field::new("y".to_owned(), TypeId::Int32),
+        ]
+    ));
+
+    vm.add_function(Function::new(
+        FunctionDeclaration::with_managed("main".to_owned(), Vec::new(), TypeId::Int32),
+        vec![TypeId::Int32, TypeId::Class("Point".to_owned())],
+        vec![
+            Instruction::LoadInt32(1337),
+            Instruction::StoreLocal(0),
+
+            Instruction::NewObject("Point".to_owned()),
+            Instruction::StoreLocal(1),
+
+            Instruction::LoadLocal(1),
+            Instruction::LoadInt32(4711),
+            Instruction::StoreField("Point".to_owned(), "y".to_owned()),
+
+            Instruction::LoadLocal(0),
+            Instruction::Return,
+        ]
+    )).unwrap();
+
+    let execution_result = vm.execute().unwrap();
+    assert_eq!(1337, execution_result);
+}
 
 #[test]
 fn test_array1() {
