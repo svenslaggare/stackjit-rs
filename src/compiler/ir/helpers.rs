@@ -381,16 +381,16 @@ pub trait AllocatedCompilerHelpers {
     }
 }
 
-pub struct TempRegisters<'a> {
-    register_allocation: &'a RegisterAllocation,
+pub struct TempRegisters {
     alive_registers: Vec<HardwareRegister>,
     int_registers: BTreeSet<HardwareRegister>,
     float_registers: BTreeSet<HardwareRegister>,
-    saved_registers: Vec<HardwareRegister>
+    saved_registers: Vec<HardwareRegister>,
+    restored: bool
 }
 
-impl<'a> TempRegisters<'a> {
-    pub fn new(register_allocation: &'a RegisterAllocation, instruction_index: usize) -> TempRegisters<'a> {
+impl TempRegisters {
+    pub fn new(register_allocation: &RegisterAllocation, instruction_index: usize) -> TempRegisters {
         let mut int_registers = BTreeSet::new();
         int_registers.insert(HardwareRegister::Int(5));
         int_registers.insert(HardwareRegister::Int(4));
@@ -404,33 +404,35 @@ impl<'a> TempRegisters<'a> {
         float_registers.insert(HardwareRegister::Float(3));
 
         TempRegisters {
-            register_allocation,
             alive_registers: register_allocation.alive_hardware_registers_at(instruction_index),
             int_registers,
             float_registers,
-            saved_registers: Vec::new()
+            saved_registers: Vec::new(),
+            restored: false
         }
     }
 
-    pub fn try_remove(&mut self, register: &RegisterMIR) {
-        if let Some(register) = self.register_allocation.get_register(register).hardware_register() {
+    pub fn try_remove(&mut self, register_allocation: &RegisterAllocation, register: &RegisterMIR) {
+        if let Some(register) = register_allocation.get_register(register).hardware_register() {
             self.int_registers.remove(&register);
             self.float_registers.remove(&register);
         }
     }
 
     pub fn get(&mut self,
+               register_allocation: &RegisterAllocation,
                function: &Function,
                instructions: &mut Vec<InstructionIR>,
                register: &RegisterMIR) -> HardwareRegister {
-        self.get_with_status(function, instructions, register).0
+        self.get_with_status(register_allocation, function, instructions, register).0
     }
 
     pub fn get_with_status(&mut self,
+                           register_allocation: &RegisterAllocation,
                            function: &Function,
                            instructions: &mut Vec<InstructionIR>,
                            register: &RegisterMIR) -> (HardwareRegister, bool, bool) {
-        let (is_stack, hardware_register) = self.get_raw(register);
+        let (is_stack, hardware_register) = self.get_raw(register_allocation, register);
         let alive = self.push_if_alive(function, instructions, register, &hardware_register, is_stack);
 
         if alive {
@@ -440,8 +442,10 @@ impl<'a> TempRegisters<'a> {
         (hardware_register, is_stack, alive)
     }
 
-    pub fn get_raw(&mut self, register: &RegisterMIR) -> (bool, HardwareRegister) {
-        match self.register_allocation.get_register(register).hardware_register() {
+    fn get_raw(&mut self,
+               register_allocation: &RegisterAllocation,
+               register: &RegisterMIR) -> (bool, HardwareRegister) {
+        match register_allocation.get_register(register).hardware_register() {
             Some(register) => (false, register.clone()),
             None if register.value_type.is_float() => {
                 let register = self.float_registers.iter().rev().next().unwrap().clone();
@@ -456,12 +460,12 @@ impl<'a> TempRegisters<'a> {
         }
     }
 
-    pub fn push_if_alive(&mut self,
-                         function: &Function,
-                         instructions: &mut Vec<InstructionIR>,
-                         register_ir: &RegisterMIR,
-                         register: &HardwareRegister,
-                         is_stack: bool) -> bool {
+    fn push_if_alive(&mut self,
+                     function: &Function,
+                     instructions: &mut Vec<InstructionIR>,
+                     register_ir: &RegisterMIR,
+                     register: &HardwareRegister,
+                     is_stack: bool) -> bool {
         let alive = if is_stack && self.alive_registers.contains(&register) {
             instructions.push(InstructionIR::Push(register.clone()));
             true
@@ -479,11 +483,22 @@ impl<'a> TempRegisters<'a> {
 
     pub fn clear(mut self) {
         self.saved_registers.clear();
+        self.restored = true;
     }
 
-    pub fn done(self, instructions: &mut Vec<InstructionIR>) {
-        for register in self.saved_registers.into_iter().rev() {
+    pub fn done(mut self, instructions: &mut Vec<InstructionIR>) {
+        for register in std::mem::take(&mut self.saved_registers).into_iter().rev() {
             instructions.push(InstructionIR::Pop(register));
+        }
+
+        self.restored = true;
+    }
+}
+
+impl Drop for TempRegisters {
+    fn drop(&mut self) {
+        if !self.restored {
+            panic!("registers not restored.");
         }
     }
 }
