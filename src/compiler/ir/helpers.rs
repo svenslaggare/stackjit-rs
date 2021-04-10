@@ -456,6 +456,23 @@ impl TempRegisters {
         (hardware_register, is_stack, alive)
     }
 
+    pub fn get_and_try_remove<const N: usize>(&mut self,
+                                              register_allocation: &RegisterAllocation,
+                                              function: &Function,
+                                              instructions: &mut Vec<InstructionIR>,
+                                              registers: [&RegisterMIR; N]) -> [HardwareRegister; N] {
+        for register in &registers {
+            self.try_remove(register_allocation, register);
+        }
+
+        let mut results: [HardwareRegister; N] = [HardwareRegister::Int(0); N];
+        for (index, register) in registers.iter().enumerate() {
+            results[index] = self.get(register_allocation, function, instructions, register);
+        }
+
+        results
+    }
+
     fn get_raw(&mut self,
                register_allocation: &RegisterAllocation,
                register: &RegisterMIR) -> (bool, HardwareRegister) {

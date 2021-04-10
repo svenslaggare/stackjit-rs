@@ -440,7 +440,6 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
 
                 let mut temp_registers = TempRegisters::new(&self.register_allocation, instruction_index);
                 temp_registers.try_remove(&self.register_allocation, size);
-
                 let (size_register, _, size_alive) = temp_registers.get_with_status(&self.register_allocation, self.function, &mut self.instructions, size);
 
                 self.instructions.push(InstructionIR::NewArray(element.clone(), size_register, if size_alive {1} else {0}));
@@ -470,11 +469,12 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
             }
             InstructionMIRData::LoadElement(element, destination, array_ref, index) => {
                 let mut temp_registers = TempRegisters::new(&self.register_allocation, instruction_index);
-                temp_registers.try_remove(&self.register_allocation, array_ref);
-                temp_registers.try_remove(&self.register_allocation, index);
-
-                let array_ref_register = temp_registers.get(&self.register_allocation, self.function, &mut self.instructions, array_ref);
-                let index_register = temp_registers.get(&self.register_allocation, self.function, &mut self.instructions, index);
+                let [array_ref_register, index_register] = temp_registers.get_and_try_remove(
+                    &self.register_allocation,
+                    self.function,
+                    &mut self.instructions,
+                    [array_ref, index]
+                );
 
                 if self.can_be_null(instruction_index, array_ref) {
                     self.instructions.push(InstructionIR::NullReferenceCheck(array_ref_register));
@@ -510,13 +510,12 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
             }
             InstructionMIRData::StoreElement(element, array_ref, index, value) => {
                 let mut temp_registers = TempRegisters::new(&self.register_allocation, instruction_index);
-                temp_registers.try_remove(&self.register_allocation, array_ref);
-                temp_registers.try_remove(&self.register_allocation, index);
-                temp_registers.try_remove(&self.register_allocation, value);
-
-                let array_ref_register = temp_registers.get(&self.register_allocation, self.function, &mut self.instructions, array_ref);
-                let index_register = temp_registers.get(&self.register_allocation, self.function, &mut self.instructions, index);
-                let value_register = temp_registers.get(&self.register_allocation, self.function, &mut self.instructions, value);
+                let [array_ref_register, index_register, value_register] = temp_registers.get_and_try_remove(
+                    &self.register_allocation,
+                    self.function,
+                    &mut self.instructions,
+                    [array_ref, index, value]
+                );
 
                 if self.can_be_null(instruction_index, array_ref) {
                     self.instructions.push(InstructionIR::NullReferenceCheck(array_ref_register));
@@ -535,9 +534,12 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
             }
             InstructionMIRData::LoadArrayLength(destination, array_ref) => {
                 let mut temp_registers = TempRegisters::new(&self.register_allocation, instruction_index);
-                temp_registers.try_remove(&self.register_allocation, array_ref);
-
-                let array_ref_register = temp_registers.get(&self.register_allocation, self.function, &mut self.instructions, array_ref);
+                let [array_ref_register] = temp_registers.get_and_try_remove(
+                    &self.register_allocation,
+                    self.function,
+                    &mut self.instructions,
+                    [array_ref]
+                );
 
                 if self.can_be_null(instruction_index, array_ref) {
                     self.instructions.push(InstructionIR::NullReferenceCheck(array_ref_register));
@@ -590,9 +592,12 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 let field = class.get_field(field_name).unwrap();
 
                 let mut temp_registers = TempRegisters::new(&self.register_allocation, instruction_index);
-                temp_registers.try_remove(&self.register_allocation, class_ref);
-
-                let class_ref_register = temp_registers.get(&self.register_allocation, self.function, &mut self.instructions, class_ref);
+                let [class_ref_register] = temp_registers.get_and_try_remove(
+                    &self.register_allocation,
+                    self.function,
+                    &mut self.instructions,
+                    [class_ref]
+                );
 
                 if self.can_be_null(instruction_index, class_ref) {
                     self.instructions.push(InstructionIR::NullReferenceCheck(class_ref_register));
@@ -630,11 +635,12 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 let field = class.get_field(field_name).unwrap();
 
                 let mut temp_registers = TempRegisters::new(&self.register_allocation, instruction_index);
-                temp_registers.try_remove(&self.register_allocation, class_ref);
-                temp_registers.try_remove(&self.register_allocation, value);
-
-                let class_ref_register = temp_registers.get(&self.register_allocation, self.function, &mut self.instructions, class_ref);
-                let value_register = temp_registers.get(&self.register_allocation, self.function, &mut self.instructions, value);
+                let [class_ref_register, value_register] = temp_registers.get_and_try_remove(
+                    &self.register_allocation,
+                    self.function,
+                    &mut self.instructions,
+                    [class_ref, value]
+                );
 
                 if self.can_be_null(instruction_index, class_ref) {
                     self.instructions.push(InstructionIR::NullReferenceCheck(class_ref_register));
@@ -657,9 +663,12 @@ impl<'a> AllocatedInstructionIRCompiler<'a> {
                 let class_ref = &arguments[0];
                 if self.can_be_null(instruction_index, class_ref) {
                     let mut temp_registers = TempRegisters::new(&self.register_allocation, instruction_index);
-                    temp_registers.try_remove(&self.register_allocation, class_ref);
-
-                    let class_ref_register = temp_registers.get(&self.register_allocation, self.function, &mut self.instructions, class_ref);
+                    let [class_ref_register] = temp_registers.get_and_try_remove(
+                        &self.register_allocation,
+                        self.function,
+                        &mut self.instructions,
+                        [class_ref]
+                    );
 
                     self.move_to_hardware_register(class_ref_register, class_ref);
                     self.instructions.push(InstructionIR::NullReferenceCheck(class_ref_register));
